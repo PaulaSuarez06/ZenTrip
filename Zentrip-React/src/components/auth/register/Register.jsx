@@ -1,47 +1,37 @@
-// Importaciones de Firebase Auth: función para registrar con email/contraseña, proveedor de Google y función para abrir popup de login
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-// Instancias de Firebase Auth y Firestore configuradas en firebaseConfig.js
+import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, signInWithPopup } from 'firebase/auth';
 import { auth, db } from './firebaseConfig';
-// Funciones de Firestore para referenciar un documento y escribir/sobreescribir datos en él
 import { doc, setDoc } from 'firebase/firestore';
-// Hook de React para manejar estado local del componente
 import { useState } from 'react';
-// Hook de React Router para navegar entre rutas programáticamente
 import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
 
-    // Hook para redirigir al usuario a otras páginas después del registro
     const navigate = useNavigate();
 
-    // Estado del campo email del formulario
     const [email, setEmail] = useState('');
-    // Estado del campo contraseña del formulario
     const [password, setPassword] = useState('');
-    // Estado para almacenar el mensaje de error si el registro falla
     const [error, setError] = useState(null);
-    // Estado para indicar si el registro fue exitoso
     const [success, setSuccess] = useState(false);
 
-    // ─── REGISTRO CON EMAIL Y CONTRASEÑA ───────────────────────────────────────
-
-    // Función que se ejecuta al enviar el formulario de registro
     const handleRegister = async (e) => {
-        // Evita que el formulario recargue la página al hacer submit
         e.preventDefault();
-        setError(null);   // Limpia cualquier error previo antes de intentar de nuevo
-        setSuccess(false); // Limpia el estado de éxito previo
+        setError(null); // Limpiar errores previos
+        setSuccess(false); // Limpiar éxito previo
+
+    ///LOGEO CON CORREO Y CONTRASEÑA
+
 
         try {
-            // Llama a Firebase Auth para crear un nuevo usuario con email y contraseña
+            // Crea un nuevo usuario con email y contraseña
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            // Extrae el objeto usuario del resultado (contiene uid, email, etc.)
             const user = userCredential.user;
             console.log("Usuario registrado:", user);
+            // Envía el email de verificación
+            await sendEmailVerification(user, {
+                url: `${window.location.origin}/Auth/Login`
+            });
 
-            // Crea un documento en la colección 'usuarios' de Firestore usando el uid como ID.
-            // Se guardan los campos de perfil con valores por defecto vacíos,
-            // que el usuario rellenará después en la pantalla de edición de perfil.
+            // Crea el documento vacío en Firestore con solo el email y uid
             await setDoc(doc(db, 'usuarios', user.uid), {
                 uid: user.uid,
                 email: user.email,
@@ -58,39 +48,32 @@ const Register = () => {
                 petFriendly: false,
             });
 
-            // Obtiene el token JWT del usuario recién registrado
-            // y lo guarda en localStorage para usarlo en peticiones autenticadas al backend
+            // Obtener el token de ID después del registro
             const idToken = await user.getIdToken();
             localStorage.setItem('firebaseIdToken', idToken);
-
-            setSuccess(true); // Marca el registro como exitoso
-            navigate('/perfil/editar'); // Redirige al usuario a completar su perfil
+            setSuccess(true);
+            // Redirigir a la página de verificación de correo con el email en el estado
+            navigate('/Auth/VerifyEmail', {
+                state: { email: user.email || email }
+            });
 
         } catch (err) {
-            // Si Firebase devuelve un error (email ya en uso, contraseña débil, etc.)
-            // lo muestra en la interfaz
             console.error("Error al registrarse:", err.message);
             setError(err.message);
         }
     };
 
-    // ─── REGISTRO / LOGIN CON GOOGLE ───────────────────────────────────────────
+    ///LOGEO CON GOOGLE
 
-    // Función que abre el popup de Google para autenticarse
     const handleGoogleSignUp = async () => {
-        // Crea una instancia del proveedor de Google
         const provider = new GoogleAuthProvider();
         try {
-            // Abre el popup de selección de cuenta de Google y espera el resultado
+            
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            // Separa el displayName de Google en nombre (primera palabra) y apellidos (el resto)
+            // Crea el documento en Firestore si es la primera vez
             const [nombre = '', ...resto] = (user.displayName || '').split(' ');
-
-            // Escribe (o actualiza) el documento del usuario en Firestore.
-            // Con { merge: true } solo se actualizan los campos indicados sin borrar
-            // los datos existentes si el usuario ya había iniciado sesión antes con Google.
             await setDoc(doc(db, 'usuarios', user.uid), {
                 uid: user.uid,
                 email: user.email,
@@ -100,14 +83,13 @@ const Register = () => {
                 bio: '',
                 telefono: '',
                 pais: '',
-                fotoPerfil: user.photoURL || '', // Usa la foto de perfil de Google si existe
+                fotoPerfil: user.photoURL || '',
                 idioma: 'Español',
                 moneda: 'EUR €',
                 viajesSoloGrupo: 'ambos',
                 petFriendly: false,
-            }, { merge: true });
+            }, { merge: true }); // merge:true para no sobreescribir si ya existe
 
-            // Redirige al usuario a completar/editar su perfil
             navigate('/perfil/editar');
 
         } catch (error) {
@@ -115,12 +97,10 @@ const Register = () => {
 
             const errorCode = error.code;
             const errorMessage = error.message;
-
-            // Caso especial: el usuario cerró el popup de Google sin seleccionar cuenta
+            
             if (errorCode === 'auth/popup-closed-by-user') {
                 alert('El registro/inicio de sesión con Google fue cancelado.');
             } else {
-                // Cualquier otro error de Firebase (cuenta bloqueada, red, etc.)
                 alert(`Error al registrarse con Google: ${errorMessage}`);
             }
         }
