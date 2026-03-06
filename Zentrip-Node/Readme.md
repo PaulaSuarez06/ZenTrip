@@ -78,7 +78,7 @@ El servidor arranca por defecto en `http://localhost:5000`.
 
 ## Endpoints
 
-
+-- En desarrollo...
 
 ### Autenticación
 
