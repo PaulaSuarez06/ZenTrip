@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+	--font-titulos: Georgia, 'Times New Roman', serif;
+	--font-cuerpo: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@layer base {
+	body {
+		font-family: var(--font-cuerpo);
+	}
+
+	h1,
+	h2,
+	h3 {
+		font-family: var(--font-titulos);
+		font-weight: 400;
+	}
+}
+
+@layer utilities {
+	.titulo-h1-desktop {
+		font-family: var(--font-titulos);
+		font-size: 32px;
+		font-weight: 400;
+	}
+
+	.titulo-h2-desktop {
+		font-family: var(--font-titulos);
+		font-size: 24px;
+		font-weight: 400;
+	}
+
+	.titulo-h3-desktop {
+		font-family: var(--font-titulos);
+		font-size: 20px;
+		font-weight: 400;
+	}
+
+	.titulo-h1-mobile {
+		font-family: var(--font-titulos);
+		font-size: 24px;
+		font-weight: 400;
+	}
+
+	.titulo-h2-mobile {
+		font-family: var(--font-titulos);
+		font-size: 20px;
+		font-weight: 400;
+	}
+
+	.titulo-h3-mobile {
+		font-family: var(--font-titulos);
+		font-size: 20px;
+		font-weight: 400;
+	}
+
+	.cuerpo-3 {
+		font-family: var(--font-cuerpo);
+		font-size: 12px;
+		font-weight: 400;
+	}
+
+	.cuerpo-2-semibold {
+		font-family: var(--font-cuerpo);
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.cuerpo-2 {
+		font-family: var(--font-cuerpo);
+		font-size: 14px;
+		font-weight: 400;
+	}
+
+	.cuerpo-bold {
+		font-family: var(--font-cuerpo);
+		font-size: 18px;
+		font-weight: 700;
+	}
+
+	.cuerpo-semibold {
+		font-family: var(--font-cuerpo);
+		font-size: 18px;
+		font-weight: 600;
+	}
+
+	.cuerpo {
+		font-family: var(--font-cuerpo);
+		font-size: 18px;
+		font-weight: 400;
+	}
+}

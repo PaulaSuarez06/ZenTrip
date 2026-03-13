@@ -3,8 +3,9 @@ import { auth, db } from './firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFirebaseErrorByField } from '../../../utils/firebaseErrorMessages';
-import { validateEmail, validatePassword, validatePolicies, validateConfirmPassword } from '../../../utils/validation';
+import { getFirebaseErrorByField } from '../../../utils/auth/firebaseErrors';
+import { validateEmail, validatePassword, validatePolicies, validateConfirmPassword } from '../../../utils/validation/register/rules';
+import { registerFeedbackMessages } from '../../../utils/validation/register/messages';
 import Input from '../../ui/Input';
 import Button from '../../ui/Button';
 
@@ -133,6 +134,7 @@ const Register = () => {
 
     const handleGoogleSignUp = async () => {
         const provider = new GoogleAuthProvider();
+        setGeneralError(null);
         try {
             
             const result = await signInWithPopup(auth, provider);
@@ -160,15 +162,8 @@ const Register = () => {
 
         } catch (error) {
             console.error('Error al registrarse/iniciar sesión con Google:', error.message);
-
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            
-            if (errorCode === 'auth/popup-closed-by-user') {
-                alert('El registro/inicio de sesión con Google fue cancelado.');
-            } else {
-                alert(`Error al registrarse con Google: ${errorMessage}`);
-            }
+            const { message } = getFirebaseErrorByField(error);
+            setGeneralError(message || registerFeedbackMessages.googleGenericError);
         }
     };
 
@@ -353,8 +348,16 @@ const Register = () => {
                                     </button>
                                 </p>
                             </form>
-                            {success && <p style={{ color: 'green' }}>¡Registro exitoso!</p>}
-                            {generalError && <p style={{ color: 'red' }}>Error: {generalError}</p>}
+                            {success && (
+                                <p className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                                    {registerFeedbackMessages.success}
+                                </p>
+                            )}
+                            {generalError && (
+                                <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                                    {generalError || registerFeedbackMessages.googleCancelled}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
