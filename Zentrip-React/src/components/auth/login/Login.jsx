@@ -2,9 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { sendEmailVerification, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../register/firebaseConfig';
+import { getFirebaseErrorByField } from '../../../utils/auth/firebaseErrors';
+import { loginFeedbackMessages } from '../../../utils/validation/login/messages';
 import Input from '../../ui/Input';
 import Button from '../../ui/Button';
-{/*Si el correo no está verificado, muestra un mensaje de error y ofrece la opción de reenviar el correo de verificación. */}
+
+
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -24,7 +27,7 @@ export default function Login() {
       const user = userCredential.user;
 
       if (!user.emailVerified) {
-        setError('Tu correo aún no está verificado. Revisa tu bandeja de entrada.');
+        setError(loginFeedbackMessages.emailNotVerified);
         setCanResendVerification(true);
         await signOut(auth);
         return;
@@ -35,7 +38,8 @@ export default function Login() {
       navigate('/perfil/editar');
     } catch (loginError) {
       setCanResendVerification(false);
-      setError('No se pudo iniciar sesión. Revisa email y contraseña.');
+      const { message } = getFirebaseErrorByField(loginError);
+      setError(message || loginFeedbackMessages.invalidCredentials);
       console.error('Error al iniciar sesión:', loginError.message);
     }
   };
@@ -45,7 +49,7 @@ export default function Login() {
     setInfo('');
 
     if (!email || !password) {
-      setError('Para reenviar la verificación, introduce email y contraseña.');
+      setError(loginFeedbackMessages.resendNeedsCredentials);
       return;
     }
 
@@ -54,7 +58,7 @@ export default function Login() {
       const user = userCredential.user;
 
       if (user.emailVerified) {
-        setInfo('Tu correo ya está verificado. Ya puedes iniciar sesión.');
+        setInfo(loginFeedbackMessages.emailAlreadyVerified);
         setCanResendVerification(false);
         await signOut(auth);
         return;
@@ -63,11 +67,12 @@ export default function Login() {
       await sendEmailVerification(user, {
         url: `${window.location.origin}/Auth/Login`
       });
-      setInfo('Correo de verificación reenviado. Revisa también spam/promociones.');
+      setInfo(loginFeedbackMessages.resendVerificationSuccess);
       setCanResendVerification(true);
       await signOut(auth);
     } catch (resendError) {
-      setError('No fue posible reenviar el correo de verificación.');
+      const { message } = getFirebaseErrorByField(resendError);
+      setError(message || loginFeedbackMessages.resendVerificationFailed);
       console.error('Error al reenviar verificación:', resendError.message);
     }
   };
@@ -135,8 +140,16 @@ export default function Login() {
               </Button>
             )}
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {info && <p className="text-sm text-green-600">{info}</p>}
+            {error && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+            {info && (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {info}
+              </p>
+            )}
           </form>
 
           <div className="mt-6 text-center text-sm text-slate-500">
