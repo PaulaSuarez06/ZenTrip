@@ -30,7 +30,7 @@ export default function Login() {
   return (
     <div className={`h-dvh md:min-h-screen flex items-center justify-center bg-blanco px-4 ${hasLoginMessage ? 'overflow-y-auto' : 'overflow-hidden'} md:overflow-y-auto`}>
       <div className="w-full max-w-5xl grid md:grid-cols-2 md:rounded-2xl md:shadow-[0_0_18px_rgba(15,23,42,0.30)] md:overflow-hidden">
-        <LoginLeftPanel heroImg={heroImg} logoImg={logoImg} />
+        <LoginLeftPanel heroImg={heroImg} logoImg={logoImg} onGoBack={() => navigate('/')} />
         <LoginForm
           logoImg={logoImg}
           email={email}
