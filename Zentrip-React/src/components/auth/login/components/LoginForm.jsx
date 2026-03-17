@@ -2,6 +2,8 @@ import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import GoogleIcon from '../../../ui/GoogleIcon';
 import AlertMessage from '../../../ui/AlertMessage';
+import PasswordVisibilityToggle from '../../../ui/PasswordVisibilityToggle';
+import { usePasswordVisibility } from '../../../../hooks/usePasswordVisibility';
 
 export default function LoginForm({
   logoImg,
@@ -22,6 +24,8 @@ export default function LoginForm({
   onGoogleLogin,
   onGoToRegister,
 }) {
+  const passwordVisibility = usePasswordVisibility();
+
   return (
     <div className="bg-white flex flex-col justify-center px-6 py-6 md:px-10 md:py-12 w-full md:max-w-none max-w-md mx-auto">
       <div className="flex items-center gap-2 mb-4 md:mb-6 md:hidden">
@@ -73,10 +77,16 @@ export default function LoginForm({
             variant="light"
             size="md"
             labelClass="text-secondary-5"
-            type="password"
+            type={passwordVisibility.inputType}
             placeholder="Mínimo 6 caracteres"
             value={password}
             onChange={onPasswordChange}
+            rightElement={(
+              <PasswordVisibilityToggle
+                isVisible={passwordVisibility.isVisible}
+                onToggle={passwordVisibility.toggleVisibility}
+              />
+            )}
           />
           <div className="text-right mt-4">
             <a onClick={onForgotPassword} className="body-bold text-orange-500 hover:text-orange-400 font-medium cursor-pointer">

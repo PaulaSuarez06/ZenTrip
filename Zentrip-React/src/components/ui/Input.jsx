@@ -28,13 +28,15 @@ const Input = ({
   labelClass = '',
   inputTextClass = '',
   errorClass = '',
+  rightElement = null,
   ...props
 }) => {
   const s = SIZE_STYLES[size] ?? SIZE_STYLES.md;
+  const rightPaddingClass = rightElement ? 'pr-10' : '';
 
   const inputClass = variant === 'light'
-    ? `w-full border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition ${s.input} ${s.inputText} ${inputTextClass} ${className}`
-    : `mt-1 w-full rounded-xl border border-white/10 bg-white/5 text-white placeholder:text-white/30 outline-none transition focus:border-orange-400/50 focus:ring-2 focus:ring-orange-400/30 ${s.input} ${s.inputText} ${inputTextClass} ${className}`;
+    ? `w-full border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition ${s.input} ${s.inputText} ${rightPaddingClass} ${inputTextClass} ${className}`
+    : `mt-1 w-full rounded-xl border border-white/10 bg-white/5 text-white placeholder:text-white/30 outline-none transition focus:border-orange-400/50 focus:ring-2 focus:ring-orange-400/30 ${s.input} ${s.inputText} ${rightPaddingClass} ${inputTextClass} ${className}`;
 
   const labelClassName = variant === 'light'
     ? `block text-slate-600 mb-1 ${s.label} ${labelClass}`
@@ -43,9 +45,16 @@ const Input = ({
   return (
     <div>
       {label && <label className={labelClassName}>{label}</label>}
-      <input className={inputClass} {...props} />
+      <div className="relative">
+        <input className={inputClass} {...props} />
+        {rightElement && (
+          <div className="absolute inset-y-0 right-3 flex items-center">
+            {rightElement}
+          </div>
+        )}
+      </div>
       {error && (
-        <p className={`mt-1 ${s.error} ${errorClass} ${variant === 'light' ? 'text-red-600' : 'text-red-400'}`}>
+        <p className={`mt-1 ${s.error} ${errorClass} ${variant === 'light' ? 'text-feedback-error' : 'text-feedback-error-muted'}`}>
           {error}
         </p>
       )}

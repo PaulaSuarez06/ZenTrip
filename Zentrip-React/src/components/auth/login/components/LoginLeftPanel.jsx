@@ -1,6 +1,11 @@
 import Button from '../../../ui/Button';
 
-export default function LoginLeftPanel({ heroImg, logoImg, onGoBack }) {
+export default function LoginLeftPanel({
+  heroImg,
+  logoImg,
+  onGoBack,
+  overlayColor = 'rgba(0, 44, 81, 0.75)',
+}) {
   return (
     <div className="relative hidden md:flex flex-col justify-between p-13 pt-10 text-white overflow-hidden min-h-520px">
       <img
@@ -8,7 +13,7 @@ export default function LoginLeftPanel({ heroImg, logoImg, onGoBack }) {
         alt="Amigos de viaje"
         className="absolute inset-0 w-full h-full object-cover object-center"
       />
-      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 44, 81, 0.75)' }} />
+      <div className="absolute inset-0" style={{ backgroundColor: overlayColor }} />
 
       <Button
         variant="ghost"

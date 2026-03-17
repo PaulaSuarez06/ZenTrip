@@ -38,6 +38,13 @@
 
     /* White */
     --color-white: #FFFFFF;
+
+    /* Feedback / Validation */
+    --color-feedback-error: #DC2626;
+    --color-feedback-error-muted: #F87171;
+    --color-feedback-error-strong: #B91C1C;
+    --color-feedback-error-bg: #FEF2F2;
+    --color-feedback-error-border: #FECACA;
 }
 
 
@@ -319,6 +326,26 @@
 
     .text-brand-white {
         color: var(--color-white);
+    }
+
+    .text-feedback-error {
+        color: var(--color-feedback-error);
+    }
+
+    .text-feedback-error-muted {
+        color: var(--color-feedback-error-muted);
+    }
+
+    .text-feedback-error-strong {
+        color: var(--color-feedback-error-strong);
+    }
+
+    .bg-feedback-error {
+        background-color: var(--color-feedback-error-bg);
+    }
+
+    .border-feedback-error {
+        border-color: var(--color-feedback-error-border);
     }
 
     /*Font sizes*/
