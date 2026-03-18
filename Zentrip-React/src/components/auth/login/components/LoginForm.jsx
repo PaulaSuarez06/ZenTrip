@@ -78,7 +78,7 @@ export default function LoginForm({
             size="md"
             labelClass="text-secondary-5"
             type={passwordVisibility.inputType}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Introduce tu contraseña"
             value={password}
             onChange={onPasswordChange}
             rightElement={(
