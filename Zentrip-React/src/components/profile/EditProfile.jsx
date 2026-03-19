@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const heroImg = '/img/background/editProfile/editProfile.jpeg';
-const logoImg = '/img/logo/logo-sin-texto-png.png';
 import { useEditProfileController } from './hooks/useEditProfileController';
 import EditProfileLeftPanel from './components/EditProfileLeftPanel';
 import EditProfileForm from './components/EditProfileForm';
+import SplashScreen from '../shared/SplashScreen';
+
+const heroImg = '/img/background/editProfile/editProfile.jpeg';
+const logoImg = '/img/logo/logo-sin-texto-png.png';
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const [imagenCargada, setImagenCargada] = useState(false);
   const {
     usuario,
     cargando,
@@ -41,29 +44,35 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="h-dvh md:min-h-screen flex items-center justify-center bg-brand-white px-4 overflow-y-auto">
-      <div className="w-full max-w-5xl grid md:grid-cols-2 md:rounded-2xl md:shadow-[0_0_18px_rgba(15,23,42,0.30)] md:overflow-hidden">
-        <EditProfileLeftPanel
-          heroImg={heroImg}
-          logoImg={logoImg}
-          usuario={usuario}
-          form={form}
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-        />
-        <EditProfileForm
-          activeSection={activeSection}
-          form={form}
-          fieldErrors={fieldErrors}
-          error={error}
-          exito={exito}
-          guardando={guardando}
-          onChange={handleChange}
-          onGuardar={handleGuardar}
-          onCancelar={handleCancelar}
-          setForm={setForm}
-        />
-      </div>
-    </div>
+    <>
+      <img src={heroImg} style={{ display: 'none' }} onLoad={() => setImagenCargada(true)} />
+      {!imagenCargada && <SplashScreen />}
+      {imagenCargada && (
+        <div className="h-dvh md:min-h-screen flex items-center justify-center bg-brand-white px-4 overflow-y-auto">
+          <div className="w-full max-w-5xl grid md:grid-cols-2 md:rounded-2xl md:shadow-[0_0_18px_rgba(15,23,42,0.30)] md:overflow-hidden">
+            <EditProfileLeftPanel
+              heroImg={heroImg}
+              logoImg={logoImg}
+              usuario={usuario}
+              form={form}
+              activeSection={activeSection}
+              setActiveSection={setActiveSection}
+            />
+            <EditProfileForm
+              activeSection={activeSection}
+              form={form}
+              fieldErrors={fieldErrors}
+              error={error}
+              exito={exito}
+              guardando={guardando}
+              onChange={handleChange}
+              onGuardar={handleGuardar}
+              onCancelar={handleCancelar}
+              setForm={setForm}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
