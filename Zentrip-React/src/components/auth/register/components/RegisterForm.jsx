@@ -178,7 +178,8 @@ export default function RegisterForm({
                             name="policies"
                             checked={form.policies}
                             onChange={onFieldChange}
-                            className="mt-0.5 h-4 w-4 rounded border-neutral-2 text-primary-3 focus:ring-primary-3 cursor-pointer"
+                            className="mt-0.5 h-4 w-4 rounded border-neutral-2 text-secondary-5 focus:ring-secondary-5 cursor-pointer"
+                            style={{ accentColor: 'var(--color-secondary-5)' }}
                         />
                         <label htmlFor="policies" className="body-3 text-neutral-4 cursor-pointer">
                             <span className="text-primary-3 mr-1">*</span>
