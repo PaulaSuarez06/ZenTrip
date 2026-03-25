@@ -1,6 +1,7 @@
 /*  Es una página informativa que se muestra después de que el usuario se registra exitosamente
     y se le envía un email de verificación. Solo muestra un mensaje y un botón para ir a iniciar sesión. */
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../config/routes';
 
 export default function VerifyEmail() {
     const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function VerifyEmail() {
                 <div className="space-y-3">
                     <button
                         type="button"
-                        onClick={() => navigate('/Auth/Login')}
+                        onClick={() => navigate(ROUTES.AUTH.LOGIN)}
                         className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg font-semibold transition duration-200"
                     >
                         Ir a iniciar sesión

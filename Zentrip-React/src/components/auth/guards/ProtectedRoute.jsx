@@ -15,5 +15,9 @@ export default function ProtectedRoute() {
     return <Navigate to={ROUTES.AUTH.LOGIN} replace state={{ from: location }} />;
   }
 
+  if (!user.emailVerified) {
+    return <Navigate to={ROUTES.AUTH.VERIFY_EMAIL} replace />;
+  }
+
   return <Outlet />;
 }
