@@ -33,6 +33,10 @@ export function useLoginController(navigate) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  // Token de reCAPTCHA y clave para forzar reset del widget
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
+
   // Este efecto va bajando el contador de segundos cada 1 segundo
   useEffect(() => {
     if (secondsToResend <= 0) return undefined;
@@ -72,6 +76,11 @@ export function useLoginController(navigate) {
       return;
     }
 
+    if (!recaptchaToken) {
+      setError('Por favor, completa el reCAPTCHA.');
+      return;
+    }
+
     // Activamos loading para bloquear doble envío
     setIsLoading(true);
     try {
@@ -96,6 +105,8 @@ export function useLoginController(navigate) {
       console.error('Error al iniciar sesión:', loginError.message);
     } finally {
       setIsLoading(false);
+      setRecaptchaToken(null);
+      setRecaptchaKey((prev) => prev + 1);
     }
   };
 
@@ -208,8 +219,11 @@ export function useLoginController(navigate) {
     secondsToResend,
     isLoading,
     isGoogleLoading,
+    recaptchaToken,
+    recaptchaKey,
     setEmail,
     setPassword,
+    setRecaptchaToken,
     handleLogin,
     handleForgotPassword,
     handleResendVerification,

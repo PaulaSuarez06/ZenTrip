@@ -25,6 +25,9 @@ export function useRegisterController(navigate) {
   const [generalError, setGeneralError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
+
   const validateField = (name, value, allValues = form) => {
     switch (name) {
       case 'email': {
@@ -81,6 +84,11 @@ export function useRegisterController(navigate) {
       return;
     }
 
+    if (!recaptchaToken) {
+      setGeneralError('Por favor, completa el reCAPTCHA.');
+      return;
+    }
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const { user } = userCredential;
@@ -98,10 +106,12 @@ export function useRegisterController(navigate) {
 
       if (field === 'email' || field === 'password') {
         setErrors((previous) => ({ ...previous, [field]: message }));
-        return;
+      } else {
+        setGeneralError(message);
       }
-
-      setGeneralError(message);
+    } finally {
+      setRecaptchaToken(null);
+      setRecaptchaKey((prev) => prev + 1);
     }
   };
 
@@ -126,6 +136,8 @@ export function useRegisterController(navigate) {
     success,
     successMessage: registerFeedbackMessages.success,
     hasRegisterMessage: Boolean(generalError || success),
+    recaptchaKey,
+    setRecaptchaToken,
     handleFieldChange,
     handleRegister,
     handleGoogleSignUp,

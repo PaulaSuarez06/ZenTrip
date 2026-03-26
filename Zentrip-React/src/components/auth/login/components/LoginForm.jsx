@@ -1,3 +1,4 @@
+import ReCAPTCHA from 'react-google-recaptcha';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import GoogleIcon from '../../../ui/GoogleIcon';
@@ -16,6 +17,8 @@ export default function LoginForm({
   secondsToResend,
   isLoading,
   isGoogleLoading,
+  recaptchaKey,
+  onRecaptchaChange,
   onEmailChange,
   onPasswordChange,
   onSubmit,
@@ -93,6 +96,14 @@ export default function LoginForm({
               ¿Olvidaste tu contraseña?
             </a>
           </div>
+        </div>
+
+        <div className="flex justify-center">
+          <ReCAPTCHA
+            key={recaptchaKey}
+            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+            onChange={onRecaptchaChange}
+          />
         </div>
 
         <AlertMessage message={error} variant="error" />

@@ -21,6 +21,8 @@ export default function Register() {
         success,
         successMessage,
         hasRegisterMessage,
+        recaptchaKey,
+        setRecaptchaToken,
         handleFieldChange,
         handleRegister,
         handleGoogleSignUp,
@@ -47,6 +49,8 @@ export default function Register() {
                             generalError={generalError}
                             success={success}
                             successMessage={successMessage}
+                            recaptchaKey={recaptchaKey}
+                            onRecaptchaChange={setRecaptchaToken}
                             onFieldChange={handleFieldChange}
                             onSubmit={handleRegister}
                             onGoogleSignUp={handleGoogleSignUp}

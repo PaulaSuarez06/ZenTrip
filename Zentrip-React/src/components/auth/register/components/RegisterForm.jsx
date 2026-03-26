@@ -1,3 +1,4 @@
+import ReCAPTCHA from 'react-google-recaptcha';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import GoogleIcon from '../../../ui/GoogleIcon';
@@ -13,6 +14,8 @@ export default function RegisterForm({
     generalError,
     success,
     successMessage,
+    recaptchaKey,
+    onRecaptchaChange,
     onFieldChange,
     onSubmit,
     onGoogleSignUp,
@@ -196,6 +199,14 @@ export default function RegisterForm({
                             <span>{errors.policies}</span>
                         </p>
                     )}
+                </div>
+
+                <div className="flex justify-center">
+                    <ReCAPTCHA
+                        key={recaptchaKey}
+                        sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                        onChange={onRecaptchaChange}
+                    />
                 </div>
 
                 <AlertMessage message={errorMessage} variant="error" />
