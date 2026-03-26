@@ -21,8 +21,10 @@ export default function Login() {
     secondsToResend,
     isLoading,
     isGoogleLoading,
+    recaptchaKey,
     setEmail,
     setPassword,
+    setRecaptchaToken,
     handleLogin,
     handleForgotPassword,
     handleResendVerification,
@@ -50,6 +52,8 @@ export default function Login() {
               secondsToResend={secondsToResend}
               isLoading={isLoading}
               isGoogleLoading={isGoogleLoading}
+              recaptchaKey={recaptchaKey}
+              onRecaptchaChange={setRecaptchaToken}
               onEmailChange={(event) => setEmail(event.target.value)}
               onPasswordChange={(event) => setPassword(event.target.value)}
               onSubmit={handleLogin}
