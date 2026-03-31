@@ -11,7 +11,7 @@ import {
   validateConfirmPassword,
 } from '../../../../utils/validation/register/rules';
 import { registerFeedbackMessages } from '../../../../utils/validation/register/messages';
-import { saveUserToken, signInWithGoogle } from '../../login/services/loginFirebaseService';
+import { saveUserToken, signInWithGoogle, verifyRecaptchaToken } from '../../login/services/loginFirebaseService';
 
 export function useRegisterController(navigate) {
   const [form, setForm] = useState({
@@ -90,6 +90,8 @@ export function useRegisterController(navigate) {
     }
 
     try {
+      await verifyRecaptchaToken(recaptchaToken);
+
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const { user } = userCredential;
 
@@ -102,12 +104,15 @@ export function useRegisterController(navigate) {
       setSuccess(true);
       navigate(ROUTES.AUTH.VERIFY_EMAIL, { state: { email: user.email || form.email } });
     } catch (registerError) {
-      const { field, message } = getFirebaseErrorByField(registerError);
-
-      if (field === 'email' || field === 'password') {
-        setErrors((previous) => ({ ...previous, [field]: message }));
+      if (!registerError.code) {
+        setGeneralError(registerError.message);
       } else {
-        setGeneralError(message);
+        const { field, message } = getFirebaseErrorByField(registerError);
+        if (field === 'email' || field === 'password') {
+          setErrors((previous) => ({ ...previous, [field]: message }));
+        } else {
+          setGeneralError(message);
+        }
       }
     } finally {
       setRecaptchaToken(null);

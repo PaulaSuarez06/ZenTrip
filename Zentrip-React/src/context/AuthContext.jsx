@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged, reload, signOut } from 'firebase/auth';
 import { auth } from '../config/firebaseConfig';
 import { getUserProfile } from '../services/profileService';
+import { isSessionExpired, clearSessionExpiry } from '../components/auth/login/services/loginFirebaseService';
 
 const AuthContext = createContext(null);
 
@@ -30,6 +31,26 @@ export function AuthProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const sessionTimerRef = useRef(null);
+
+  const doLogout = useCallback(async () => {
+    clearSessionExpiry();
+    clearTimeout(sessionTimerRef.current);
+    await signOut(auth);
+    setProfile(null);
+  }, []);
+
+  const scheduleSessionExpiry = useCallback(() => {
+    clearTimeout(sessionTimerRef.current);
+    const expiry = Number(sessionStorage.getItem('sessionExpiry'));
+    if (!expiry) return;
+    const remaining = expiry - Date.now();
+    if (remaining <= 0) {
+      doLogout();
+      return;
+    }
+    sessionTimerRef.current = setTimeout(() => doLogout(), remaining);
+  }, [doLogout]);
 
   const refreshProfile = useCallback(async (firebaseUser = user) => {
     if (!firebaseUser?.uid) {
@@ -55,6 +76,18 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       const syncAuthState = async () => {
         if (!firebaseUser) {
+          clearTimeout(sessionTimerRef.current);
+          if (isMounted) {
+            setUser(null);
+            setAuthLoading(false);
+          }
+          return;
+        }
+
+        // Si la sesión ya expiró, cerramos sin mostrar nada
+        if (isSessionExpired()) {
+          await signOut(auth);
+          clearSessionExpiry();
           if (isMounted) {
             setUser(null);
             setAuthLoading(false);
@@ -71,6 +104,7 @@ export function AuthProvider({ children }) {
         if (isMounted) {
           setUser(auth.currentUser || firebaseUser);
           setAuthLoading(false);
+          scheduleSessionExpiry();
         }
       };
 
@@ -80,18 +114,14 @@ export function AuthProvider({ children }) {
     return () => {
       isMounted = false;
       unsubscribe();
+      clearTimeout(sessionTimerRef.current);
     };
-  }, []);
+  }, [scheduleSessionExpiry]);
 
   useEffect(() => {
     if (authLoading) return;
     refreshProfile(user);
   }, [authLoading, user?.uid]);
-
-  const logout = useCallback(async () => {
-    await signOut(auth);
-    setProfile(null);
-  }, []);
 
   const value = useMemo(
     () => ({
@@ -102,9 +132,9 @@ export function AuthProvider({ children }) {
       loading: authLoading || profileLoading,
       setProfile,
       refreshProfile,
-      logout,
+      logout: doLogout,
     }),
-    [user, profile, authLoading, profileLoading, refreshProfile, logout]
+    [user, profile, authLoading, profileLoading, refreshProfile, doLogout]
   );
 
   return (

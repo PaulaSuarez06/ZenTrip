@@ -6,11 +6,13 @@ import {
   refreshAuthenticatedUser,
   getPostLoginPath,
   saveUserToken,
+  saveSessionExpiry,
   sendResetPasswordEmail,
   sendVerificationEmail,
   signInWithEmail,
   signInWithGoogle,
   signOutUser,
+  verifyRecaptchaToken,
 } from '../services/loginFirebaseService';
 
 // Espera mínima antes de volver a reenviar verificación (1 minuto y medio)
@@ -85,6 +87,9 @@ export function useLoginController(navigate) {
     // Activamos loading para bloquear doble envío
     setIsLoading(true);
     try {
+      // Verificamos el token de reCAPTCHA en el servidor antes de continuar
+      await verifyRecaptchaToken(recaptchaToken);
+
       // Intentamos autenticación con Firebase
       const user = await signInWithEmail(normalizedEmail, normalizedPassword);
       const refreshedUser = await refreshAuthenticatedUser(user);
@@ -97,8 +102,9 @@ export function useLoginController(navigate) {
         return;
       }
 
-      // Si todo salió bien, guardamos token y vamos a la ruta final
+      // Si todo salió bien, guardamos token, marcamos expiración y vamos a la ruta final
       await saveUserToken(refreshedUser);
+      saveSessionExpiry();
       navigate(await getPostLoginPath(refreshedUser));
     } catch (loginError) {
       setCanResendVerification(false);
@@ -201,6 +207,7 @@ export function useLoginController(navigate) {
       // Inicia popup de Google y devuelve el usuario autenticado
       const user = await signInWithGoogle();
       await saveUserToken(user);
+      saveSessionExpiry();
       navigate(await getPostLoginPath(user));
     } catch (googleError) {
       const { message } = getFirebaseErrorByField(googleError);
