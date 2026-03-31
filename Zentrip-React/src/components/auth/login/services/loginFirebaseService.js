@@ -1,8 +1,10 @@
 import {
   GoogleAuthProvider,
+  browserSessionPersistence,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -12,7 +14,24 @@ import { getPostLoginPath } from '../../../../services/userService';
 
 export { getPostLoginPath };
 
+const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hora
+
+export function saveSessionExpiry() {
+  sessionStorage.setItem('sessionExpiry', Date.now() + SESSION_DURATION_MS);
+}
+
+export function clearSessionExpiry() {
+  sessionStorage.removeItem('sessionExpiry');
+}
+
+export function isSessionExpired() {
+  const expiry = sessionStorage.getItem('sessionExpiry');
+  if (!expiry) return true;
+  return Date.now() > Number(expiry);
+}
+
 export async function signInWithEmail(email, password) {
+  await setPersistence(auth, browserSessionPersistence);
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   return userCredential.user;
 }
@@ -24,6 +43,7 @@ export async function refreshAuthenticatedUser(user) {
 }
 
 export async function signInWithGoogle() {
+  await setPersistence(auth, browserSessionPersistence);
   const provider = new GoogleAuthProvider();
   const result = await signInWithPopup(auth, provider);
   return result.user;
@@ -39,6 +59,11 @@ export async function sendVerificationEmail(user, redirectUrl) {
 
 export async function signOutUser() {
   await signOut(auth);
+}
+
+export async function verifyRecaptchaToken(token) {
+  const { apiClient } = await import('../../../../services/apiClient');
+  await apiClient.post('/auth/verify-recaptcha', { recaptchaToken: token });
 }
 
 export async function saveUserToken(user) {

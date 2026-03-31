@@ -4,11 +4,12 @@ require('./src/config/firebase');
 const express = require('express');
 const cors = require('cors');
 const userRouters = require('./src/routes/userRouters');
+const authRouters = require('./src/routes/authRouters');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -16,6 +17,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api', userRouters);
+app.use('/api/auth', authRouters);
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
