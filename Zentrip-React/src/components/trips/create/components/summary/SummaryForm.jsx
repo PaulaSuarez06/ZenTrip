@@ -1,6 +1,6 @@
-import Button from '../../ui/Button';
+import Button from '../../../../ui/Button';
 
-export default function ResumenTrip({ form, onAtras }) {
+export default function ResumenForm({ form, onAtras }) {
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-sm border border-neutral-1 p-10 text-center text-neutral-3 body">

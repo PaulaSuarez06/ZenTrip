@@ -1,22 +1,8 @@
 import currency from 'currency.js';
 import Select from 'react-select';
-import Input from '../../../ui/Input';
-import Button from '../../../ui/Button';
-import { DIVISAS } from '../../../../utils/divisas';
-
-export function formatCurrency(amount, divisaCode) {
-  const divisa = DIVISAS.find((d) => d.code === divisaCode) ?? DIVISAS[0];
-  return currency(amount, {
-    symbol: divisa.symbol,
-    decimal: divisa.decimal,
-    separator: divisa.separator,
-    precision: divisa.precision ?? 2,
-  }).format();
-}
-
-const DIVISA_OPTIONS = DIVISAS.map((d) => ({ value: d.code, label: d.label }));
-
-const labelClass = 'block text-slate-600 mb-1 body-bold';
+import Input from '../../../../ui/Input';
+import Button from '../../../../ui/Button';
+import { DIVISAS } from '../../../../../utils/divisas';
 
 const selectStyles = {
   control: (base, state) => ({
@@ -37,7 +23,21 @@ const selectStyles = {
   singleValue: (base) => ({ ...base, color: '#334155' }),
 };
 
-export default function CreateTripForm({
+export function formatCurrency(amount, divisaCode) {
+  const divisa = DIVISAS.find((d) => d.code === divisaCode) ?? DIVISAS[0];
+  return currency(amount, {
+    symbol: divisa.symbol,
+    decimal: divisa.decimal,
+    separator: divisa.separator,
+    precision: divisa.precision ?? 2,
+  }).format();
+}
+
+const DIVISA_OPTIONS = DIVISAS.map((d) => ({ value: d.code, label: d.label }));
+
+const labelClass = 'block text-slate-600 mb-1 body-bold';
+
+export default function DetallesForm({
   form,
   fieldErrors,
   onChange,
@@ -46,11 +46,9 @@ export default function CreateTripForm({
 }) {
   return (
     <form onSubmit={onSiguiente} noValidate>
-      {/* Información básica */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
         <h2 className="title-h3-desktop text-secondary-5 mb-5">Información básica</h2>
 
-        {/* Nombre del viaje */}
         <div className="mb-4">
           <Input
             variant="light"
@@ -64,7 +62,6 @@ export default function CreateTripForm({
           />
         </div>
 
-        {/* Origen y Destino */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Input
             variant="light"
@@ -86,7 +83,6 @@ export default function CreateTripForm({
           />
         </div>
 
-        {/* Fechas y Divisa */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
             <Input
@@ -132,7 +128,6 @@ export default function CreateTripForm({
           </div>
         </div>
 
-        {/* Presupuesto y Mascota */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <Input
             variant="light"
@@ -169,8 +164,6 @@ export default function CreateTripForm({
         </div>
       </div>
 
-
-      {/* Botones */}
       <div className="flex justify-end gap-3">
         <Button variant="ghost" type="button" onClick={onCancelar} className="w-auto px-6">
           Cancelar

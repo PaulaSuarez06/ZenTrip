@@ -1,14 +1,16 @@
 import { useCreateTripController } from './hooks/useCreateTripController';
-import CreateTripForm from './components/CreateTripForm';
-import InvitacionesForm from './components/InvitacionesForm';
-import ResumenTrip from '../resumen/ResumenTrip';
 import StepBar from './components/StepBar';
+import DetailsForm from './components/details/DetailsForm';
+import InvitationsForm from './components/invitations/InvitationsForm';
+import SummaryForm from './components/summary/SummaryForm';
 
 export default function CreateTrip() {
   const {
     step,
     form,
     fieldErrors,
+    guardando,
+    error,
     handleChange,
     handleSiguiente,
     handleAtras,
@@ -26,7 +28,7 @@ export default function CreateTrip() {
         <StepBar activeStep={step} />
 
         {step === 0 && (
-          <CreateTripForm
+          <DetailsForm
             form={form}
             fieldErrors={fieldErrors}
             onChange={handleChange}
@@ -36,14 +38,14 @@ export default function CreateTrip() {
         )}
 
         {step === 1 && (
-          <InvitacionesForm
+          <InvitationsForm
             onAtras={handleAtras}
             onSiguiente={handleSiguiente}
           />
         )}
 
         {step === 2 && (
-          <ResumenTrip
+          <SummaryForm
             form={form}
             onAtras={handleAtras}
           />
