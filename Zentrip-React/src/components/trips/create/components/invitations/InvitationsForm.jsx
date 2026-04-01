@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import Button from '../../../ui/Button';
-import TabMiembros from './invitaciones/TabMiembros';
-import TabEnlaceEmail from './invitaciones/TabEnlaceEmail';
-import PanelParticipantes from './invitaciones/PanelParticipantes';
+import Button from '../../../../ui/Button';
+import TabMembers from './TabMembers';
+import TabEmailLink from './TabEmailLink';
+import ParticipantsPanel from './ParticipantsPanel';
 
 function IconPeople() {
   return (
@@ -37,52 +37,52 @@ export default function InvitacionesForm({
   return (
     <div>
       <div className="flex flex-col lg:flex-row gap-5 lg:items-stretch">
-          {/* Card izquierda — Invitaciones */}
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-1 p-6 flex-1 min-w-0 w-full">
-            <h2 className="title-h3-desktop text-secondary-5 mb-5">Invitaciones</h2>
+        {/* Card izquierda — Invitaciones */}
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-1 p-6 flex-1 min-w-0 w-full">
+          <h2 className="title-h3-desktop text-secondary-5 mb-5">Invitaciones</h2>
 
-            {/* Tab toggle */}
-            <div className="flex bg-neutral-1 rounded-full p-1 gap-1 mb-5 w-fit">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full body-2-semibold transition ${
-                    activeTab === tab.id
-                      ? 'bg-secondary-5 text-white'
-                      : 'text-secondary-5 hover:bg-neutral-2'
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Contenido del tab activo */}
-            {activeTab === 'miembros' ? (
-              <TabMiembros recientes={recientes} />
-            ) : (
-              <TabEnlaceEmail enlaceInvitacion={enlaceInvitacion} />
-            )}
+          {/* Tab toggle */}
+          <div className="flex bg-neutral-1 rounded-full p-1 gap-1 mb-5 w-fit">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full body-2-semibold transition ${
+                  activeTab === tab.id
+                    ? 'bg-secondary-5 text-white'
+                    : 'text-secondary-5 hover:bg-neutral-2'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Panel derecho — Participantes */}
-          <div className="lg:ml-8 w-full lg:w-auto">
-            <PanelParticipantes participantes={participantes} />
-          </div>
+          {/* Contenido del tab activo */}
+          {activeTab === 'miembros' ? (
+            <TabMembers recientes={recientes} />
+          ) : (
+            <TabEmailLink enlaceInvitacion={enlaceInvitacion} />
+          )}
         </div>
 
-        {/* Botones de navegación */}
-        <div className="flex justify-between mt-6">
-          <Button variant="ghost" type="button" onClick={onAtras} className="w-auto! px-6">
-            Atrás
-          </Button>
-          <Button variant="orange" type="button" onClick={onSiguiente} className="w-auto! px-6">
-            Siguiente
-          </Button>
+        {/* Panel derecho — Participantes */}
+        <div className="lg:ml-8 w-full lg:w-auto">
+          <ParticipantsPanel participantes={participantes} />
         </div>
+      </div>
+
+      {/* Botones de navegación */}
+      <div className="flex justify-between mt-6">
+        <Button variant="ghost" type="button" onClick={onAtras} className="w-auto! px-6">
+          Atrás
+        </Button>
+        <Button variant="orange" type="button" onClick={onSiguiente} className="w-auto! px-6">
+          Siguiente
+        </Button>
+      </div>
     </div>
   );
 }

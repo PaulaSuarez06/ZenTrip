@@ -14,7 +14,6 @@ function EmptyState() {
 export default function PanelParticipantes({ participantes = [] }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-neutral-1 p-5 w-full lg:w-64 shrink-0">
-      {/* Encabezado */}
       <div className="flex items-center gap-2 mb-4">
         <h2 className="title-h3-desktop text-neutral-4">Participantes</h2>
         {participantes.length > 0 && (
@@ -24,7 +23,6 @@ export default function PanelParticipantes({ participantes = [] }) {
         )}
       </div>
 
-      {/* Contenido */}
       {participantes.length === 0 ? (
         <EmptyState />
       ) : (
