@@ -9,6 +9,7 @@ export default function CreateTrip() {
     step,
     form,
     fieldErrors,
+    enlaceInvitacion,
     handleChange,
     handleSiguiente,
     handleAtras,
@@ -42,6 +43,7 @@ export default function CreateTrip() {
         {step === 1 && (
           <InvitationsForm
             participantes={form.miembros}
+            enlaceInvitacion={enlaceInvitacion}
             onAtras={handleAtras}
             onSiguiente={handleSiguiente}
             onAgregarMiembro={handleAgregarMiembro}

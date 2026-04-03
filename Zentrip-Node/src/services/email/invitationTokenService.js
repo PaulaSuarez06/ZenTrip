@@ -1,30 +1,48 @@
-const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const admin = require('../../config/firebase');
 
-function generateToken() {
-  return crypto.randomBytes(32).toString('hex');
+const EMAIL_INVITATION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 dias
+const PUBLIC_INVITATION_TTL_SECONDS = 365 * 24 * 60 * 60; // 1 ano
+
+function getJwtSecret() {
+  return process.env.JWT_INVITE_SECRET || process.env.JWT_SECRET || 'dev-invite-secret-change-me';
+}
+
+function signInvitationJwt(payload, ttlSeconds) {
+  return jwt.sign(payload, getJwtSecret(), {
+    algorithm: 'HS256',
+    expiresIn: ttlSeconds,
+  });
+}
+
+function verifyInvitationJwt(token) {
+  try {
+    return jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
+  } catch {
+    return null;
+  }
+}
+
+function isValidPublicJwtToken(token) {
+  const decoded = verifyInvitationJwt(token);
+  return Boolean(decoded?.kind === 'public');
 }
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
-function buildMemberDocId({ email, uid }) {
-  const normalizedEmail = normalizeEmail(email);
-  if (normalizedEmail) return normalizedEmail;
-  return String(uid || '').trim();
-}
-
 async function upsertTripMember({ tripId, member }) {
   const db = admin.firestore();
-  const memberDocId = buildMemberDocId(member);
-  if (!memberDocId) return;
+  const normalizedUid = String(member?.uid || '').trim();
+  const normalizedEmail = normalizeEmail(member?.email);
+  if (!normalizedUid && !normalizedEmail) return;
 
-  const memberRef = db.collection('viajes').doc(tripId).collection('miembros').doc(memberDocId);
+  const membersRef = db.collection('viajes').doc(tripId).collection('miembros');
 
   const payload = {
-    email: normalizeEmail(member.email),
-    uid: member.uid || null,
+    email: normalizedEmail,
+    uid: normalizedUid || null,
     rol: member.rol || 'miembro',
     estadoInvitacion: member.estadoInvitacion || 'pendiente',
   };
@@ -37,7 +55,37 @@ async function upsertTripMember({ tripId, member }) {
     payload.aceptadoEn = admin.firestore.FieldValue.serverTimestamp();
   }
 
-  await memberRef.set(payload, { merge: true });
+  // Sin UID, se conserva el documento por email para invitados no registrados.
+  if (!normalizedUid) {
+    const emailMemberRef = membersRef.doc(normalizedEmail);
+    await emailMemberRef.set(payload, { merge: true });
+    return;
+  }
+
+  // Con UID, el documento canónico siempre es por UID.
+  const uidMemberRef = membersRef.doc(normalizedUid);
+  const emailMemberRef = normalizedEmail ? membersRef.doc(normalizedEmail) : null;
+
+  const [uidSnap, emailSnap] = await Promise.all([
+    uidMemberRef.get(),
+    emailMemberRef && emailMemberRef.path !== uidMemberRef.path ? emailMemberRef.get() : Promise.resolve(null),
+  ]);
+
+  const mergedPayload = {
+    ...(emailSnap?.exists ? emailSnap.data() : {}),
+    ...(uidSnap.exists ? uidSnap.data() : {}),
+    ...payload,
+  };
+
+  const batch = db.batch();
+  batch.set(uidMemberRef, mergedPayload, { merge: true });
+
+  // Limpia el documento legacy por email para evitar duplicados lógicos.
+  if (emailSnap?.exists && emailMemberRef && emailMemberRef.path !== uidMemberRef.path) {
+    batch.delete(emailMemberRef);
+  }
+
+  await batch.commit();
 }
 
 async function applyAcceptanceToTrip({ tripId, invitedEmail, userId }) {
@@ -49,7 +97,7 @@ async function applyAcceptanceToTrip({ tripId, invitedEmail, userId }) {
     throw new Error('No se encontró el viaje asociado a la invitación');
   }
 
-  const normalizedEmail = String(invitedEmail || '').trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(invitedEmail);
 
   await upsertTripMember({
     tripId,
@@ -62,71 +110,138 @@ async function applyAcceptanceToTrip({ tripId, invitedEmail, userId }) {
   });
 }
 
+function resolveExpiryDate(data, decodedToken = null) {
+  if (data?.expiresAt?.toDate) {
+    return data.expiresAt.toDate();
+  }
+
+  if (decodedToken?.exp) {
+    return new Date(decodedToken.exp * 1000);
+  }
+
+  return null;
+}
+
+async function resolveEmailInvitationByToken(token) {
+  const db = admin.firestore();
+  const decoded = verifyInvitationJwt(token);
+
+  if (!(decoded?.kind === 'email' && decoded?.invitationId)) {
+    return null;
+  }
+
+  const docRef = db.collection('invitations').doc(String(decoded.invitationId));
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
+    return null;
+  }
+
+  const data = doc.data();
+  if (String(data?.token || '') !== String(token)) {
+    return null;
+  }
+
+  return {
+    invitationId: doc.id,
+    data,
+    docRef,
+    decoded,
+  };
+}
+
+async function resolvePublicInvitationByToken(token) {
+  const db = admin.firestore();
+  const decoded = verifyInvitationJwt(token);
+
+  if (decoded?.kind !== 'public') {
+    return null;
+  }
+
+  const snapshot = await db
+    .collection('tripPublicInvitations')
+    .where('token', '==', token)
+    .where('status', '==', 'active')
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+
+  return {
+    publicInvitationId: doc.id,
+    data: doc.data(),
+    decoded,
+    docRef: doc.ref,
+  };
+}
+
 async function createInvitation({ tripId, tripName, email, creatorId, creatorName }) {
   const db = admin.firestore();
-  const token = generateToken();
+  const normalizedEmail = normalizeEmail(email);
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 días
+  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const invitationRef = await db.collection('invitations').add({
     tripId,
     tripName,
-    email: String(email).trim().toLowerCase(),
+    email: normalizedEmail,
     creatorId,
     creatorName,
-    token,
+    token: null,
     status: 'pending',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
   });
 
+  const token = signInvitationJwt(
+    {
+      kind: 'email',
+      invitationId: invitationRef.id,
+      tripId,
+      email: normalizedEmail,
+    },
+    EMAIL_INVITATION_TTL_SECONDS,
+  );
+
+  await invitationRef.update({ token });
+
   return { invitationId: invitationRef.id, token };
 }
 
 async function verifyToken(token) {
-  const db = admin.firestore();
-  const snapshot = await db
-    .collection('invitations')
-    .where('token', '==', token)
-    .limit(1)
-    .get();
-
-  if (snapshot.empty) {
+  const resolved = await resolveEmailInvitationByToken(token);
+  if (!resolved) {
     return null;
   }
 
-  const doc = snapshot.docs[0];
-  const data = doc.data();
+  const { invitationId, data, decoded } = resolved;
 
   if (data.status !== 'pending') {
     return null;
   }
 
-  const expiry = data.expiresAt.toDate();
-  if (new Date() > expiry) {
+  const expiry = resolveExpiryDate(data, decoded);
+  if (expiry && new Date() > expiry) {
     return null;
   }
 
-  return { invitationId: doc.id, ...data };
+  return { invitationId, ...data };
 }
 
 async function acceptInvitation(token, userId, userEmail) {
-  const db = admin.firestore();
-  const snapshot = await db
-    .collection('invitations')
-    .where('token', '==', token)
-    .limit(1)
-    .get();
-
-  if (snapshot.empty) {
+  const resolved = await resolveEmailInvitationByToken(token);
+  if (!resolved) {
     throw new Error('Invitación no válida');
   }
 
-  const doc = snapshot.docs[0];
-  const data = doc.data();
+  const { invitationId, data, decoded, docRef } = resolved;
 
-  const normalizedInvitationEmail = String(data.email || '').trim().toLowerCase();
-  const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
+  const normalizedInvitationEmail = normalizeEmail(data.email);
+  const normalizedUserEmail = normalizeEmail(userEmail);
   if (!normalizedUserEmail || normalizedInvitationEmail !== normalizedUserEmail) {
     throw new Error('El correo autenticado no coincide con el correo invitado');
   }
@@ -134,7 +249,7 @@ async function acceptInvitation(token, userId, userEmail) {
   if (data.status === 'accepted') {
     return {
       tripId: data.tripId,
-      invitationId: doc.id,
+      invitationId,
       alreadyAccepted: true,
     };
   }
@@ -143,12 +258,12 @@ async function acceptInvitation(token, userId, userEmail) {
     throw new Error('Invitación ya fue procesada y no puede aceptarse');
   }
 
-  const expiry = data.expiresAt.toDate();
-  if (new Date() > expiry) {
+  const expiry = resolveExpiryDate(data, decoded);
+  if (expiry && new Date() > expiry) {
     throw new Error('Invitación expirada');
   }
 
-  await db.collection('invitations').doc(doc.id).update({
+  await docRef.update({
     status: 'accepted',
     acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
     acceptedById: userId,
@@ -161,12 +276,12 @@ async function acceptInvitation(token, userId, userEmail) {
     userId,
   });
 
-  return { tripId: data.tripId, invitationId: doc.id };
+  return { tripId: data.tripId, invitationId };
 }
 
 async function claimPendingInvitationsForUser(userId, userEmail) {
   const db = admin.firestore();
-  const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
+  const normalizedUserEmail = normalizeEmail(userEmail);
 
   if (!normalizedUserEmail) {
     throw new Error('No se pudo determinar el correo del usuario autenticado');
@@ -188,7 +303,7 @@ async function claimPendingInvitationsForUser(userId, userEmail) {
       continue;
     }
 
-    await db.collection('invitations').doc(doc.id).update({
+    await doc.ref.update({
       status: 'accepted',
       acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
       acceptedById: userId,
@@ -207,11 +322,165 @@ async function claimPendingInvitationsForUser(userId, userEmail) {
   return claimed;
 }
 
+async function getOrCreateTripPublicInvitation({ tripId, creatorId, forceRegenerate = false, preferredToken = '' }) {
+  const db = admin.firestore();
+  const tripRef = db.collection('viajes').doc(tripId);
+  const tripDoc = await tripRef.get();
+
+  if (!tripDoc.exists) {
+    throw new Error('No se encontró el viaje para generar enlace compartible');
+  }
+
+  const tripData = tripDoc.data() || {};
+  const ownerId = String(tripData.uid || '').trim();
+  if (!ownerId || ownerId !== String(creatorId || '').trim()) {
+    throw new Error('No tienes permisos para generar el enlace de este viaje');
+  }
+
+  const activeSnapshot = await db
+    .collection('tripPublicInvitations')
+    .where('tripId', '==', tripId)
+    .where('status', '==', 'active')
+    .get();
+
+  const now = new Date();
+  if (!activeSnapshot.empty && !forceRegenerate) {
+    for (const doc of activeSnapshot.docs) {
+      const data = doc.data();
+      const expiry = data?.expiresAt?.toDate ? data.expiresAt.toDate() : null;
+      if (!expiry || now <= expiry) {
+        return {
+          publicInvitationId: doc.id,
+          token: data.token,
+          tripId: data.tripId,
+          tripName: data.tripName || tripData.nombre || 'Viaje',
+        };
+      }
+    }
+  }
+
+  if (!activeSnapshot.empty && forceRegenerate) {
+    const nowTimestamp = admin.firestore.FieldValue.serverTimestamp();
+    const batch = db.batch();
+
+    activeSnapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, {
+        status: 'rotated',
+        rotatedAt: nowTimestamp,
+      });
+    });
+
+    await batch.commit();
+  }
+
+  const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+  const publicInvitationRef = await db.collection('tripPublicInvitations').add({
+    tripId,
+    tripName: tripData.nombre || 'Viaje',
+    token: null,
+    status: 'active',
+    creatorId: ownerId,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+  });
+
+  let token = String(preferredToken || '').trim();
+
+  if (token) {
+    if (!isValidPublicJwtToken(token)) {
+      token = '';
+    } else {
+      const tokenSnapshot = await db
+        .collection('tripPublicInvitations')
+        .where('token', '==', token)
+        .where('status', '==', 'active')
+        .limit(1)
+        .get();
+
+      if (!tokenSnapshot.empty) {
+        const usedTokenTripId = tokenSnapshot.docs[0].data()?.tripId;
+        if (usedTokenTripId !== tripId) {
+          token = '';
+        }
+      }
+    }
+  }
+
+  if (!token) {
+    token = signInvitationJwt(
+      {
+        kind: 'public',
+        tripId,
+      },
+      PUBLIC_INVITATION_TTL_SECONDS,
+    );
+  }
+
+  await publicInvitationRef.update({ token });
+
+  return {
+    publicInvitationId: publicInvitationRef.id,
+    token,
+    tripId,
+    tripName: tripData.nombre || 'Viaje',
+  };
+}
+
+async function verifyTripPublicToken(token) {
+  const resolved = await resolvePublicInvitationByToken(token);
+  if (!resolved) {
+    return null;
+  }
+
+  const { publicInvitationId, data, decoded } = resolved;
+
+  if (data.status !== 'active') {
+    return null;
+  }
+
+  const expiry = resolveExpiryDate(data, decoded);
+  if (expiry && new Date() > expiry) {
+    return null;
+  }
+
+  return {
+    publicInvitationId,
+    ...data,
+  };
+}
+
+async function acceptTripPublicInvitation(token, userId, userEmail) {
+  const invitation = await verifyTripPublicToken(token);
+  if (!invitation) {
+    throw new Error('Enlace de invitación no válido o expirado');
+  }
+
+  const normalizedUserEmail = normalizeEmail(userEmail);
+  if (!userId || !normalizedUserEmail) {
+    throw new Error('No se pudo identificar al usuario autenticado');
+  }
+
+  await applyAcceptanceToTrip({
+    tripId: invitation.tripId,
+    invitedEmail: normalizedUserEmail,
+    userId,
+  });
+
+  return {
+    tripId: invitation.tripId,
+    publicInvitationId: invitation.publicInvitationId,
+  };
+}
+
 module.exports = {
   createInvitation,
   verifyToken,
   acceptInvitation,
   claimPendingInvitationsForUser,
+  getOrCreateTripPublicInvitation,
+  verifyTripPublicToken,
+  acceptTripPublicInvitation,
   upsertTripMember,
-  generateToken,
+  signInvitationJwt,
 };

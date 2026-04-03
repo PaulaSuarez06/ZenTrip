@@ -54,7 +54,17 @@ export default function RegisterForm({
             {invitationInfo?.valid && (
                 <div className="mb-4 rounded-lg border border-secondary-2 bg-secondary-1/10 p-3">
                     <p className="body-3 text-secondary-5">
-                        Invitación detectada para <strong>{invitationInfo.tripName}</strong>. Si te registras con <strong>{invitationInfo.email}</strong>, la invitación se aceptará automáticamente.
+                        {invitationInfo?.requiresEmailMatch
+                            ? (
+                                <>
+                                    Invitación detectada para <strong>{invitationInfo.tripName}</strong>. Si te registras con <strong>{invitationInfo.email}</strong>, la invitación se aceptará automáticamente.
+                                </>
+                            )
+                            : (
+                                <>
+                                    Enlace compartible detectado para <strong>{invitationInfo.tripName}</strong>. Si te registras, se aceptará automáticamente tu acceso al viaje.
+                                </>
+                            )}
                     </p>
                 </div>
             )}

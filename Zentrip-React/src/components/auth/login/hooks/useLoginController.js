@@ -19,9 +19,22 @@ import {
 // Espera mínima antes de volver a reenviar verificación (1 minuto y medio)
 const WAIT_TO_RESEND_SECONDS = 90;
 
+function decodeJwtPayload(token) {
+  try {
+    const [, payload] = String(token || '').split('.');
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(window.atob(base64));
+  } catch {
+    return null;
+  }
+}
+
 export function useLoginController(navigate) {
   const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY?.trim() || '';
-  const inviteToken = new URLSearchParams(window.location.search).get('inviteToken')?.trim() || '';
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteToken = urlParams.get('inviteToken')?.trim() || '';
+  const joinToken = urlParams.get('join')?.trim() || urlParams.get('tripInviteToken')?.trim() || '';
 
   const [invitationInfo, setInvitationInfo] = useState(null);
   const [invitationError, setInvitationError] = useState('');
@@ -32,6 +45,12 @@ export function useLoginController(navigate) {
         await apiClient.post('/invitations/accept', { token: inviteToken });
       } catch (acceptError) {
         console.warn('No se pudo aceptar por token, se intentará reclamar por correo:', acceptError);
+      }
+    } else if (joinToken) {
+      try {
+        await apiClient.post('/invitations/public-accept', { token: joinToken });
+      } catch (acceptError) {
+        console.warn('No se pudo aceptar por enlace público del viaje:', acceptError);
       }
     }
 
@@ -75,12 +94,18 @@ export function useLoginController(navigate) {
   }, [secondsToResend]);
 
   useEffect(() => {
-    if (!inviteToken) return undefined;
+    if (!inviteToken && !joinToken) return undefined;
 
     let active = true;
 
+    const decodedJoin = !inviteToken && joinToken ? decodeJwtPayload(joinToken) : null;
+
+    const verifyPath = inviteToken
+      ? `/invitations/verify?token=${encodeURIComponent(inviteToken)}`
+      : `/invitations/public-verify?token=${encodeURIComponent(joinToken)}`;
+
     apiClient
-      .get(`/invitations/verify?token=${encodeURIComponent(inviteToken)}`)
+      .get(verifyPath)
       .then((data) => {
         if (!active) return;
         setInvitationInfo(data);
@@ -92,13 +117,17 @@ export function useLoginController(navigate) {
       .catch((error) => {
         if (!active) return;
         setInvitationInfo(null);
+        if (decodedJoin?.scope === 'preview') {
+          setInvitationError('Este enlace es válido, pero el viaje todavía no existe (aún no se ha creado). Pide al creador que finalice y guarde el viaje.');
+          return;
+        }
         setInvitationError(error.message || 'No se pudo validar la invitación.');
       });
 
     return () => {
       active = false;
     };
-  }, [inviteToken]);
+  }, [inviteToken, joinToken]);
 
   // Login normal con email y contraseña
   const handleLogin = async (event) => {
@@ -286,6 +315,7 @@ export function useLoginController(navigate) {
     recaptchaKey,
     recaptchaSiteKey,
     inviteToken,
+    joinToken,
     invitationInfo,
     invitationError,
     setEmail,

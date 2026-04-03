@@ -1,5 +1,5 @@
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../config/firebaseConfig';
+import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { db, auth } from '../config/firebaseConfig';
 import { apiClient } from './apiClient';
 
 export async function createTrip(uid, form) {
@@ -10,9 +10,34 @@ export async function createTrip(uid, form) {
     uid,
     creadoEn: serverTimestamp(),
   });
+
+  // El creador debe aparecer siempre en la subcoleccion de miembros.
+  const memberRef = doc(db, 'viajes', docRef.id, 'miembros', uid);
+  try {
+    const userEmail = auth.currentUser?.email || '';
+    await setDoc(memberRef, {
+      uid,
+      email: userEmail,
+      rol: 'coordinador',
+      estadoInvitacion: 'aceptada',
+      aceptadoEn: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    // No bloqueamos la creacion del viaje por reglas de Firestore en miembros.
+    console.warn('No se pudo guardar el creador en miembros (revisar reglas de Firestore):', error);
+  }
+
   return docRef.id;
 }
 
 export async function sendTripInvitations(payload) {
   return apiClient.post('/invitations/send', payload);
+}
+
+export async function getTripPublicInvitePreview() {
+  return apiClient.get('/invitations/public-link/preview');
+}
+
+export async function getTripPublicInviteLink(tripId, preferredToken = '') {
+  return apiClient.post('/invitations/public-link', { tripId, preferredToken });
 }

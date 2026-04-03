@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../../config/routes';
 import { useAuth } from '../../../../context/AuthContext';
-import { createTrip, sendTripInvitations } from '../../../../services/tripService';
+import { createTrip, getTripPublicInviteLink, getTripPublicInvitePreview, sendTripInvitations } from '../../../../services/tripService';
 
 // Nombre para guardar el progreso en el navegador.
 const STORAGE_KEY = 'zentrip:create-trip-wizard';
@@ -51,6 +51,27 @@ export function useCreateTripController() {
 
   // Errores para mostrar debajo de los campos.
   const [fieldErrors, setFieldErrors] = useState({});
+  const [previewJoinToken, setPreviewJoinToken] = useState('');
+  const [enlaceInvitacion, setEnlaceInvitacion] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    getTripPublicInvitePreview()
+      .then((data) => {
+        if (!active) return;
+        setPreviewJoinToken(data?.token || '');
+        setEnlaceInvitacion(data?.shareLink || '');
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.warn('No se pudo obtener preview de enlace de invitación:', error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Cada cambio se guarda para no perder datos al recargar.
   useEffect(() => {
@@ -171,6 +192,22 @@ export function useCreateTripController() {
 
     const tripId = await createTrip(user.uid, form);
 
+    let sharedLink = '';
+    try {
+      const linkResponse = await getTripPublicInviteLink(tripId, previewJoinToken);
+      sharedLink = linkResponse?.shareLink || '';
+
+      if (sharedLink) {
+        setEnlaceInvitacion(sharedLink);
+      }
+
+      if (sharedLink && navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(sharedLink);
+      }
+    } catch (error) {
+      console.warn('No se pudo generar o copiar el enlace compartible del viaje:', error);
+    }
+
     const pendingInvites = form.miembros.filter(
       (item) => item.email && (item.estadoInvitacion === 'pendiente' || item.estadoInvitacion === 'pendiente_correo'),
     );
@@ -202,6 +239,7 @@ export function useCreateTripController() {
     step,
     form,
     fieldErrors,
+    enlaceInvitacion,
     handleChange,
     handleSiguiente,
     handleAtras,
