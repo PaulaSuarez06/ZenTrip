@@ -22,6 +22,7 @@ export default function Register() {
         successMessage,
         hasRegisterMessage,
         inviteToken,
+        joinToken,
         invitationInfo,
         invitationError,
         recaptchaKey,
@@ -61,7 +62,19 @@ export default function Register() {
                             onFieldChange={handleFieldChange}
                             onSubmit={handleRegister}
                             onGoogleSignUp={handleGoogleSignUp}
-                            onGoToLogin={() => navigate(inviteToken ? `${ROUTES.AUTH.LOGIN}?inviteToken=${encodeURIComponent(inviteToken)}` : ROUTES.AUTH.LOGIN)}
+                            onGoToLogin={() => {
+                                if (inviteToken) {
+                                    navigate(`${ROUTES.AUTH.LOGIN}?inviteToken=${encodeURIComponent(inviteToken)}`);
+                                    return;
+                                }
+
+                                if (joinToken) {
+                                    navigate(`${ROUTES.AUTH.LOGIN}?join=${encodeURIComponent(joinToken)}`);
+                                    return;
+                                }
+
+                                navigate(ROUTES.AUTH.LOGIN);
+                            }}
                         />
                     </div>
                 </div>

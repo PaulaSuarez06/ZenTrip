@@ -11,6 +11,7 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', participantes = 
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [copyMessage, setCopyMessage] = useState('');
   const [seleccionado, setSeleccionado] = useState(null);
   const currentUserUid = user?.uid || '';
   const currentUserEmail = (user?.email || '').trim().toLowerCase();
@@ -120,6 +121,18 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', participantes = 
     setFieldErrors({});
   };
 
+  const handleCopiarEnlace = async () => {
+    if (!enlaceInvitacion) return;
+
+    try {
+      await navigator.clipboard.writeText(enlaceInvitacion);
+      setCopyMessage('Enlace copiado al portapapeles.');
+      setTimeout(() => setCopyMessage(''), 1800);
+    } catch {
+      setCopyMessage('No se pudo copiar automáticamente.');
+    }
+  };
+
   return (
     <div>
       <div className="mb-5">
@@ -201,6 +214,8 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', participantes = 
           />
           <button
             type="button"
+            onClick={handleCopiarEnlace}
+            disabled={!enlaceInvitacion}
             className="flex items-center gap-2 bg-neutral-1 border border-neutral-2 rounded-lg px-4 py-2 body-2-semibold text-neutral-5 hover:bg-neutral-2 transition shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -209,6 +224,7 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', participantes = 
             Copiar
           </button>
         </div>
+        {copyMessage && <p className="mt-2 body-3 text-secondary-5">{copyMessage}</p>}
       </div>
     </div>
   );

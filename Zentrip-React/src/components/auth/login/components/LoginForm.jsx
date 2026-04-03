@@ -49,7 +49,17 @@ export default function LoginForm({
       {invitationInfo?.valid && (
         <div className="mb-4 rounded-lg border border-secondary-2 bg-secondary-1/10 p-3">
           <p className="body-3 text-secondary-5">
-            Esta invitación está asociada al viaje <strong>{invitationInfo.tripName}</strong>. Si inicias sesión con este correo, la solicitud se aceptará automáticamente y entrarás al viaje.
+            {invitationInfo?.requiresEmailMatch
+              ? (
+                <>
+                  Esta invitación está asociada al viaje <strong>{invitationInfo.tripName}</strong>. Si inicias sesión con este correo, la solicitud se aceptará automáticamente y entrarás al viaje.
+                </>
+              )
+              : (
+                <>
+                  Este enlace compartible pertenece al viaje <strong>{invitationInfo.tripName}</strong>. Si inicias sesión, entrarás automáticamente al viaje.
+                </>
+              )}
           </p>
         </div>
       )}

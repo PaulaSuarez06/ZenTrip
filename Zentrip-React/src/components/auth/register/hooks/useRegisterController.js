@@ -14,11 +14,27 @@ import {
 import { registerFeedbackMessages } from '../../../../utils/validation/register/messages';
 import { saveUserToken, signInWithGoogle, verifyRecaptchaToken } from '../../login/services/loginFirebaseService';
 
+function decodeJwtPayload(token) {
+  try {
+    const [, payload] = String(token || '').split('.');
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(window.atob(base64));
+  } catch {
+    return null;
+  }
+}
+
 export function useRegisterController(navigate) {
   const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY?.trim() || '';
-  const inviteToken = useMemo(() => {
-    const token = new URLSearchParams(window.location.search).get('inviteToken');
-    return token ? token.trim() : '';
+  const { inviteToken, joinToken } = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const emailToken = params.get('inviteToken');
+    const publicToken = params.get('join') || params.get('tripInviteToken');
+    return {
+      inviteToken: emailToken ? emailToken.trim() : '',
+      joinToken: publicToken ? publicToken.trim() : '',
+    };
   }, []);
 
   const [form, setForm] = useState({
@@ -38,11 +54,18 @@ export function useRegisterController(navigate) {
   const [invitationError, setInvitationError] = useState('');
 
   useEffect(() => {
-    if (!inviteToken) return;
+    if (!inviteToken && !joinToken) return;
 
     let active = true;
+
+    const decodedJoin = !inviteToken && joinToken ? decodeJwtPayload(joinToken) : null;
+
+    const verifyPath = inviteToken
+      ? `/invitations/verify?token=${encodeURIComponent(inviteToken)}`
+      : `/invitations/public-verify?token=${encodeURIComponent(joinToken)}`;
+
     apiClient
-      .get(`/invitations/verify?token=${encodeURIComponent(inviteToken)}`)
+      .get(verifyPath)
       .then((data) => {
         if (!active) return;
         setInvitationInfo(data);
@@ -54,13 +77,17 @@ export function useRegisterController(navigate) {
       .catch((error) => {
         if (!active) return;
         setInvitationInfo(null);
+        if (decodedJoin?.scope === 'preview') {
+          setInvitationError('Este enlace es válido, pero el viaje todavía no existe (aún no se ha creado). Pide al creador que finalice y guarde el viaje.');
+          return;
+        }
         setInvitationError(error.message || 'No se pudo validar la invitación.');
       });
 
     return () => {
       active = false;
     };
-  }, [inviteToken]);
+  }, [inviteToken, joinToken]);
 
   const validateField = (name, value, allValues = form) => {
     switch (name) {
@@ -143,6 +170,12 @@ export function useRegisterController(navigate) {
         } catch (acceptError) {
           console.warn('No se pudo aceptar por token, se intentará reclamar por correo:', acceptError);
         }
+      } else if (joinToken) {
+        try {
+          await apiClient.post('/invitations/public-accept', { token: joinToken });
+        } catch (acceptError) {
+          console.warn('No se pudo aceptar por enlace público del viaje:', acceptError);
+        }
       }
 
       try {
@@ -184,6 +217,12 @@ export function useRegisterController(navigate) {
         } catch (acceptError) {
           console.warn('No se pudo aceptar por token, se intentará reclamar por correo:', acceptError);
         }
+      } else if (joinToken) {
+        try {
+          await apiClient.post('/invitations/public-accept', { token: joinToken });
+        } catch (acceptError) {
+          console.warn('No se pudo aceptar por enlace público del viaje:', acceptError);
+        }
       }
 
       try {
@@ -207,6 +246,7 @@ export function useRegisterController(navigate) {
     successMessage: registerFeedbackMessages.success,
     hasRegisterMessage: Boolean(generalError || success),
     inviteToken,
+    joinToken,
     invitationInfo,
     invitationError,
     recaptchaKey,

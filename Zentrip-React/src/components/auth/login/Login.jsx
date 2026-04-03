@@ -25,6 +25,7 @@ export default function Login() {
     isLoading,
     isGoogleLoading,
     inviteToken,
+    joinToken,
     recaptchaKey,
     recaptchaSiteKey,
     setEmail,
@@ -68,7 +69,19 @@ export default function Login() {
               onForgotPassword={handleForgotPassword}
               onResendVerification={handleResendVerification}
               onGoogleLogin={handleGoogleLogin}
-              onGoToRegister={() => navigate(inviteToken ? `${ROUTES.AUTH.REGISTER}?inviteToken=${encodeURIComponent(inviteToken)}` : ROUTES.AUTH.REGISTER)}
+              onGoToRegister={() => {
+                if (inviteToken) {
+                  navigate(`${ROUTES.AUTH.REGISTER}?inviteToken=${encodeURIComponent(inviteToken)}`);
+                  return;
+                }
+
+                if (joinToken) {
+                  navigate(`${ROUTES.AUTH.REGISTER}?join=${encodeURIComponent(joinToken)}`);
+                  return;
+                }
+
+                navigate(ROUTES.AUTH.REGISTER);
+              }}
             />
           </div>
         </div>
