@@ -44,6 +44,10 @@ export function useLoginController(navigate) {
       try {
         await apiClient.post('/invitations/accept', { token: inviteToken });
       } catch (acceptError) {
+        const msg = acceptError?.message || '';
+        if (msg.toLowerCase().includes('correo') || msg.toLowerCase().includes('email')) {
+          return { emailMismatch: true };
+        }
         console.warn('No se pudo aceptar por token, se intentará reclamar por correo:', acceptError);
       }
     } else if (joinToken) {
@@ -59,6 +63,8 @@ export function useLoginController(navigate) {
     } catch (claimError) {
       console.warn('No se pudieron reclamar invitaciones pendientes por correo:', claimError);
     }
+
+    return {};
   };
 
   // Datos que el usuario escribe en el formulario
@@ -184,9 +190,10 @@ export function useLoginController(navigate) {
 
       // Si todo salió bien, guardamos token, marcamos expiración y vamos a la ruta final
       await saveUserToken(refreshedUser);
-      await reconcileInvitationAccess();
+      const { emailMismatch } = await reconcileInvitationAccess();
       saveSessionExpiry();
-      navigate(await getPostLoginPath(refreshedUser));
+      const destination = emailMismatch ? ROUTES.HOME : await getPostLoginPath(refreshedUser);
+      navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : destination);
     } catch (loginError) {
       setCanResendVerification(false);
       const { message } = getFirebaseErrorByField(loginError);
@@ -288,9 +295,9 @@ export function useLoginController(navigate) {
       // Inicia popup de Google y devuelve el usuario autenticado
       const user = await signInWithGoogle();
       await saveUserToken(user);
-      await reconcileInvitationAccess();
+      const { emailMismatch } = await reconcileInvitationAccess();
       saveSessionExpiry();
-      navigate(await getPostLoginPath(user));
+      navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : await getPostLoginPath(user));
     } catch (googleError) {
       const { message } = getFirebaseErrorByField(googleError);
       setError(message || loginFeedbackMessages.invalidCredentials);
