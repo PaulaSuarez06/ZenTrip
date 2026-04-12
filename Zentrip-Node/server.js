@@ -6,6 +6,7 @@ const cors = require('cors');
 const userRouters = require('./src/routes/userRouters');
 const authRouters = require('./src/routes/authRouters');
 const invitationRouters = require('./src/routes/invitationRouters');
+const hotelRouters = require('./src/routes/hotelRouters');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,7 @@ app.get('/', (req, res) => {
 app.use('/api', userRouters);
 app.use('/api/auth', authRouters);
 app.use('/api/invitations', invitationRouters);
+app.use('/api/hotels', hotelRouters);
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
