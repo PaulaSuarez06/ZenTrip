@@ -82,6 +82,8 @@ export default function ResumenForm({
   form,
   onAtras,
   onCrearViaje,
+  onCancelar,
+  onGuardarBorrador,
   isCreatingTrip = false,
   tripCreationLocked = false,
 }) {
@@ -152,15 +154,23 @@ export default function ResumenForm({
         <Button variant="ghost" type="button" onClick={onAtras} className="w-auto! px-6">
           Atrás
         </Button>
-        <Button
-          variant="orange"
-          type="button"
-          className="w-auto! px-6"
-          onClick={onCrearViaje}
-          disabled={disableCreate}
-        >
-          {isCreatingTrip ? 'Creando...' : tripCreationLocked ? 'Viaje creado' : 'Crear viaje'}
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="ghost" type="button" onClick={onCancelar} className="w-auto! px-6">
+            Cancelar
+          </Button>
+          <Button variant="ghost" type="button" onClick={onGuardarBorrador} className="w-auto! px-6">
+            Continuar más tarde
+          </Button>
+          <Button
+            variant="orange"
+            type="button"
+            className="w-auto! px-6"
+            onClick={onCrearViaje}
+            disabled={disableCreate}
+          >
+            {isCreatingTrip ? 'Creando...' : tripCreationLocked ? 'Viaje creado' : 'Crear viaje'}
+          </Button>
+        </div>
       </div>
     </div>
   );
