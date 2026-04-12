@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 const GRADIENTS = [
@@ -56,7 +58,16 @@ function IconPeople() {
   );
 }
 
-export default function TripCard({ trip, isDraft, memberCount, onClick }) {
+function IconTrash() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+  );
+}
+
+export default function TripCard({ trip, isDraft, memberCount, onClick, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
   const name       = trip.name   || trip.nombre    || 'Viaje sin nombre';
   const origin     = trip.origin  || trip.origen    || '';
   const destination= trip.destination || trip.destino || '';
@@ -70,14 +81,24 @@ export default function TripCard({ trip, isDraft, memberCount, onClick }) {
 
   return (
     <div
-      onClick={onClick}
-      className="bg-white rounded-2xl shadow-sm border border-neutral-1 overflow-hidden cursor-pointer hover:shadow-md transition-shadow w-60 shrink-0 flex flex-col"
+      onClick={!confirming ? onClick : undefined}
+      className="bg-white rounded-2xl shadow-sm border border-neutral-1 overflow-hidden cursor-pointer hover:shadow-md transition-shadow w-60 shrink-0 flex flex-col relative"
     >
       {/* Imagen / gradiente */}
-      <div className={`h-36 bg-gradient-to-br ${gradient} relative flex items-start justify-end p-3`}>
+      <div className={`h-36 bg-linear-to-br ${gradient} relative flex items-start justify-between p-3`}>
         <span className={`body-3 px-2 py-0.5 rounded-full font-semibold ${statusCfg.className}`}>
           {statusCfg.label}
         </span>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+            className="w-7 h-7 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-neutral-4 hover:text-feedback-error transition-colors"
+            aria-label="Eliminar viaje"
+          >
+            <IconTrash />
+          </button>
+        )}
       </div>
 
       {/* Contenido */}
@@ -106,6 +127,34 @@ export default function TripCard({ trip, isDraft, memberCount, onClick }) {
           <p className="body-3 text-primary-3 mt-auto pt-1">Toca para continuar →</p>
         )}
       </div>
+
+      {/* Overlay de confirmación de borrado */}
+      {confirming && (
+        <div
+          className="absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-center gap-4 p-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <IconTrash />
+          <p className="body-bold text-neutral-6 text-center">¿Eliminar este viaje?</p>
+          <p className="body-3 text-neutral-3 text-center -mt-2">Esta acción no se puede deshacer.</p>
+          <div className="flex gap-3 w-full">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
+              className="flex-1 py-2 rounded-xl border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex-1 py-2 rounded-xl bg-primary-3 text-white body-3 font-semibold hover:opacity-90 transition-opacity"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

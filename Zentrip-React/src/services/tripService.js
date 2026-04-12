@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
 import { apiClient } from './apiClient';
 
@@ -77,6 +77,10 @@ export async function saveTripDraft(uid, form) {
   };
   const docRef = await addDoc(collection(db, 'viajes'), payload);
   return docRef.id;
+}
+
+export async function deleteTrip(tripId) {
+  await deleteDoc(doc(db, 'viajes', tripId));
 }
 
 export async function getUserTrips(uid) {

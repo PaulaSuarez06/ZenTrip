@@ -105,7 +105,7 @@ export default function ResumenForm({
 
           {/* Ruta */}
           <SectionRow label="Ruta">
-            <p className="body text-secondary-3">
+            <p className="body text-secondary-5">
               {form.origen && form.destino
                 ? `${form.origen} → ${form.destino}`
                 : form.origen || form.destino || '—'}
@@ -114,7 +114,7 @@ export default function ResumenForm({
 
           {/* Fechas */}
           <SectionRow label="Fechas">
-            <p className="body text-secondary-3">
+            <p className="body text-secondary-5">
               {form.fechaInicio && form.fechaFin
                 ? `${form.fechaInicio} → ${form.fechaFin}${nights ? ` (${nights} ${nights === 1 ? 'noche' : 'noches'})` : ''}`
                 : form.fechaInicio || form.fechaFin || '—'}
@@ -124,14 +124,16 @@ export default function ResumenForm({
           {/* Presupuesto */}
           <SectionRow label="Presupuesto">
             <p className="body text-primary-3">
-              {hasPresupuesto ? `${form.presupuesto} ${form.divisa}` : '—'}
+              {hasPresupuesto
+                ? `${form.presupuesto} ${form.divisa}`
+                : `— ${form.divisa || ''}`.trim()}
             </p>
           </SectionRow>
 
           {/* Mascota */}
           <div className="mb-5">
             <p className="body-3 text-neutral-3 mb-1">Viaje con mascotas</p>
-            <p className="body text-neutral-6">{form.conMascota ? 'Sí' : 'No'}</p>
+            <p className="body text-secondary-5">{form.conMascota ? 'Sí' : 'No'}</p>
           </div>
 
           {/* Caja informativa */}
@@ -151,13 +153,15 @@ export default function ResumenForm({
 
       {/* Botones de navegación */}
       <div className="flex justify-between mt-6">
-        <Button variant="ghost" type="button" onClick={onAtras} className="w-auto! px-6">
-          Atrás
-        </Button>
         <div className="flex gap-3">
-          <Button variant="ghost" type="button" onClick={onCancelar} className="w-auto! px-6">
+          <Button variant="ghost" type="button" onClick={onAtras} className="w-auto! px-6">
+            Atrás
+          </Button>
+          <Button variant="danger" type="button" onClick={onCancelar} className="w-auto! px-6">
             Cancelar
           </Button>
+        </div>
+        <div className="flex gap-3">
           <Button variant="ghost" type="button" onClick={onGuardarBorrador} className="w-auto! px-6">
             Continuar más tarde
           </Button>
