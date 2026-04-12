@@ -11,7 +11,7 @@ function SectionTitle({ children }) {
   );
 }
 
-function TripRow({ trips, isDraft, onCardClick }) {
+function TripRow({ trips, isDraft, onCardClick, onDelete }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
       {trips.map((trip, i) => (
@@ -21,6 +21,7 @@ function TripRow({ trips, isDraft, onCardClick }) {
           isDraft={isDraft}
           memberCount={isDraft ? (trip.miembros?.length ?? 0) + 1 : undefined}
           onClick={() => onCardClick(trip)}
+          onDelete={onDelete ? () => onDelete(trip.id) : undefined}
         />
       ))}
     </div>
@@ -46,7 +47,7 @@ function EmptyState({ onCreateClick }) {
 
 export default function MisViajes() {
   const navigate = useNavigate();
-  const { borradores, enCurso, proximos, pasados, loading } = useMyTrips();
+  const { borradores, enCurso, proximos, pasados, loading, handleDeleteTrip } = useMyTrips();
 
   const hasDraft    = borradores.length > 0;
   const hasTrips    = enCurso.length + proximos.length + pasados.length > 0;
@@ -92,6 +93,7 @@ export default function MisViajes() {
                 <TripRow
                   trips={borradores}
                   isDraft={true}
+                  onDelete={handleDeleteTrip}
                   onCardClick={(trip) => {
                     if (trip.formSnapshot) {
                       localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: 0, form: trip.formSnapshot }));
@@ -108,6 +110,7 @@ export default function MisViajes() {
                 <SectionTitle>En curso</SectionTitle>
                 <TripRow
                   trips={enCurso}
+                  onDelete={handleDeleteTrip}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
               </section>
@@ -119,6 +122,7 @@ export default function MisViajes() {
                 <SectionTitle>Próximos viajes</SectionTitle>
                 <TripRow
                   trips={proximos}
+                  onDelete={handleDeleteTrip}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
               </section>
@@ -130,6 +134,7 @@ export default function MisViajes() {
                 <SectionTitle>Viajes pasados</SectionTitle>
                 <TripRow
                   trips={pasados}
+                  onDelete={handleDeleteTrip}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
               </section>
