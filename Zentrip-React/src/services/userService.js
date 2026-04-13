@@ -11,56 +11,58 @@ import { db } from '../config/firebaseConfig';
 import { ROUTES } from '../config/routes';
 import { apiClient } from './apiClient';
 
+const USER_COLLECTION = 'users';
+
+async function getUserDoc(uid) {
+  const ref = doc(db, USER_COLLECTION, uid);
+  const snap = await getDoc(ref);
+  return snap.exists() ? { ref, data: snap.data() } : null;
+}
+
 function buildDefaultProfile(user) {
-  const [nombre = '', ...rest] = (user.displayName || '').split(' ');
+  const [firstName = '', ...rest] = (user.displayName || '').split(' ');
+  const lastName = rest.join(' ');
   return {
     uid: user.uid,
     email: user.email,
-    nombre,
-    apellidos: rest.join(' '),
+    firstName,
+    lastName,
     username: '',
     bio: '',
-    telefono: '',
-    pais: '',
-    fotoPerfil: user.photoURL || '',
+    phone: '',
+    country: '',
+    profilePhoto: user.photoURL || '',
     avatarColor: '',
-    idioma: 'Español',
-    moneda: 'EUR €',
-    viajesSoloGrupo: 'ambos',
+    language: 'Español',
+    currency: 'EUR €',
+    tripGroupType: 'both',
     petFriendly: false,
-    perfilCompleto: false,
+    isProfileComplete: false,
   };
 }
 
 export async function getOrCreateUserProfile(user) {
-  const ref = doc(db, 'usuarios', user.uid);
-  const snap = await getDoc(ref);
+  const existing = await getUserDoc(user.uid);
 
-  if (!snap.exists()) {
+  if (!existing) {
     const profile = buildDefaultProfile(user);
-    await setDoc(ref, profile);
+    await setDoc(doc(db, USER_COLLECTION, user.uid), profile, { merge: true });
     return { profile, isNew: true };
   }
 
-  return { profile: snap.data(), isNew: false };
+  return { profile: existing.data, isNew: false };
 }
 
 export async function getPostLoginPath(user) {
   const { profile, isNew } = await getOrCreateUserProfile(user);
   if (isNew) return ROUTES.PROFILE.SETUP;
-  return profile.perfilCompleto ? ROUTES.HOME : ROUTES.PROFILE.SETUP;
+  return profile.isProfileComplete ? ROUTES.HOME : ROUTES.PROFILE.SETUP;
 }
 
 export async function searchUsersByUsername(username, maxResults = 8) {
   const term = username.trim().toLowerCase();
   if (!term) return [];
-
-  try {
-    const results = await apiClient.get(`/search-users?query=${encodeURIComponent(term)}&limit=${maxResults}`);
-    return results;
-  } catch (error) {
-    throw error;
-  }
+  return apiClient.get(`/search-users?query=${encodeURIComponent(term)}&limit=${maxResults}`);
 }
 
 export async function getUserByUid(uid) {
@@ -73,31 +75,21 @@ export async function getUserByUid(uid) {
 }
 
 export async function isUsernameUnique(username, currentUid) {
-  const q = query(
-    collection(db, 'usuarios'),
-    where('username', '==', username.trim())
+  const snap = await getDocs(
+    query(collection(db, USER_COLLECTION), where('username', '==', username.trim()))
   );
-  const snap = await getDocs(q);
-  return snap.empty || snap.docs.every((d) => d.id === currentUid);
+  return snap.docs.length === 0 || snap.docs.every((d) => d.id === currentUid);
 }
 
-export async function isPhoneUnique(telefono, currentUid) {
-  const q = query(
-    collection(db, 'usuarios'),
-    where('telefono', '==', telefono.trim())
+export async function isPhoneUnique(phone, currentUid) {
+  const snap = await getDocs(
+    query(collection(db, USER_COLLECTION), where('phone', '==', phone.trim()))
   );
-  const snap = await getDocs(q);
-  return snap.empty || snap.docs.every((d) => d.id === currentUid);
+  return snap.docs.length === 0 || snap.docs.every((d) => d.id === currentUid);
 }
 
 export async function searchUsersByEmail(email, maxResults = 5) {
   const term = email.trim().toLowerCase();
   if (!term) return [];
-
-  try {
-    const results = await apiClient.get(`/search-users?query=${encodeURIComponent(term)}&limit=${maxResults}&type=email`);
-    return results;
-  } catch (error) {
-    throw error;
-  }
+  return apiClient.get(`/search-users?query=${encodeURIComponent(term)}&limit=${maxResults}&type=email`);
 }

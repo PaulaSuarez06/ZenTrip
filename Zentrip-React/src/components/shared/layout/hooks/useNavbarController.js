@@ -3,22 +3,40 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../../config/routes";
 import { useProfileAvatar } from "../../../../hooks/useProfileAvatar";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNotifications } from "../../../../context/NotificationContext";
 
 export function useNavbarController() {
   const navigate = useNavigate();
   const { avatarSrc, initials } = useProfileAvatar();
   const { profile, logout } = useAuth();
+  const { notificationCount } = useNotifications();
   const avatarColor = profile?.avatarColor || "";
 
-  const notificationCount = 5;
   const messageCount = 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+
+  const toggleNotificationPanel = () => {
+    setNotificationPanelOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setMenuOpen(false);
+        setProfileMenuOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const closeNotificationPanel = () => setNotificationPanelOpen(false);
 
   const toggleProfileMenu = () => {
     setProfileMenuOpen((prev) => {
       const next = !prev;
-      if (next) setMenuOpen(false);
+      if (next) {
+        setMenuOpen(false);
+        setNotificationPanelOpen(false);
+      }
       return next;
     });
   };
@@ -26,10 +44,15 @@ export function useNavbarController() {
   const toggleMobileMenu = () => {
     setMenuOpen((prev) => {
       const next = !prev;
-      if (next) setProfileMenuOpen(false);
+      if (next) {
+        setProfileMenuOpen(false);
+        setNotificationPanelOpen(false);
+      }
       return next;
     });
   };
+
+  const closeMobileMenu = () => setMenuOpen(false);
 
   const closeProfileMenu = () => {
     setProfileMenuOpen(false);
@@ -67,9 +90,13 @@ export function useNavbarController() {
     messageCount,
     menuOpen,
     profileMenuOpen,
+    notificationPanelOpen,
     toggleProfileMenu,
     toggleMobileMenu,
+    closeMobileMenu,
     closeProfileMenu,
+    toggleNotificationPanel,
+    closeNotificationPanel,
     handleGoToEditProfile,
     handleGoHome,
     handleGoToMyTrips,

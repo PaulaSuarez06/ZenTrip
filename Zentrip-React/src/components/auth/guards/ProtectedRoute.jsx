@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import SplashScreen from '../../shared/SplashScreen';
 
 function isProfileComplete(profile) {
-  return profile?.nombre?.trim() && profile?.apellidos?.trim() && profile?.username?.trim();
+  return profile?.firstName?.trim() && profile?.lastName?.trim() && profile?.username?.trim();
 }
 
 export default function ProtectedRoute() {

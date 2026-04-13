@@ -3,55 +3,50 @@ import { db, auth } from '../config/firebaseConfig';
 import { apiClient } from './apiClient';
 
 export async function createTrip(uid, form) {
-  const { miembros, ...tripData } = form;
+  const { members, ...tripData } = form;
   const tripPayload = {
     uid,
-    name: tripData.nombre || '',
-    origin: tripData.origen || '',
-    destination: tripData.destino || '',
-    startDate: tripData.fechaInicio || '',
-    endDate: tripData.fechaFin || '',
-    currency: tripData.divisa || '',
-    budget: tripData.presupuesto || '',
-    hasPet: Boolean(tripData.conMascota),
+    name: tripData.name || '',
+    origin: tripData.origin || '',
+    destination: tripData.destination || '',
+    startDate: tripData.startDate || '',
+    endDate: tripData.endDate || '',
+    currency: tripData.currency || '',
+    budget: tripData.budget || '',
+    hasPet: Boolean(tripData.hasPet),
     createdAt: serverTimestamp(),
   };
 
-  const ref = collection(db, 'viajes');
-  const docRef = await addDoc(ref, tripPayload);
+  const docRef = await addDoc(collection(db, 'trips'), tripPayload);
 
-  // El creador debe aparecer siempre en la subcoleccion de miembros.
-  const memberRef = doc(db, 'viajes', docRef.id, 'miembros', uid);
+  const memberRef = doc(db, 'trips', docRef.id, 'members', uid);
   try {
-    const userEmail = auth.currentUser?.email || '';
     await setDoc(memberRef, {
       uid,
-      email: userEmail,
-      role: 'coordinador',
-      invitationStatus: 'aceptada',
+      email: auth.currentUser?.email || '',
+      role: 'coordinator',
+      invitationStatus: 'accepted',
       acceptedAt: serverTimestamp(),
     }, { merge: true });
   } catch (error) {
-    // No bloqueamos la creacion del viaje por reglas de Firestore en miembros.
-    console.warn('No se pudo guardar el creador en miembros (revisar reglas de Firestore):', error);
+    console.warn('No se pudo guardar el creador en members:', error);
   }
 
-  // Guardar los miembros invitados con sus datos para poder recuperarlos como recientes.
-  for (const member of (miembros || [])) {
+  for (const member of (members || [])) {
     if (!member?.uid) continue;
-    const invitedRef = doc(db, 'viajes', docRef.id, 'miembros', member.uid);
+    const invitedRef = doc(db, 'trips', docRef.id, 'members', member.uid);
     try {
       await setDoc(invitedRef, {
         uid: member.uid,
         email: member.email || '',
-        nombre: member.nombre || '',
+        name: member.name || '',
         username: member.username || '',
         avatar: member.avatar || '',
-        role: 'miembro',
-        invitationStatus: member.estadoInvitacion || 'pendiente',
+        role: 'member',
+        invitationStatus: member.invitationStatus || 'pending',
       }, { merge: true });
     } catch {
-      // No bloqueamos la creacion del viaje si falla algún miembro.
+      // No bloquear la creación del viaje si falla la escritura de un miembro.
     }
   }
 
@@ -59,40 +54,34 @@ export async function createTrip(uid, form) {
 }
 
 export async function saveTripDraft(uid, form) {
-  const { miembros, ...tripData } = form;
+  const { members, ...tripData } = form;
   const payload = {
     uid,
     isDraft: true,
-    name: tripData.nombre || '',
-    origin: tripData.origen || '',
-    destination: tripData.destino || '',
-    startDate: tripData.fechaInicio || '',
-    endDate: tripData.fechaFin || '',
-    currency: tripData.divisa || '',
-    budget: tripData.presupuesto || '',
-    hasPet: Boolean(tripData.conMascota),
-    miembros: miembros || [],
+    name: tripData.name || '',
+    origin: tripData.origin || '',
+    destination: tripData.destination || '',
+    startDate: tripData.startDate || '',
+    endDate: tripData.endDate || '',
+    currency: tripData.currency || '',
+    budget: tripData.budget || '',
+    hasPet: Boolean(tripData.hasPet),
+    members: members || [],
     formSnapshot: form,
     createdAt: serverTimestamp(),
   };
-  const docRef = await addDoc(collection(db, 'viajes'), payload);
+  const docRef = await addDoc(collection(db, 'trips'), payload);
   return docRef.id;
 }
 
 export async function deleteTrip(tripId) {
-  await deleteDoc(doc(db, 'viajes', tripId));
+  await deleteDoc(doc(db, 'trips', tripId));
 }
 
 export async function getUserTrips(uid) {
-  const q = query(collection(db, 'viajes'), where('uid', '==', uid));
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocs(query(collection(db, 'trips'), where('uid', '==', uid)));
   const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-  // Ordenar por fecha de creación descendente en el cliente para evitar índice compuesto en Firestore
-  return docs.sort((a, b) => {
-    const aTs = a.createdAt?.seconds ?? 0;
-    const bTs = b.createdAt?.seconds ?? 0;
-    return bTs - aTs;
-  });
+  return docs.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
 
 export async function sendTripInvitations(payload) {

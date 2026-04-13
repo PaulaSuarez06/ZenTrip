@@ -18,6 +18,10 @@ import {
 
 // Espera mínima antes de volver a reenviar verificación (1 minuto y medio)
 const WAIT_TO_RESEND_SECONDS = 90;
+const VERIFICATION_MAX_RETRIES = 4;
+const VERIFICATION_RETRY_DELAY_MS = 700;
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function decodeJwtPayload(token) {
   try {
@@ -194,13 +198,32 @@ export function useLoginController(navigate) {
 
       // Intentamos autenticación con Firebase
       const user = await signInWithEmail(normalizedEmail, normalizedPassword);
-      const refreshedUser = await refreshAuthenticatedUser(user);
+
+      const resolveVerificationState = async (currentUser) => {
+        let latestUser = currentUser;
+
+        for (let attempt = 0; attempt < VERIFICATION_MAX_RETRIES; attempt += 1) {
+          latestUser = await refreshAuthenticatedUser(latestUser);
+          if (latestUser.emailVerified) {
+            return latestUser;
+          }
+
+          if (attempt < VERIFICATION_MAX_RETRIES - 1) {
+            await delay(VERIFICATION_RETRY_DELAY_MS);
+          }
+        }
+
+        return latestUser;
+      };
+
+      const refreshedUser = await resolveVerificationState(user);
 
       if (!refreshedUser.emailVerified) {
         // Si no verificó correo, mostramos aviso y habilitamos el botón de reenviar
         setError(loginFeedbackMessages.emailNotVerified);
         setCanResendVerification(true);
         await signOutUser();
+        localStorage.removeItem('firebaseIdToken');
         return;
       }
 

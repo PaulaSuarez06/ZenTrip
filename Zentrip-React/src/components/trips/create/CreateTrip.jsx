@@ -12,24 +12,22 @@ export default function CreateTrip() {
     fieldErrors,
     isCreatingTrip,
     tripCreationLocked,
-    enlaceInvitacion,
+    inviteLink,
     handleChange,
-    handleSiguiente,
-    handleAtras,
+    handleNext,
+    handleBack,
     handleGoToStep,
-    handleCancelarViaje,
-    handleGuardarBorrador,
-    handleAgregarMiembro,
-    handleAgregarInvitadoEmail,
-    handleEliminarInvitado,
-    handleCrearViaje,
+    handleCancel,
+    handleSaveDraft,
+    handleAddMember,
+    handleAddEmailGuest,
+    handleRemoveMember,
+    handleCreateTrip,
   } = useCreateTripController();
-
-  const maxWidth = 'max-w-4xl';
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className={`${maxWidth} mx-auto`}>
+      <div className="max-w-4xl mx-auto">
         <h1 className="title-h1-mobile md:title-h1-desktop text-secondary-5 mb-6">
           Crear <span className="text-primary-3">nuevo</span> viaje
         </h1>
@@ -41,31 +39,31 @@ export default function CreateTrip() {
             form={form}
             fieldErrors={fieldErrors}
             onChange={handleChange}
-            onSiguiente={handleSiguiente}
-            onCancelar={handleAtras}
+            onNext={handleNext}
+            onCancel={handleBack}
           />
         )}
 
         {step === 1 && (
           <InvitationsForm
             recientes={recientes}
-            participantes={form.miembros}
-            enlaceInvitacion={enlaceInvitacion}
-            onAtras={handleAtras}
-            onSiguiente={handleSiguiente}
-            onAgregarMiembro={handleAgregarMiembro}
-            onAgregarInvitadoEmail={handleAgregarInvitadoEmail}
-            onEliminarParticipante={handleEliminarInvitado}
+            participantes={form.members}
+            enlaceInvitacion={inviteLink}
+            onAtras={handleBack}
+            onSiguiente={handleNext}
+            onAgregarMiembro={handleAddMember}
+            onAgregarInvitadoEmail={handleAddEmailGuest}
+            onEliminarParticipante={handleRemoveMember}
           />
         )}
 
         {step === 2 && (
           <SummaryForm
             form={form}
-            onAtras={handleAtras}
-            onCrearViaje={handleCrearViaje}
-            onCancelar={handleCancelarViaje}
-            onGuardarBorrador={handleGuardarBorrador}
+            onBack={handleBack}
+            onCreateTrip={handleCreateTrip}
+            onCancel={handleCancel}
+            onSaveDraft={handleSaveDraft}
             isCreatingTrip={isCreatingTrip}
             tripCreationLocked={tripCreationLocked}
           />

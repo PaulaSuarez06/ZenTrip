@@ -27,10 +27,10 @@ export default function TabMiembros({ recientes = [], participantes = [], onAgre
     return recientes.filter((item) => {
       const uid = String(item?.uid || '').trim();
       if (!uid || seen.has(uid)) return false;
-      const nombre = String(item?.nombre || '').trim();
-      const apellidos = String(item?.apellidos || '').trim();
+      const firstName = String(item?.firstName || item?.name || '').trim();
+      const lastName = String(item?.lastName || '').trim();
       const username = String(item?.username || '').trim();
-      if (!nombre && !apellidos && !username) return false;
+      if (!firstName && !lastName && !username) return false;
       seen.add(uid);
       return true;
     });
@@ -51,10 +51,10 @@ export default function TabMiembros({ recientes = [], participantes = [], onAgre
       const users = await searchUsersByUsername(term);
       const filtered = users.filter((item) => {
         const memberEmail = (item.email || '').trim().toLowerCase();
-        const nombre = String(item?.nombre || '').trim();
-        const apellidos = String(item?.apellidos || '').trim();
+        const firstName = String(item?.firstName || item?.name || '').trim();
+        const lastName = String(item?.lastName || '').trim();
         const username = String(item?.username || '').trim();
-        const perfilCompleto = nombre || apellidos || username;
+        const perfilCompleto = firstName || lastName || username;
 
         return (
           item.uid !== currentUserUid
@@ -121,13 +121,13 @@ export default function TabMiembros({ recientes = [], participantes = [], onAgre
                 <div className="flex items-center gap-3 min-w-0">
                   <UserAvatar
                     src={member.avatar}
-                    fullName={member.nombre || member.email}
+                    fullName={member.name || member.firstName || member.email}
                     sizeClass="w-10 h-10"
                     backgroundClass="bg-secondary-1"
                   />
 
                   <div className="min-w-0">
-                    <p className="body-2-semibold text-neutral-6 truncate">{member.nombre}</p>
+                    <p className="body-2-semibold text-neutral-6 truncate">{member.name || member.firstName}</p>
                     <p className="body-3 text-neutral-4 truncate">
                       {isEmailSearch ? (member.email || `@${member.username}`) : `@${member.username}`}
                     </p>

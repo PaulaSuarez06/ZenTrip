@@ -36,7 +36,7 @@ export function useRecentMembers(user) {
     const load = async () => {
       try {
         const tripsQuery = query(
-          collection(db, 'viajes'),
+          collection(db, 'trips'),
           where('uid', '==', user.uid),
           limit(20),
         );
@@ -44,20 +44,22 @@ export function useRecentMembers(user) {
         const membersFromTrips = [];
 
         for (const tripDoc of tripsSnapshot.docs) {
-          const membersSnapshot = await getDocs(collection(db, 'viajes', tripDoc.id, 'miembros'));
+          const membersSnapshot = await getDocs(collection(db, 'trips', tripDoc.id, 'members'));
           membersSnapshot.forEach((memberDoc) => {
             const data = memberDoc.data() || {};
             const memberUid = String(data.uid || '').trim();
             const memberEmail = String(data.email || '').trim().toLowerCase();
             if (!memberUid || memberUid === user.uid) return;
+            const fullName = String(data.name || '').trim();
+            const nameParts = fullName.split(/\s+/).filter(Boolean);
             membersFromTrips.push({
               id: memberUid,
               uid: memberUid,
-              nombre: String(data.nombre || '').trim(),
-              apellidos: String(data.apellidos || '').trim(),
+              firstName: nameParts[0] || '',
+              lastName: nameParts.slice(1).join(' ') || '',
               email: memberEmail,
               username: String(data.username || '').trim(),
-              avatar: data.avatar || data.fotoPerfil || '',
+              avatar: data.avatar || data.profilePhoto || '',
             });
           });
         }
@@ -74,12 +76,12 @@ export function useRecentMembers(user) {
               const profile = await getUserByUid(recentMember.uid);
               if (!profile) return recentMember;
 
-              const fullName = String(profile.nombre || '').trim();
+              const fullName = String(profile.firstName ? `${profile.firstName} ${profile.lastName || ''}` : profile.name || '').trim();
               const parts = fullName.split(/\s+/).filter(Boolean);
               return {
                 ...recentMember,
-                nombre: parts[0] || recentMember.nombre,
-                apellidos: parts.slice(1).join(' ') || recentMember.apellidos,
+                firstName: parts[0] || recentMember.firstName,
+                lastName: parts.slice(1).join(' ') || recentMember.lastName,
                 username: profile.username || recentMember.username,
                 avatar: profile.avatar || recentMember.avatar,
               };
@@ -91,7 +93,7 @@ export function useRecentMembers(user) {
 
         if (active) setRecientes(normalizeRecentMembers(enriched, user.uid));
       } catch (error) {
-        console.warn('No se pudieron cargar miembros recientes desde viajes anteriores:', error);
+        console.warn('No se pudieron cargar miembros recientes:', error);
       }
     };
 
@@ -114,8 +116,8 @@ export function useRecentMembers(user) {
       {
         id: member.uid,
         uid: member.uid,
-        nombre: String(member.nombre || '').trim(),
-        apellidos: String(member.apellidos || '').trim(),
+        firstName: String(member.firstName || member.name || '').trim(),
+        lastName: String(member.lastName || '').trim(),
         email: String(member.email || '').trim().toLowerCase(),
         username: String(member.username || '').trim(),
         avatar: member.avatar || '',

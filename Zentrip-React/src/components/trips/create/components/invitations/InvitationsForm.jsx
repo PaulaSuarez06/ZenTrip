@@ -21,7 +21,7 @@ function IconLink() {
 }
 
 const TABS = [
-  { id: 'miembros', label: 'Miembros', icon: <IconPeople /> },
+  { id: 'members', label: 'Miembros', icon: <IconPeople /> },
   { id: 'enlace', label: 'Enlace / Email', icon: <IconLink /> },
 ];
 
@@ -35,7 +35,7 @@ export default function InvitacionesForm({
   onAgregarInvitadoEmail,
   onEliminarParticipante,
 }) {
-  const [activeTab, setActiveTab] = useState('miembros');
+  const [activeTab, setActiveTab] = useState('members');
 
   return (
     <div>
@@ -63,7 +63,7 @@ export default function InvitacionesForm({
             ))}
           </div>
 
-          {activeTab === 'miembros' ? (
+          {activeTab === 'members' ? (
             <TabMembers
               recientes={recientes}
               participantes={participantes}

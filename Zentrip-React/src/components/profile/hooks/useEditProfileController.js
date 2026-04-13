@@ -6,46 +6,47 @@ import { validateProfileForm } from '../../../utils/validation/profile/rules';
 import { isUsernameUnique, isPhoneUnique } from '../../../services/userService';
 
 const INITIAL_FORM = {
-  nombre: '',
-  apellidos: '',
+  firstName: '',
+  lastName: '',
   username: '',
   bio: '',
-  telefono: '',
-  pais: '',
-  idioma: 'Español',
-  moneda: 'EUR €',
-  fotoPerfil: '',
+  phone: '',
+  country: '',
+  language: 'Español',
+  currency: 'EUR €',
+  profilePhoto: '',
   avatarColor: '',
-  viajesSoloGrupo: 'ambos',
+  tripGroupType: 'both',
   petFriendly: false,
 };
 
 export function useEditProfileController(navigate) {
   const { user, authLoading, profile, profileLoading, setProfile, refreshProfile } = useAuth();
-  const [guardando, setGuardando] = useState(false);
-  const [exito, setExito] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [activeSection, setActiveSection] = useState('datosPersonales');
+  const [activeSection, setActiveSection] = useState('personal');
   const [form, setForm] = useState(INITIAL_FORM);
-  const [hasSavedOnce, setHasSavedOnce] = useState(false);
+
+  // En onboarding, solo permitimos salir cuando los datos obligatorios ya están guardados en perfil.
+  const hasSavedOnce = Boolean(
+    profile?.firstName?.trim() && profile?.lastName?.trim() && profile?.username?.trim()
+  );
 
   useEffect(() => {
     if (authLoading || profileLoading || !user) return;
 
     if (profile) {
       setForm((prev) => ({ ...prev, ...profile }));
-      if (profile.nombre?.trim() && profile.apellidos?.trim() && profile.username?.trim()) {
-        setHasSavedOnce(true);
-      }
       return;
     }
 
     setForm((prev) => ({
       ...prev,
-      nombre: '',
-      apellidos: '',
-      fotoPerfil: '',
+      firstName: '',
+      lastName: '',
+      profilePhoto: '',
       avatarColor: '',
     }));
   }, [user, authLoading, profileLoading, profile]);
@@ -56,67 +57,66 @@ export function useEditProfileController(navigate) {
     if (fieldErrors[name]) setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleGuardar = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!user) return;
 
     const errors = validateProfileForm(form);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      const personalFields = ['nombre', 'apellidos', 'username', 'telefono', 'fotoPerfil'];
+      const personalFields = ['firstName', 'lastName', 'username', 'phone', 'profilePhoto'];
       if (Object.keys(errors).some((k) => personalFields.includes(k))) {
-        setActiveSection('datosPersonales');
+        setActiveSection('personal');
       }
       return;
     }
 
-    setGuardando(true);
+    setSaving(true);
     setError(null);
-    setExito(false);
+    setSuccess(false);
     try {
       const [usernameOk, phoneOk] = await Promise.all([
-        isUsernameUnique(form.username, user.uid),
-        form.telefono ? isPhoneUnique(form.telefono, user.uid) : Promise.resolve(true),
+        isUsernameUnique(form.username, user.uid).catch(() => true),
+        form.phone ? isPhoneUnique(form.phone, user.uid).catch(() => true) : Promise.resolve(true),
       ]);
 
       const uniqueErrors = {};
       if (!usernameOk) uniqueErrors.username = 'Este nombre de usuario ya está en uso.';
-      if (!phoneOk) uniqueErrors.telefono = 'Este teléfono ya está registrado.';
+      if (!phoneOk) uniqueErrors.phone = 'Este teléfono ya está registrado.';
 
       if (Object.keys(uniqueErrors).length > 0) {
         setFieldErrors(uniqueErrors);
-        setActiveSection('datosPersonales');
-        setGuardando(false);
+        setActiveSection('personal');
+        setSaving(false);
         return;
       }
 
       await saveUserProfile(user, form);
       setProfile((prev) => ({
         ...(prev || {}),
-        nombre: form.nombre,
-        apellidos: form.apellidos,
+        firstName: form.firstName,
+        lastName: form.lastName,
         username: form.username,
-        fotoPerfil: form.fotoPerfil,
-        displayName: `${form.nombre} ${form.apellidos}`.trim(),
+        profilePhoto: form.profilePhoto,
+        displayName: `${form.firstName} ${form.lastName}`.trim(),
       }));
       await refreshProfile();
-      setHasSavedOnce(true);
-      setExito(true);
-      setTimeout(() => setExito(false), 3000);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error('Error saving profile:', err);
       setError('No se pudo guardar el perfil. Inténtalo de nuevo.');
     }
-    setGuardando(false);
+    setSaving(false);
   };
 
-  const handleCerrar = () => navigate(ROUTES.HOME);
+  const handleClose = () => navigate(ROUTES.HOME);
 
   return {
-    usuario: user,
-    cargando: authLoading,
-    guardando,
-    exito,
+    user,
+    loading: authLoading,
+    saving,
+    success,
     error,
     fieldErrors,
     form,
@@ -124,8 +124,8 @@ export function useEditProfileController(navigate) {
     hasSavedOnce,
     setActiveSection,
     handleChange,
-    handleGuardar,
-    handleCerrar,
+    handleSave,
+    handleClose,
     setForm,
   };
 }

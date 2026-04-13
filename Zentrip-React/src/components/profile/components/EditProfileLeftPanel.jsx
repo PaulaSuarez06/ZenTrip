@@ -2,15 +2,15 @@ import { User, Clock, Lock, Paintbrush } from 'lucide-react';
 import GoogleIcon from '../../ui/GoogleIcon';
 
 const NAV_ITEMS = [
-  { key: 'datosPersonales', label: 'Datos personales', Icon: User },
-  { key: 'preferencias', label: 'Preferencias', Icon: Clock },
-  { key: 'seguridad', label: 'Seguridad', Icon: Lock },
+  { key: 'personal', label: 'Datos personales', Icon: User },
+  { key: 'preferences', label: 'Preferencias', Icon: Clock },
+  { key: 'security', label: 'Seguridad', Icon: Lock },
 ];
 
 const AVATAR_COLORS = ['#4f6f8f', '#7ea3c9', '#5f8d7a', '#d9a67a', '#c48aa6'];
 
 export default function EditProfileLeftPanel({ heroImg, logoImg, usuario, form, setForm, activeSection, setActiveSection }) {
-  const initials = `${form.nombre?.[0] || ''}${form.apellidos?.[0] || ''}`.toUpperCase() || '?';
+  const initials = `${form.firstName?.[0] || ''}${form.lastName?.[0] || ''}`.toUpperCase() || '?';
   const avatarBackground = form.avatarColor || AVATAR_COLORS[0];
 
   const handleAvatarColorChange = () => {
@@ -54,10 +54,10 @@ export default function EditProfileLeftPanel({ heroImg, logoImg, usuario, form, 
             className="relative h-11 w-11 rounded-full bg-secondary-5 flex items-center justify-center overflow-hidden"
             style={avatarBackground ? { backgroundColor: avatarBackground } : undefined}
           >
-            {form.fotoPerfil ? (
+            {form.profilePhoto ? (
               <>
                 <img
-                  src={form.fotoPerfil}
+                  src={form.profilePhoto}
                   alt="avatar"
                   className="h-full w-full rounded-full object-cover"
                   onError={(e) => { e.target.style.display = 'none'; }}
@@ -86,7 +86,7 @@ export default function EditProfileLeftPanel({ heroImg, logoImg, usuario, form, 
         </div>
         <div className="min-w-0">
           <p className="body-bold text-white truncate">
-            {form.nombre || 'Tu nombre'} {form.apellidos}
+            {form.firstName || 'Tu nombre'} {form.lastName}
           </p>
           <p className="body-3 text-white/60 truncate">{usuario?.email}</p>
         </div>
