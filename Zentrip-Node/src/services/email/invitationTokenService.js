@@ -52,11 +52,11 @@ async function upsertTripMember({ tripId, member }) {
   const db = admin.firestore();
   const normalizedUid = String(member?.uid || '').trim();
   const normalizedEmail = normalizeEmail(member?.email);
-  const memberRole = String(member?.role || member?.rol || 'miembro').trim();
-  const invitationStatus = String(member?.invitationStatus || member?.estadoInvitacion || 'pendiente').trim();
+  const memberRole = String(member?.role || 'member').trim();
+  const invitationStatus = String(member?.invitationStatus || 'pending').trim();
   if (!normalizedUid && !normalizedEmail) return;
 
-  const membersRef = db.collection('viajes').doc(tripId).collection('miembros');
+  const membersRef = db.collection('trips').doc(tripId).collection('members');
 
   const payload = {
     email: normalizedEmail,
@@ -65,11 +65,11 @@ async function upsertTripMember({ tripId, member }) {
     invitationStatus,
   };
 
-  if (invitationStatus === 'pendiente' || invitationStatus === 'pendiente_correo') {
+  if (invitationStatus === 'pending' || invitationStatus === 'pending_email') {
     payload.invitedAt = admin.firestore.FieldValue.serverTimestamp();
   }
 
-  if (invitationStatus === 'aceptada') {
+  if (invitationStatus === 'accepted') {
     payload.acceptedAt = admin.firestore.FieldValue.serverTimestamp();
   }
 
@@ -105,7 +105,7 @@ async function upsertTripMember({ tripId, member }) {
 
 async function applyAcceptanceToTrip({ tripId, invitedEmail, userId }) {
   const db = admin.firestore();
-  const tripRef = db.collection('viajes').doc(tripId);
+  const tripRef = db.collection('trips').doc(tripId);
   const tripDoc = await tripRef.get();
 
   if (!tripDoc.exists) {
@@ -117,8 +117,8 @@ async function applyAcceptanceToTrip({ tripId, invitedEmail, userId }) {
     member: {
       email: normalizeEmail(invitedEmail),
       uid: userId,
-      rol: 'miembro',
-      estadoInvitacion: 'aceptada',
+      role: 'member',
+      invitationStatus: 'accepted',
     },
   });
 }
@@ -330,7 +330,7 @@ async function claimPendingInvitationsForUser(userId, userEmail) {
 
 async function getOrCreateTripPublicInvitation({ tripId, creatorId, forceRegenerate = false, preferredToken = '' }) {
   const db = admin.firestore();
-  const tripRef = db.collection('viajes').doc(tripId);
+  const tripRef = db.collection('trips').doc(tripId);
   const tripDoc = await tripRef.get();
 
   if (!tripDoc.exists) {
@@ -497,13 +497,13 @@ async function acceptTripPublicInvitation(token, userId, userEmail) {
   // Comprobar si el usuario ya es miembro activo del viaje
   const db = admin.firestore();
   const memberSnap = await db
-    .collection('viajes')
+    .collection('trips')
     .doc(invitation.tripId)
-    .collection('miembros')
+    .collection('members')
     .doc(userId)
     .get();
 
-  if (memberSnap.exists && memberSnap.data()?.invitationStatus === 'aceptada') {
+  if (memberSnap.exists && memberSnap.data()?.invitationStatus === 'accepted') {
     return {
       tripId: invitation.tripId,
       publicInvitationId: invitation.publicInvitationId,
@@ -523,10 +523,60 @@ async function acceptTripPublicInvitation(token, userId, userEmail) {
   };
 }
 
+// Rechaza una invitación por ID (flujo de notificaciones, usuario autenticado).
+async function rejectInvitation(invitationId, userId, userEmail) {
+  const db = admin.firestore();
+  const docRef = db.collection('invitations').doc(String(invitationId));
+  const doc = await docRef.get();
+
+  if (!doc.exists) throw new Error('Invitación no encontrada');
+
+  const data = doc.data();
+  const normalizedInvitationEmail = normalizeEmail(data.email);
+  const normalizedUserEmail = normalizeEmail(userEmail);
+
+  if (normalizedInvitationEmail !== normalizedUserEmail) {
+    throw new Error('No tienes permiso para rechazar esta invitación');
+  }
+
+  if (data.status === 'rejected') {
+    return { tripId: data.tripId, invitationId, alreadyRejected: true };
+  }
+
+  if (data.status !== 'pending') {
+    throw new Error('La invitación no se puede rechazar en su estado actual');
+  }
+
+  await docRef.update({
+    status: 'rejected',
+    rejectedAt: admin.firestore.FieldValue.serverTimestamp(),
+    rejectedById: userId,
+    rejectedByEmail: normalizedUserEmail,
+  });
+
+  // Marcar al miembro como rechazado en la subcolección del viaje
+  const memberRef = db
+    .collection('trips')
+    .doc(data.tripId)
+    .collection('members')
+    .doc(normalizedInvitationEmail);
+
+  const memberSnap = await memberRef.get();
+  if (memberSnap.exists) {
+    const mData = memberSnap.data();
+    if (mData?.invitationStatus === 'pending' || mData?.invitationStatus === 'pending_email') {
+      await memberRef.update({ invitationStatus: 'rejected' });
+    }
+  }
+
+  return { tripId: data.tripId, invitationId };
+}
+
 module.exports = {
   createInvitation,
   verifyToken,
   acceptInvitation,
+  rejectInvitation,
   claimPendingInvitationsForUser,
   getOrCreateTripPublicInvitation,
   verifyTripPublicToken,

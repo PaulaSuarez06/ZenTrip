@@ -68,11 +68,11 @@ function IconTrash() {
 
 export default function TripCard({ trip, isDraft, memberCount, onClick, onDelete }) {
   const [confirming, setConfirming] = useState(false);
-  const name       = trip.name   || trip.nombre    || 'Viaje sin nombre';
-  const origin     = trip.origin  || trip.origen    || '';
-  const destination= trip.destination || trip.destino || '';
-  const startDate  = trip.startDate   || trip.fechaInicio || '';
-  const endDate    = trip.endDate     || trip.fechaFin    || '';
+  const name        = trip.name        || 'Viaje sin nombre';
+  const origin      = trip.origin      || '';
+  const destination = trip.destination || '';
+  const startDate   = trip.startDate   || '';
+  const endDate     = trip.endDate     || '';
   const status     = isDraft ? 'borrador' : (trip.status || 'proximo');
 
   const gradient   = getGradient(destination || name);

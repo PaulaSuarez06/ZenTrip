@@ -21,7 +21,7 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
   const registeredName =
-    profile?.nombre ||
+    profile?.firstName ||
     profile?.displayName ||
     user?.displayName ||
     user?.email?.split("@")[0] ||

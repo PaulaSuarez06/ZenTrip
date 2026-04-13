@@ -5,6 +5,7 @@ const {
 	sendTripInvitations,
 	verifyInvitationToken,
 	acceptInvitationHandler,
+	rejectInvitationHandler,
 	claimMyInvitationsHandler,
 	createOrGetTripPublicLinkHandler,
 	getTripPublicLinkPreviewHandler,
@@ -16,6 +17,7 @@ const {
 router.post('/send', verifyFirebaseToken, sendTripInvitations);
 router.get('/verify', verifyInvitationToken);
 router.post('/accept', verifyFirebaseToken, acceptInvitationHandler);
+router.post('/reject', verifyFirebaseToken, rejectInvitationHandler);
 router.post('/claim-my-invitations', verifyFirebaseToken, claimMyInvitationsHandler);
 router.get('/public-link/preview', verifyFirebaseToken, getTripPublicLinkPreviewHandler);
 router.post('/public-link', verifyFirebaseToken, createOrGetTripPublicLinkHandler);

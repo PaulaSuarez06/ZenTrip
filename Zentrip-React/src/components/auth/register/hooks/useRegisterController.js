@@ -12,7 +12,12 @@ import {
   validateConfirmPassword,
 } from '../../../../utils/validation/register/rules';
 import { registerFeedbackMessages } from '../../../../utils/validation/register/messages';
-import { saveUserToken, signInWithGoogle, verifyRecaptchaToken } from '../../login/services/loginFirebaseService';
+import {
+  saveUserToken,
+  signInWithGoogle,
+  signOutUser,
+  verifyRecaptchaToken,
+} from '../../login/services/loginFirebaseService';
 
 function decodeJwtPayload(token) {
   try {
@@ -183,6 +188,9 @@ export function useRegisterController(navigate) {
       } catch (claimError) {
         console.warn('No se pudieron reclamar invitaciones pendientes por correo:', claimError);
       }
+
+      await signOutUser();
+      localStorage.removeItem('firebaseIdToken');
 
       setSuccess(true);
       navigate(ROUTES.AUTH.VERIFY_EMAIL, { state: { email: user.email || form.email } });

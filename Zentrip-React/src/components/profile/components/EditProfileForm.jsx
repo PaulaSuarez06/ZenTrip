@@ -7,20 +7,20 @@ import Button from '../../ui/Button';
 import AlertMessage from '../../ui/AlertMessage';
 import UserAvatar from '../../ui/UserAvatar';
 
-const IDIOMAS = ISO6391.getAllNativeNames().sort();
-const MONEDAS = ['EUR €', 'USD $', 'GBP £', 'JPY ¥', 'MXN $'];
-const PAISES = getNames().sort();
+const LANGUAGES = ISO6391.getAllNativeNames().sort();
+const CURRENCIES = ['EUR €', 'USD $', 'GBP £', 'JPY ¥', 'MXN $'];
+const COUNTRIES = getNames().sort();
 
 const PERSONAL_FIELDS = [
-  { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Tu nombre', required: true },
-  { name: 'apellidos', label: 'Apellidos', type: 'text', placeholder: 'Tus apellidos', required: true },
+  { name: 'firstName', label: 'Nombre', type: 'text', placeholder: 'Tu nombre', required: true },
+  { name: 'lastName', label: 'Apellidos', type: 'text', placeholder: 'Tus apellidos', required: true },
   { name: 'username', label: 'Nombre de usuario', type: 'text', placeholder: 'usuario123', required: true },
-  { name: 'telefono', label: 'Teléfono', type: 'tel', placeholder: '+34 600 000 000' },
+  { name: 'phone', label: 'Teléfono', type: 'tel', placeholder: '+34 600 000 000' },
 ];
 
 const PREFERENCE_SELECTS = [
-  { name: 'idioma', label: 'Idioma', options: IDIOMAS },
-  { name: 'moneda', label: 'Moneda preferida', options: MONEDAS },
+  { name: 'language', label: 'Idioma', options: LANGUAGES },
+  { name: 'currency', label: 'Moneda preferida', options: CURRENCIES },
 ];
 
 const SELECT_CLASS =
@@ -95,8 +95,8 @@ function AvatarUpload({ value, fullName, onUploaded }) {
 }
 
 const REQUIRED_CHECKLIST = [
-  { name: 'nombre', label: 'Nombre' },
-  { name: 'apellidos', label: 'Apellidos' },
+  { name: 'firstName', label: 'Nombre' },
+  { name: 'lastName', label: 'Apellidos' },
   { name: 'username', label: 'Nombre de usuario' },
 ];
 
@@ -109,9 +109,9 @@ function PersonalSection({ form, fieldErrors, onChange, setForm }) {
 
       <div className="mt-2">
         <AvatarUpload
-          value={form.fotoPerfil}
-          fullName={`${form.nombre || ''} ${form.apellidos || ''}`}
-          onUploaded={(url) => setForm((p) => ({ ...p, fotoPerfil: url }))}
+          value={form.profilePhoto}
+          fullName={`${form.firstName || ''} ${form.lastName || ''}`}
+          onUploaded={(url) => setForm((p) => ({ ...p, profilePhoto: url }))}
         />
       </div>
 
@@ -146,9 +146,9 @@ function PersonalSection({ form, fieldErrors, onChange, setForm }) {
 
       <div>
         <label className={LABEL_CLASS}>País</label>
-        <select name="pais" value={form.pais} onChange={onChange} className={SELECT_CLASS}>
+        <select name="country" value={form.country} onChange={onChange} className={SELECT_CLASS}>
           <option value="" disabled>Seleccione país</option>
-          {PAISES.map((p) => <option key={p} value={p}>{p}</option>)}
+          {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
@@ -186,17 +186,17 @@ function PreferencesSection({ form, onChange, setForm }) {
       <div>
         <label className={LABEL_CLASS}>Tipo de viaje preferido</label>
         <div className="flex gap-2 mt-1">
-          {['solo', 'grupo', 'ambos'].map((op) => (
+          {['solo', 'group', 'both'].map((op) => (
             <button
               key={op}
               type="button"
-              onClick={() => setForm((p) => ({ ...p, viajesSoloGrupo: op }))}
+              onClick={() => setForm((p) => ({ ...p, tripGroupType: op }))}
               className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium capitalize transition cursor-pointer
-                ${form.viajesSoloGrupo === op
+                ${form.tripGroupType === op
                   ? 'border-orange-400 bg-orange-50 text-orange-600'
                   : 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50'}`}
             >
-              {op === 'solo' ? 'Solo' : op === 'grupo' ? 'En grupo' : 'Ambos'}
+              {op === 'solo' ? 'Solo' : op === 'group' ? 'En grupo' : 'Ambos'}
             </button>
           ))}
         </div>
@@ -241,16 +241,15 @@ export default function EditProfileForm({
   form,
   fieldErrors,
   error,
-  exito,
-  guardando,
+  success,
+  saving,
   isOnboarding,
   hasSavedOnce,
   onChange,
-  onGuardar,
-  onCerrar,
+  onSave,
+  onClose,
   setForm,
 }) {
-
   return (
     <div className="bg-white flex flex-col justify-center px-6 py-8 md:px-10 w-full">
       <h2 className="title-h2-desktop text-secondary-5">{isOnboarding ? 'Completa tu perfil' : 'Editar Perfil'}</h2>
@@ -258,31 +257,31 @@ export default function EditProfileForm({
         {isOnboarding ? 'Cuéntanos un poco sobre ti para empezar' : 'Actualiza tu información personal y preferencias de viaje'}
       </p>
 
-      <form className="space-y-4" onSubmit={onGuardar}>
-        {activeSection === 'datosPersonales' && (
+      <form className="space-y-4" onSubmit={onSave}>
+        {activeSection === 'personal' && (
           <PersonalSection form={form} fieldErrors={fieldErrors} onChange={onChange} setForm={setForm} />
         )}
-        {activeSection === 'preferencias' && (
+        {activeSection === 'preferences' && (
           <PreferencesSection form={form} onChange={onChange} setForm={setForm} />
         )}
-        {activeSection === 'seguridad' && <SecuritySection />}
+        {activeSection === 'security' && <SecuritySection />}
 
         <AlertMessage message={error} variant="error" />
-        <AlertMessage message={exito ? '¡Perfil guardado correctamente!' : null} variant="success" />
+        <AlertMessage message={success ? '¡Perfil guardado correctamente!' : null} variant="success" />
 
         <div className="flex gap-3 pt-2">
           <Button
             variant="ghost"
             type="button"
-            onClick={onCerrar}
+            onClick={onClose}
             disabled={isOnboarding && !hasSavedOnce}
             className="flex-1"
             title={isOnboarding && !hasSavedOnce ? 'Guarda tu perfil para continuar' : undefined}
           >
             {isOnboarding ? 'Ir al inicio' : 'Cerrar'}
           </Button>
-          <Button variant="orange" type="submit" disabled={guardando} className="flex-1">
-            {guardando ? 'Guardando...' : 'Guardar cambios'}
+          <Button variant="orange" type="submit" disabled={saving} className="flex-1">
+            {saving ? 'Guardando...' : 'Guardar cambios'}
           </Button>
         </div>
       </form>

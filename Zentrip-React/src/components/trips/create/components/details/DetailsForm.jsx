@@ -23,8 +23,8 @@ const selectStyles = {
   singleValue: (base) => ({ ...base, color: '#334155' }),
 };
 
-export function formatCurrency(amount, divisaCode) {
-  const divisa = DIVISAS.find((d) => d.code === divisaCode) ?? DIVISAS[0];
+export function formatCurrency(amount, currencyCode) {
+  const divisa = DIVISAS.find((d) => d.code === currencyCode) ?? DIVISAS[0];
   return currency(amount, {
     symbol: divisa.symbol,
     decimal: divisa.decimal,
@@ -33,76 +33,74 @@ export function formatCurrency(amount, divisaCode) {
   }).format();
 }
 
-const DIVISA_OPTIONS = DIVISAS.map((d) => ({ value: d.code, label: d.label }));
+const CURRENCY_OPTIONS = DIVISAS.map((d) => ({ value: d.code, label: d.label }));
 
 const labelClass = 'block text-slate-600 mb-1 body-bold';
 
-export default function DetallesForm({
+export default function DetailsForm({
   form,
   fieldErrors,
   onChange,
-  onSiguiente,
-  onCancelar,
+  onNext,
+  onCancel,
 }) {
   return (
-    <form onSubmit={onSiguiente} noValidate>
+    <form onSubmit={onNext} noValidate>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
         <h2 className="title-h3-desktop text-secondary-5 mb-5">Información básica</h2>
 
-        {/* Nombre | Destino / Origen */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Input
             variant="light"
             label="Nombre del viaje"
-            name="nombre"
+            name="name"
             placeholder="Ej. Roadtrip Costa Oeste"
-            value={form.nombre}
+            value={form.name}
             onChange={onChange}
-            error={fieldErrors.nombre}
+            error={fieldErrors.name}
             required
           />
           <div />
           <Input
             variant="light"
             label="Origen"
-            name="origen"
+            name="origin"
             placeholder="Ej. Madrid, España"
-            value={form.origen}
+            value={form.origin}
             onChange={onChange}
-            error={fieldErrors.origen}
+            error={fieldErrors.origin}
           />
           <Input
             variant="light"
             label="Destino"
-            name="destino"
+            name="destination"
             placeholder="Ej. Paris, Francia"
-            value={form.destino}
+            value={form.destination}
             onChange={onChange}
-            error={fieldErrors.destino}
+            error={fieldErrors.destination}
           />
         </div>
 
-        {/* Fecha inicio + Fecha fin | Divisa */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
               variant="light"
               label="Fecha inicio"
-              name="fechaInicio"
+              name="startDate"
               type="date"
-              value={form.fechaInicio}
+              value={form.startDate}
               onChange={onChange}
-              error={fieldErrors.fechaInicio}
+              error={fieldErrors.startDate}
             />
             <Input
               variant="light"
               label="Fecha fin"
-              name="fechaFin"
+              name="endDate"
               type="date"
-              value={form.fechaFin}
+              value={form.endDate}
               onChange={onChange}
-              error={fieldErrors.fechaFin}
-              min={form.fechaInicio || undefined}
+              error={fieldErrors.endDate}
+              min={form.startDate || undefined}
             />
           </div>
           <div>
@@ -110,33 +108,32 @@ export default function DetallesForm({
               Divisa <span className="text-red-500 ml-0.5">*</span>
             </label>
             <Select
-              inputId="divisa"
-              options={DIVISA_OPTIONS}
-              value={DIVISA_OPTIONS.find((o) => o.value === form.divisa) ?? null}
+              inputId="currency"
+              options={CURRENCY_OPTIONS}
+              value={CURRENCY_OPTIONS.find((o) => o.value === form.currency) ?? null}
               onChange={(option) =>
-                onChange({ target: { name: 'divisa', value: option?.value ?? '' } })
+                onChange({ target: { name: 'currency', value: option?.value ?? '' } })
               }
               styles={selectStyles}
               placeholder="Selecciona divisa..."
               noOptionsMessage={() => 'Sin resultados'}
             />
-            {fieldErrors.divisa && (
-              <p className="mt-1 body-3 text-feedback-error">{fieldErrors.divisa}</p>
+            {fieldErrors.currency && (
+              <p className="mt-1 body-3 text-feedback-error">{fieldErrors.currency}</p>
             )}
           </div>
         </div>
 
-        {/* Presupuesto | Mascota */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <Input
             variant="light"
             label="Presupuesto"
-            name="presupuesto"
+            name="budget"
             type="number"
             placeholder="Ej. 1200"
-            value={form.presupuesto}
+            value={form.budget}
             onChange={onChange}
-            error={fieldErrors.presupuesto}
+            error={fieldErrors.budget}
             min="0"
             className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
@@ -145,17 +142,17 @@ export default function DetallesForm({
             <button
               type="button"
               role="switch"
-              aria-checked={form.conMascota}
+              aria-checked={form.hasPet}
               onClick={() =>
-                onChange({ target: { name: 'conMascota', type: 'checkbox', checked: !form.conMascota } })
+                onChange({ target: { name: 'hasPet', type: 'checkbox', checked: !form.hasPet } })
               }
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-3 focus:ring-offset-1 ${
-                form.conMascota ? 'bg-secondary-3' : 'bg-slate-300'
+                form.hasPet ? 'bg-secondary-3' : 'bg-slate-300'
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                  form.conMascota ? 'translate-x-6' : 'translate-x-1'
+                  form.hasPet ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
@@ -164,7 +161,7 @@ export default function DetallesForm({
       </div>
 
       <div className="flex justify-between mt-6">
-        <Button variant="ghost" type="button" onClick={onCancelar} className="w-auto! px-6">
+        <Button variant="ghost" type="button" onClick={onCancel} className="w-auto! px-6">
           Cancelar
         </Button>
         <Button variant="orange" type="submit" className="w-auto! px-6">

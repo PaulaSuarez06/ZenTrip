@@ -7,22 +7,38 @@ import { isSessionExpired, clearSessionExpiry } from '../components/auth/login/s
 const AuthContext = createContext(null);
 
 function mapProfile(data) {
-  const appDisplayName = `${data?.nombre || ''} ${data?.apellidos || ''}`.trim();
+  const firstName = data?.firstName || '';
+  const lastName = data?.lastName || '';
+  const phone = data?.phone || '';
+  const country = data?.country || '';
+  const language = data?.language || 'Español';
+  const currency = data?.currency || 'EUR €';
+  const profilePhoto = data?.profilePhoto || '';
+
+  const normalizeTripGroupType = (value) => {
+    const normalized = String(value || '').toLowerCase().trim();
+    if (normalized === 'solo') return 'solo';
+    if (normalized === 'group') return 'group';
+    return 'both';
+  };
+
+  const tripGroupType = normalizeTripGroupType(data?.tripGroupType);
 
   return {
-    nombre: data?.nombre || '',
-    apellidos: data?.apellidos || '',
+    firstName,
+    lastName,
     username: data?.username || '',
     bio: data?.bio || '',
-    telefono: data?.telefono || '',
-    pais: data?.pais || '',
-    idioma: data?.idioma || 'Español',
-    moneda: data?.moneda || 'EUR €',
-    fotoPerfil: data?.fotoPerfil || '',
+    phone,
+    country,
+    language,
+    currency,
+    profilePhoto,
     avatarColor: data?.avatarColor || '',
-    viajesSoloGrupo: data?.viajesSoloGrupo || 'ambos',
+    tripGroupType,
     petFriendly: data?.petFriendly || false,
-    displayName: appDisplayName,
+    isProfileComplete: Boolean(data?.isProfileComplete),
+    displayName: `${firstName} ${lastName}`.trim(),
   };
 }
 
@@ -84,7 +100,6 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // Si la sesión ya expiró, cerramos sin mostrar nada
         const expiry = sessionStorage.getItem('sessionExpiry');
         if (expiry && isSessionExpired()) {
           await signOut(auth);
@@ -99,7 +114,7 @@ export function AuthProvider({ children }) {
         try {
           await reload(firebaseUser);
         } catch {
-          // Si reload falla por red, mantenemos el usuario actual para no bloquear la sesión.
+          // Si falla la recarga por red, mantener el usuario actual para no bloquear la sesión.
         }
 
         if (isMounted) {

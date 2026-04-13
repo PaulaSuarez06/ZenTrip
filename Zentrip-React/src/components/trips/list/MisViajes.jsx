@@ -19,7 +19,7 @@ function TripRow({ trips, isDraft, onCardClick, onDelete }) {
           key={trip.id || i}
           trip={trip}
           isDraft={isDraft}
-          memberCount={isDraft ? (trip.miembros?.length ?? 0) + 1 : undefined}
+          memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
           onClick={() => onCardClick(trip)}
           onDelete={onDelete ? () => onDelete(trip.id) : undefined}
         />

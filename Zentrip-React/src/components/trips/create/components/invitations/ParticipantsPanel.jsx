@@ -31,20 +31,20 @@ export default function PanelParticipantes({ participantes = [], onEliminarParti
             <li key={p.id} className="flex items-center gap-2">
               <UserAvatar
                 src={p.avatar}
-                fullName={p.nombre || p.email}
+                fullName={p.name || p.firstName || p.email}
                 sizeClass="w-9 h-9"
                 backgroundClass="bg-secondary-1"
               />
               <div className="flex-1 min-w-0">
-                <p className="body-2-semibold text-neutral-6 truncate">{p.nombre || p.email}</p>
-                <p className={`body-3 truncate ${p.tipo === 'email' ? 'text-primary-3' : 'text-neutral-3'}`}>
-                  {p.tipo === 'email' ? 'Invitado por email' : 'Miembro ZenTrip'}
+                <p className="body-2-semibold text-neutral-6 truncate">{p.name || p.firstName || p.email}</p>
+                <p className={`body-3 truncate ${p.invitationStatus === 'pending_email' ? 'text-primary-3' : 'text-neutral-3'}`}>
+                  {p.invitationStatus === 'pending_email' ? 'Invitado por email' : 'Miembro ZenTrip'}
                 </p>
               </div>
               <button
                 type="button"
                 className="text-neutral-3 hover:text-neutral-5 transition shrink-0"
-                aria-label={`Eliminar a ${p.nombre}`}
+                aria-label={`Eliminar a ${p.name || p.firstName || p.email}`}
                 onClick={() => onEliminarParticipante?.(p.id)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

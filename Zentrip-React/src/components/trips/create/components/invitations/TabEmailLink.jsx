@@ -118,10 +118,10 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', participantes = 
 
     onAgregarInvitadoEmail?.({
       email: match?.email || email,
-      nombre: match?.nombre || email,
+      name: match?.name || match?.firstName || email,
       avatar: match?.avatar || '',
       uid: match?.uid || null,
-      tipo: isRegistered ? 'miembro' : 'email',
+      type: isRegistered ? 'member' : 'email',
     });
 
     setQuery('');
@@ -189,7 +189,7 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', participantes = 
                   onClick={() => handleSeleccionar(user)}
                 >
                   <div className="min-w-0">
-                    <p className="body-2-semibold text-neutral-6 truncate">{user.nombre}</p>
+                    <p className="body-2-semibold text-neutral-6 truncate">{user.firstName || user.name}</p>
                     <p className="body-3 text-neutral-4 truncate">{user.email}</p>
                   </div>
                   <span className={`body-3 ${yaInvitado ? 'text-neutral-3' : 'text-primary-3'}`}>

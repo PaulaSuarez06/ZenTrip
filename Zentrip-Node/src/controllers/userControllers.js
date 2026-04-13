@@ -1,4 +1,5 @@
 const admin = require('../config/firebase');
+const USER_COLLECTIONS = ['users'];
 
 const getProtectedData = (req, res) => {
   res.json({
@@ -27,14 +28,17 @@ function normalizeText(value) {
 }
 
 function buildUserResponse(uid, data) {
-  const nombreCompleto = `${data?.nombre || ''} ${data?.apellidos || ''}`.trim();
+  const firstName = data?.firstName || data?.nombre || '';
+  const lastName = data?.lastName || data?.apellidos || '';
+  const fullName = `${firstName} ${lastName}`.trim();
   return {
     id: uid,
     uid: data?.uid || uid,
     email: data?.email || '',
     username: data?.username || '',
-    nombre: nombreCompleto || '',
-    avatar: data?.fotoPerfil || '',
+    name: fullName || '',
+    nombre: fullName || '',
+    avatar: data?.avatar || data?.profilePhoto || '',
   };
 }
 
@@ -58,20 +62,31 @@ const searchUsers = async (req, res) => {
     const db = admin.firestore();
     const term = normalizeText(query);
 
-    // Obtener todos los documentos de usuarios
-    const snapshot = await db.collection('usuarios').get();
+    const snapshots = await Promise.all(
+      USER_COLLECTIONS.map((collectionName) => db.collection(collectionName).get())
+    );
+    const docsByUid = new Map();
+
+    snapshots.forEach((snapshot) => {
+      snapshot.docs.forEach((doc) => {
+        if (!docsByUid.has(doc.id)) {
+          docsByUid.set(doc.id, doc);
+        }
+      });
+    });
+    const allDocs = Array.from(docsByUid.values());
     
     // Filtrar en el cliente (como el Frontend hacía)
-    const results = snapshot.docs
+    const results = allDocs
       .map((doc) => buildUserResponse(doc.id, doc.data()))
       .filter((item) => {
         const email = normalizeText(item.email);
         const username = normalizeText(item.username);
-        const nombre = normalizeText(item.nombre);
+        const name = normalizeText(item.name || item.nombre);
 
         if (type === 'email') return matchesEmailQuery(email, term);
 
-        return username.includes(term) || matchesEmailQuery(email, term) || nombre.includes(term);
+        return username.includes(term) || matchesEmailQuery(email, term) || name.includes(term);
       })
       .slice(0, parseInt(limit, 10));
 
@@ -88,10 +103,19 @@ const getUserByUid = async (req, res) => {
 
   try {
     const db = admin.firestore();
-    const snap = await db.collection('usuarios').doc(uid).get();
-    if (!snap.exists) return res.status(404).json({ error: 'User not found' });
+    let userData = null;
 
-    res.json(buildUserResponse(uid, snap.data()));
+    for (const collectionName of USER_COLLECTIONS) {
+      const snap = await db.collection(collectionName).doc(uid).get();
+      if (snap.exists) {
+        userData = snap.data();
+        break;
+      }
+    }
+
+    if (!userData) return res.json(null);
+
+    res.json(buildUserResponse(uid, userData));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

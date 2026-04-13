@@ -4,7 +4,7 @@ const { verifyToken, acceptInvitation } = require('../services/email/invitationT
 const { claimPendingInvitationsForUser } = require('../services/email/invitationTokenService');
 const { upsertTripMember } = require('../services/email/invitationTokenService');
 const { getOrCreateTripPublicInvitation, signInvitationJwt } = require('../services/email/invitationTokenService');
-const { verifyTripPublicToken, acceptTripPublicInvitation } = require('../services/email/invitationTokenService');
+const { verifyTripPublicToken, acceptTripPublicInvitation, rejectInvitation } = require('../services/email/invitationTokenService');
 const admin = require('../config/firebase');
 
 function getFrontendBaseUrl() {
@@ -64,15 +64,15 @@ const sendTripInvitations = async (req, res) => {
 
       const recipientIsRegistered = Boolean(registeredUser?.uid);
       const authLink = recipientIsRegistered ? loginLink : registerLink;
-      const recipientName = registeredUser?.displayName || invite.nombre || invite.email;
+      const recipientName = registeredUser?.displayName || invite.name || invite.nombre || invite.email;
 
       await upsertTripMember({
         tripId,
         member: {
           email: normalizedEmail,
           uid: registeredUser?.uid || invite?.uid || null,
-          rol: 'miembro',
-          estadoInvitacion: 'pendiente',
+          role: 'member',
+          invitationStatus: 'pending',
         },
       });
 
@@ -340,10 +340,34 @@ const claimMyInvitationsHandler = async (req, res) => {
   }
 };
 
+const rejectInvitationHandler = async (req, res) => {
+  const { invitationId } = req.body;
+  const userId = req.user?.uid;
+  const userEmail = req.user?.email;
+
+  if (!invitationId || !userId || !userEmail) {
+    return res.status(400).json({ error: 'invitationId y autenticación son obligatorios' });
+  }
+
+  try {
+    const result = await rejectInvitation(invitationId, userId, userEmail);
+    return res.json({
+      message: result.alreadyRejected ? 'La invitación ya había sido rechazada' : 'Invitación rechazada',
+      tripId: result.tripId,
+      invitationId: result.invitationId,
+      alreadyRejected: result.alreadyRejected || false,
+    });
+  } catch (error) {
+    console.error('Error al rechazar invitación:', error.message);
+    return res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   sendTripInvitations,
   verifyInvitationToken,
   acceptInvitationHandler,
+  rejectInvitationHandler,
   claimMyInvitationsHandler,
   createOrGetTripPublicLinkHandler,
   getTripPublicLinkPreviewHandler,

@@ -7,8 +7,8 @@ export const MAX_RECENT_MEMBERS = 8;
 /**
  * Deduplica y normaliza una lista de miembros recientes.
  * - Excluye al usuario actual.
- * - Separa "nombre completo" en nombre + apellidos si aplica.
- * - Limpia datos legacy donde "nombre" era la parte local del email.
+ * - Separa el nombre completo en firstName + lastName si aplica.
+ * - Limpia datos legacy donde name era la parte local del email.
  */
 export function normalizeRecentMembers(items = [], currentUserUid = '') {
   const seen = new Set();
@@ -21,14 +21,14 @@ export function normalizeRecentMembers(items = [], currentUserUid = '') {
     if (!uid || uid === currentUserUid || seen.has(uid)) continue;
     if (email && seenEmails.has(email)) continue;
 
-    const rawFirstName = String(item?.nombre || '').trim();
-    const rawLastName = String(item?.apellidos || '').trim();
+    const rawFirstName = String(item?.firstName || item?.name || '').trim();
+    const rawLastName = String(item?.lastName || '').trim();
     const emailLocalPart = email.includes('@') ? email.split('@')[0] : '';
 
-    // Limpia datos legacy donde "nombre" era la parte local del email.
+    // Limpia datos donde name era la parte local del email.
     const cleanedFirstName = rawFirstName && rawFirstName !== emailLocalPart ? rawFirstName : '';
 
-    // Si "nombre" es el nombre completo (tiene espacio) y "apellidos" está vacío, separar.
+    // Si firstName contiene nombre completo y lastName está vacío, separar.
     let firstName = cleanedFirstName;
     let lastName = rawLastName;
     if (firstName && firstName.includes(' ') && !lastName) {
@@ -42,8 +42,8 @@ export function normalizeRecentMembers(items = [], currentUserUid = '') {
     normalized.push({
       id: uid,
       uid,
-      nombre: firstName,
-      apellidos: lastName,
+      firstName,
+      lastName,
       email,
       username: String(item?.username || '').trim(),
       avatar: item?.avatar || '',
@@ -60,8 +60,8 @@ export function normalizeRecentMembers(items = [], currentUserUid = '') {
  * para mostrarlo en la cuadrícula de recientes.
  */
 export function getRecentNameParts(recentUser) {
-  const rawFirstName = String(recentUser?.nombre || '').trim();
-  const rawLastName = String(recentUser?.apellidos || '').trim();
+  const rawFirstName = String(recentUser?.firstName || recentUser?.name || '').trim();
+  const rawLastName = String(recentUser?.lastName || '').trim();
 
   if (rawFirstName || rawLastName) {
     if (rawFirstName && !rawLastName && rawFirstName.includes(' ')) {
@@ -81,9 +81,5 @@ export function getRecentNameParts(recentUser) {
   }
 
   const username = String(recentUser?.username || '').trim();
-  return {
-    firstName: username,
-    lastName: '',
-    fullName: username,
-  };
+  return { firstName: username, lastName: '', fullName: username };
 }
