@@ -1,6 +1,7 @@
 const { resolveDestinationByCity, searchHotels, getHotelDetails } = require('../services/external/hotelService');
+const { AppError } = require('../errors');
 
-const searchHotelsController = async (req, res) => {
+const searchHotelsController = async (req, res, next) => {
   const {
     city,
     destId,
@@ -15,7 +16,7 @@ const searchHotelsController = async (req, res) => {
   } = req.query;
 
   if (!city && !destId) {
-    return res.status(400).json({ error: 'city o destId es obligatorio.' });
+    return next(new AppError('city o destId es obligatorio.', 400, 'VALIDATION_ERROR'));
   }
 
   try {
@@ -29,7 +30,7 @@ const searchHotelsController = async (req, res) => {
     }
 
     if (!resolvedDestId) {
-      return res.status(404).json({ error: `No se pudo resolver la ciudad "${city}".` });
+      return next(new AppError(`No se pudo resolver la ciudad "${city}".`, 404, 'DESTINATION_NOT_FOUND'));
     }
 
     const hotels = await searchHotels({
@@ -53,13 +54,11 @@ const searchHotelsController = async (req, res) => {
       },
     });
   } catch (error) {
-    const status = error.status || error.response?.status || 500;
-    const message = error.response?.data?.message || error.message;
-    res.status(status).json({ error: message });
+    return next(error);
   }
 };
 
-const getHotelDetailsController = async (req, res) => {
+const getHotelDetailsController = async (req, res, next) => {
   const {
     hotelId,
     arrivalDate,
@@ -74,7 +73,7 @@ const getHotelDetailsController = async (req, res) => {
   } = req.query;
 
   if (!hotelId) {
-    return res.status(400).json({ error: 'hotelId es obligatorio.' });
+    return next(new AppError('hotelId es obligatorio.', 400, 'VALIDATION_ERROR'));
   }
 
   try {
@@ -93,9 +92,7 @@ const getHotelDetailsController = async (req, res) => {
 
     res.json(details);
   } catch (error) {
-    const status = error.status || error.response?.status || 500;
-    const message = error.response?.data?.message || error.message;
-    res.status(status).json({ error: message });
+    return next(error);
   }
 };
 
