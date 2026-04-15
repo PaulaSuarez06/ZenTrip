@@ -2,6 +2,7 @@ import currency from 'currency.js';
 import Select from 'react-select';
 import Input from '../../../../ui/Input';
 import Button from '../../../../ui/Button';
+import CityAutocomplete from '../../../../ui/CityAutocomplete';
 import { DIVISAS } from '../../../../../utils/divisas';
 
 const selectStyles = {
@@ -70,8 +71,7 @@ export default function DetailsForm({
             required
           />
           <div />
-          <Input
-            variant="light"
+          <CityAutocomplete
             label="Origen"
             name="origin"
             placeholder="Ej. Madrid, España"
@@ -79,11 +79,10 @@ export default function DetailsForm({
             onChange={onChange}
             error={fieldErrors.origin}
           />
-          <Input
-            variant="light"
+          <CityAutocomplete
             label="Destino"
             name="destination"
-            placeholder="Ej. Paris, Francia"
+            placeholder="Ej. París, Francia"
             value={form.destination}
             onChange={onChange}
             error={fieldErrors.destination}
