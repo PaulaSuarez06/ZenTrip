@@ -1,4 +1,4 @@
-import { addDoc, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { addDoc, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
 import { apiClient } from './apiClient';
 
@@ -83,6 +83,10 @@ export async function saveTripDraft(uid, form, existingDraftId = null) {
 
 export async function deleteTrip(tripId) {
   await deleteDoc(doc(db, 'trips', tripId));
+}
+
+export async function updateTripCover(tripId, imageUrl) {
+  await updateDoc(doc(db, 'trips', tripId), { coverImage: imageUrl });
 }
 
 export async function getUserTrips(uid) {
