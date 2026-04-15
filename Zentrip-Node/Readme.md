@@ -66,7 +66,6 @@ npm install
 ```
 
 ---
-
 ## Configuración
 
 Crea un archivo `.env` en la raíz con las siguientes variables:
@@ -80,7 +79,6 @@ JWT_SECRET=tu_secreto_jwt
 ```
 
 Además coloca el archivo de credenciales de Firebase (`serviceAccountKey.json`) en la ruta configurada en `server.js`.
-
 ---
 
 ## Ejecución
