@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
-import { deleteTrip, getUserTrips } from '../../../../services/tripService';
+import { deleteTrip, getUserTrips, updateTripCover } from '../../../../services/tripService';
 
 function getTripStatus(startDate, endDate) {
   if (!startDate && !endDate) return 'proximo';
@@ -50,6 +50,15 @@ export function useMyTrips() {
     }
   };
 
+  const handleUpdateTripCover = async (tripId, imageUrl) => {
+    try {
+      await updateTripCover(tripId, imageUrl);
+      setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, coverImage: imageUrl } : t));
+    } catch (err) {
+      console.error('[useMyTrips] Error al actualizar imagen del viaje:', err);
+    }
+  };
+
   return {
     borradores,
     enCurso:  reales.filter((t) => t.status === 'en_curso'),
@@ -58,5 +67,6 @@ export function useMyTrips() {
     loading,
     userId: user?.uid,
     handleDeleteTrip,
+    handleUpdateTripCover,
   };
 }

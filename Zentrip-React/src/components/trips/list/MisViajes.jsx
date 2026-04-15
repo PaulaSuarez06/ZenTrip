@@ -11,7 +11,7 @@ function SectionTitle({ children }) {
   );
 }
 
-function TripRow({ trips, isDraft, onCardClick, onDelete, userId }) {
+function TripRow({ trips, isDraft, onCardClick, onDelete, onImageUpload, userId }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
       {trips.map((trip, i) => (
@@ -22,6 +22,7 @@ function TripRow({ trips, isDraft, onCardClick, onDelete, userId }) {
           memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
           onClick={() => onCardClick(trip)}
           onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
+          onImageUpload={onImageUpload && trip.uid === userId ? (url) => onImageUpload(trip.id, url) : undefined}
         />
       ))}
     </div>
@@ -47,7 +48,7 @@ function EmptyState({ onCreateClick }) {
 
 export default function MisViajes() {
   const navigate = useNavigate();
-  const { borradores, enCurso, proximos, pasados, loading, userId, handleDeleteTrip } = useMyTrips();
+  const { borradores, enCurso, proximos, pasados, loading, userId, handleDeleteTrip, handleUpdateTripCover } = useMyTrips();
 
   const hasDraft    = borradores.length > 0;
   const hasTrips    = enCurso.length + proximos.length + pasados.length > 0;
@@ -94,6 +95,7 @@ export default function MisViajes() {
                   trips={borradores}
                   isDraft={true}
                   onDelete={handleDeleteTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(trip) => {
                     if (trip.formSnapshot) {
@@ -112,6 +114,7 @@ export default function MisViajes() {
                 <TripRow
                   trips={enCurso}
                   onDelete={handleDeleteTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
@@ -125,6 +128,7 @@ export default function MisViajes() {
                 <TripRow
                   trips={proximos}
                   onDelete={handleDeleteTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
@@ -138,6 +142,7 @@ export default function MisViajes() {
                 <TripRow
                   trips={pasados}
                   onDelete={handleDeleteTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
