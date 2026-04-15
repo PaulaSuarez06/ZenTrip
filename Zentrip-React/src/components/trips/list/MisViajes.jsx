@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../config/routes';
 import { STORAGE_KEY } from '../create/hooks/useTripDraft';
@@ -11,20 +12,37 @@ function SectionTitle({ children }) {
   );
 }
 
+const INITIAL_COUNT = 5;
+
 function TripRow({ trips, isDraft, onCardClick, onDelete, onImageUpload, userId }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMore = trips.length > INITIAL_COUNT;
+  const visible = expanded ? trips : trips.slice(0, INITIAL_COUNT);
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {trips.map((trip, i) => (
-        <TripCard
-          key={trip.id || i}
-          trip={trip}
-          isDraft={isDraft}
-          memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
-          onClick={() => onCardClick(trip)}
-          onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
-          onImageUpload={onImageUpload && trip.uid === userId ? (url) => onImageUpload(trip.id, url) : undefined}
-        />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {visible.map((trip, i) => (
+          <TripCard
+            key={trip.id || i}
+            trip={trip}
+            isDraft={isDraft}
+            memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
+            onClick={() => onCardClick(trip)}
+            onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
+            onImageUpload={onImageUpload && trip.uid === userId ? (url) => onImageUpload(trip.id, url) : undefined}
+          />
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="self-start body-3 text-primary-3 font-semibold hover:underline flex items-center gap-1"
+        >
+          {expanded ? 'Ver menos ↑' : `Ver más (${trips.length - INITIAL_COUNT} más) ↓`}
+        </button>
+      )}
     </div>
   );
 }
