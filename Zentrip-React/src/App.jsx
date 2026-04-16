@@ -11,6 +11,7 @@ import EditProfile from './components/profile/EditProfile';
 import CreateTrip from './components/trips/create/CreateTrip';
 import MisViajes from './components/trips/list/MisViajes';
 import FlightsExplorer from './components/flights/FlightsExplorer';
+import HotelsExplorer from './components/hotels/HotelsExplorer';
 import TripDetail from './components/trips/detail/TripDetail';
 import Landing from './components/landing/landing';
 import Home from './components/home/Home';
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
         children: [
           { path: ROUTES.HOME, element: <Home /> },
           { path: ROUTES.FLIGHTS, element: <FlightsExplorer /> },
+          { path: ROUTES.HOTELS, element: <HotelsExplorer /> },
           { path: ROUTES.PROFILE.EDIT, element: <EditProfile /> },
           { path: ROUTES.TRIPS.CREATE, element: <CreateTrip /> },
           { path: ROUTES.TRIPS.LIST, element: <MisViajes /> },

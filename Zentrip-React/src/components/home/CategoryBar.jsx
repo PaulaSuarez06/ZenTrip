@@ -17,6 +17,8 @@ export default function CategoryBar() {
   const handleCategoryClick = (categoryKey) => {
     if (categoryKey === 'vuelos') {
       navigate(ROUTES.FLIGHTS);
+    } else if (categoryKey === 'hoteles') {
+      navigate(ROUTES.HOTELS);
     }
   };
 
