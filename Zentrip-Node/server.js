@@ -8,6 +8,7 @@ const userRouters = require('./src/routes/userRouters');
 const authRouters = require('./src/routes/authRouters');
 const invitationRouters = require('./src/routes/invitationRouters');
 const hotelRouters = require('./src/routes/hotelRouters');
+const flightRouters = require('./src/routes/flightRouters');
 const tripRouters = require('./src/routes/tripRouters');
 const errorHandler = require('./src/middlewares/errorHandler');
 
@@ -49,7 +50,9 @@ app.use('/api', userRouters);
 app.use('/api/auth', authRouters);
 app.use('/api/invitations', invitationRouters);
 app.use('/api/hotels', hotelRouters);
+app.use('/api/flights', flightRouters);
 app.use('/api/trips', tripRouters);
+app.use('/api/flights', flightRouters);
 
 app.use(errorHandler);
 

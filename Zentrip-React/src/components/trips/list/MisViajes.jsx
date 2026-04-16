@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../config/routes';
 import { STORAGE_KEY } from '../create/hooks/useTripDraft';
@@ -11,19 +12,38 @@ function SectionTitle({ children }) {
   );
 }
 
-function TripRow({ trips, isDraft, onCardClick, onDelete, userId }) {
+const INITIAL_COUNT = 5;
+
+function TripRow({ trips, isDraft, onCardClick, onDelete, onEdit, onImageUpload, userId }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMore = trips.length > INITIAL_COUNT;
+  const visible = expanded ? trips : trips.slice(0, INITIAL_COUNT);
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-      {trips.map((trip, i) => (
-        <TripCard
-          key={trip.id || i}
-          trip={trip}
-          isDraft={isDraft}
-          memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
-          onClick={() => onCardClick(trip)}
-          onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
-        />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {visible.map((trip, i) => (
+          <TripCard
+            key={trip.id || i}
+            trip={trip}
+            isDraft={isDraft}
+            memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
+            onClick={() => onCardClick(trip)}
+            onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
+            onEdit={onEdit && trip.uid === userId ? () => onEdit(trip) : undefined}
+            onImageUpload={onImageUpload && trip.uid === userId ? (url) => onImageUpload(trip.id, url) : undefined}
+          />
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="self-start body-3 text-primary-3 font-semibold hover:underline flex items-center gap-1"
+        >
+          {expanded ? 'Ver menos ↑' : `Ver más (${trips.length - INITIAL_COUNT} más) ↓`}
+        </button>
+      )}
     </div>
   );
 }
@@ -47,7 +67,23 @@ function EmptyState({ onCreateClick }) {
 
 export default function MisViajes() {
   const navigate = useNavigate();
-  const { borradores, enCurso, proximos, pasados, loading, userId, handleDeleteTrip } = useMyTrips();
+  const { borradores, enCurso, proximos, pasados, loading, userId, handleDeleteTrip, handleUpdateTripCover } = useMyTrips();
+
+  const handleEditTrip = (trip) => {
+    const tripForm = {
+      name: trip.name || '',
+      origin: trip.origin || '',
+      destination: trip.destination || '',
+      startDate: trip.startDate || '',
+      endDate: trip.endDate || '',
+      currency: trip.currency || '',
+      budget: trip.budget || '',
+      hasPet: Boolean(trip.hasPet),
+      members: [],
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: 0, form: tripForm }));
+    navigate(ROUTES.TRIPS.CREATE, { state: { editTripId: trip.id } });
+  };
 
   const hasDraft    = borradores.length > 0;
   const hasTrips    = enCurso.length + proximos.length + pasados.length > 0;
@@ -55,7 +91,7 @@ export default function MisViajes() {
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
 
         {/* Cabecera */}
         <div className="flex items-start justify-between mb-8">
@@ -94,6 +130,7 @@ export default function MisViajes() {
                   trips={borradores}
                   isDraft={true}
                   onDelete={handleDeleteTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(trip) => {
                     if (trip.formSnapshot) {
@@ -112,6 +149,8 @@ export default function MisViajes() {
                 <TripRow
                   trips={enCurso}
                   onDelete={handleDeleteTrip}
+                  onEdit={handleEditTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
@@ -125,6 +164,8 @@ export default function MisViajes() {
                 <TripRow
                   trips={proximos}
                   onDelete={handleDeleteTrip}
+                  onEdit={handleEditTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
@@ -138,6 +179,8 @@ export default function MisViajes() {
                 <TripRow
                   trips={pasados}
                   onDelete={handleDeleteTrip}
+                  onEdit={handleEditTrip}
+                  onImageUpload={handleUpdateTripCover}
                   userId={userId}
                   onCardClick={(t) => navigate(`/trips/${t.id}`)}
                 />
