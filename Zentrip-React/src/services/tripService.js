@@ -199,3 +199,20 @@ export async function addActivity(tripId, activity) {
 export async function deleteActivity(tripId, activityId) {
   await deleteDoc(doc(db, 'trips', tripId, 'activities', activityId));
 }
+
+export async function addBooking(tripId, booking) {
+  const docRef = await addDoc(collection(db, 'trips', tripId, 'bookings'), {
+    ...booking,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function getBookings(tripId) {
+  const snap = await getDocs(collection(db, 'trips', tripId, 'bookings'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function deleteBooking(tripId, bookingId) {
+  await deleteDoc(doc(db, 'trips', tripId, 'bookings', bookingId));
+}

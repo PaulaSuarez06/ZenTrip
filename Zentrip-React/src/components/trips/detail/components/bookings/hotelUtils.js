@@ -34,11 +34,11 @@ export function mapApiHotel(raw, nights = 1) {
 
   const hotelName = prop.name || '';
   const ufi = prop.ufi || '';
-  const bookingUrl = `https://www.booking.com/searchresults.es.html?ss=${encodeURIComponent(hotelName)}&dest_id=${ufi}&dest_type=city`;
 
   return {
     id: raw.hotel_id ?? prop.id,
     name: hotelName || 'Hotel',
+    ufi,
     loc: prop.wishlistName || prop.address || prop.countryCode || '',
     stars,
     score,
@@ -51,7 +51,6 @@ export function mapApiHotel(raw, nights = 1) {
     tags: (prop.facilities || []).slice(0, 4).map((f) => f.name).filter(Boolean),
     checkin: prop.checkin?.fromTime || null,
     checkout: prop.checkout?.untilTime || null,
-    bookingUrl,
   };
 }
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink } from 'lucide-react';
 import { apiClient } from '../../../../../services/apiClient';
-import { addActivity } from '../../../../../services/tripService';
+import { addActivity, addBooking, getBookings } from '../../../../../services/tripService';
+// addActivity se usa en handleBooked para añadir al itinerario al reservar
 import { ScoreBadge, StarRow } from './HotelAtoms';
 
 function InfoRow({ label, value }) {
@@ -23,8 +24,9 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
   const [photos, setPhotos]     = useState(hotel.photo ? [hotel.photo] : []);
   const [policies, setPolicies] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(true);
-  const [adding, setAdding]     = useState(false);
-  const [added, setAdded]       = useState(false);
+  const [booking, setBooking]   = useState(false);
+  const [booked, setBooked]     = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
@@ -60,27 +62,55 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     return () => { cancelled = true; };
   }, [hotel.id, checkIn, checkOut, adults, rooms, currency]);
 
-  const handleAddToItinerary = async () => {
-    if (!tripId || !checkIn) return;
-    setAdding(true);
+  const handleBooked = async () => {
+    if (!tripId) return;
+    setBooking(true);
     try {
-      const nights = Math.round((new Date(checkOut + 'T00:00:00') - new Date(checkIn + 'T00:00:00')) / 86400000);
+      const existing = await getBookings(tripId);
+      const isDuplicate = existing.some(
+        (b) => b.hotelId === hotel.id && b.checkIn === checkIn && b.checkOut === checkOut
+      );
+      if (isDuplicate) {
+        setDuplicate(true);
+        return;
+      }
+      const bookingUrl = `https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`;
+      const bookingData = {
+        type: 'hotel',
+        hotelId: hotel.id,
+        hotelName: hotel.name,
+        hotelStars: hotel.stars,
+        hotelScore: hotel.score,
+        checkIn,
+        checkOut,
+        adults,
+        rooms,
+        nights,
+        pricePerNight: hotel.price,
+        totalPrice: hotel.price != null ? hotel.price * nights : null,
+        currency: hotel.currency,
+        status: 'reservado',
+        bookingUrl,
+      };
+      await addBooking(tripId, bookingData);
       await addActivity(tripId, {
         date: checkIn,
         startTime: details?.data?.property?.checkin?.fromTime || '15:00',
         endTime: details?.data?.property?.checkout?.untilTime || '11:00',
         name: hotel.name,
         type: 'hotel',
-        notes: hotel.price != null ? `Desde ${hotel.price} ${hotel.currency}/noche · ${nights} noche${nights !== 1 ? 's' : ''}` : '',
-        status: 'pendiente',
+        notes: hotel.price != null ? `Reservado · ${hotel.price} ${hotel.currency}/noche · ${nights} noche${nights !== 1 ? 's' : ''}` : 'Reservado',
+        status: 'reservado',
       });
-      setAdded(true);
+      setBooked(true);
+      setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
-      console.error('[HotelDetailModal] Error al añadir al itinerario:', err);
+      console.error('[HotelDetailModal] Error al guardar reserva:', err);
     } finally {
-      setAdding(false);
+      setBooking(false);
     }
   };
+
 
   const prop = details?.data?.property ?? details?.property ?? {};
   const description = prop.description?.intro || prop.shortDescription || null;
@@ -271,25 +301,29 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
 
         {/* Footer fijo con acciones */}
         <div className="px-5 py-4 border-t border-neutral-1 flex gap-3 shrink-0 bg-white">
-          {added ? (
+          {duplicate ? (
+            <div className="flex-1 h-11 rounded-lg bg-feedback-warning border border-feedback-warning-strong text-feedback-warning-strong flex items-center justify-center gap-2 body-2-semibold">
+              ⚠️ Ya tienes este hotel reservado
+            </div>
+          ) : booked ? (
             <div className="flex-1 h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
-              ✓ Añadido al itinerario
+              ✓ Reserva guardada
             </div>
           ) : (
             <button
-              onClick={handleAddToItinerary}
-              disabled={adding || !tripId || !checkIn}
+              onClick={handleBooked}
+              disabled={booking || !tripId}
               className={`flex-1 h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${
-                adding || !tripId || !checkIn ? 'bg-neutral-2 cursor-not-allowed' : 'bg-primary-3 hover:bg-primary-4'
+                booking || !tripId ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'
               }`}
             >
-              {adding ? (
-                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Añadiendo…</>
-              ) : '🗓 Añadir al itinerario'}
+              {booking ? (
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Comprobando…</>
+              ) : '✓ He reservado'}
             </button>
           )}
           <a
-            href={hotel.bookingUrl}
+            href={`https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`}
             target="_blank"
             rel="noopener noreferrer"
             className="h-11 px-4 rounded-lg border border-secondary-3 text-secondary-3 flex items-center gap-2 body-2-semibold hover:bg-secondary-1 transition"
