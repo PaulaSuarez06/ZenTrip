@@ -14,14 +14,16 @@ export default function ParticipantsCard({ members, onInvite }) {
     <div className="bg-white rounded-2xl border border-neutral-1 p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="body-3 text-neutral-4 font-semibold uppercase tracking-wide">Participantes</p>
-        <button
-          type="button"
-          onClick={onInvite}
-          className="flex items-center gap-1 body-3 text-primary-3 font-semibold hover:text-primary-4 transition-colors"
-        >
-          <UserPlus className="w-3.5 h-3.5" />
-          Invitar
-        </button>
+        {onInvite && (
+          <button
+            type="button"
+            onClick={onInvite}
+            className="flex items-center gap-1 body-3 text-primary-3 font-semibold hover:text-primary-4 transition-colors"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            Invitar
+          </button>
+        )}
       </div>
 
       {accepted.length === 0 && pending.length === 0 ? (

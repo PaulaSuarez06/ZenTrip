@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 import { useTripDetail } from './hooks/useTripDetail';
 import { addActivity } from '../../../services/tripService';
 import TripDetailHeader from './components/TripDetailHeader';
 import TripDetailTabs from './components/TripDetailTabs';
 import ItineraryTab from './components/tabs/ItineraryTab';
 import BookingsTab from './components/tabs/BookingsTab';
+import InvitationsTab from './components/tabs/InvitationsTab';
 import PlaceholderTab from './components/tabs/PlaceholderTab';
 
 
@@ -46,6 +48,7 @@ const TAB_PLACEHOLDERS = {
 export default function TripDetail() {
   const { tripId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('itinerario');
   const [reservasSubTab, setReservasSubTab] = useState('hoteles');
 
@@ -87,6 +90,8 @@ export default function TripDetail() {
   if (loading) return <LoadingState />;
   if (error || !trip) return <ErrorState message={error || 'Viaje no encontrado.'} onBack={() => navigate('/trips')} />;
 
+  const isCreator = user?.uid === trip?.uid;
+
   const renderTab = () => {
     if (activeTab === 'itinerario') {
       return (
@@ -97,8 +102,18 @@ export default function TripDetail() {
           activitiesByDate={activitiesByDate}
           tripDays={tripDays}
           onAddActivity={handleAddActivity}
-          onInvite={() => navigate('/trips/create')}
+          onInvite={isCreator ? () => setActiveTab('invitaciones') : null}
           onBook={handleBook}
+        />
+      );
+    }
+    if (activeTab === 'invitaciones') {
+      return (
+        <InvitationsTab
+          tripId={tripId}
+          tripName={trip.name}
+          members={members}
+          isCreator={isCreator}
         />
       );
     }
