@@ -5,6 +5,7 @@ import { SectionLabel, TipCard } from './HotelAtoms';
 import HotelSearchForm from './HotelSearchForm';
 import HotelResults from './HotelResults';
 import HotelDetailModal from './HotelDetailModal';
+import BookingDetailModal from './BookingDetailModal';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { getBookings, deleteBooking, deleteActivity } from '../../../../../../services/tripService';
 
@@ -107,6 +108,7 @@ export default function HotelSearch({ trip, members = [], tripId }) {
   const [page, setPage]       = useState(1);
 
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const [existingBookings, setExistingBookings] = useState([]);
 
   useEffect(() => {
@@ -182,7 +184,12 @@ export default function HotelSearch({ trip, members = [], tripId }) {
           <div className="flex flex-col gap-3">
             {existingBookings.map((b) => (
               <div key={b.id} className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl px-4 py-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBooking(b)}
+                  className="w-full text-left mb-3 hover:opacity-80 transition"
+                >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🏨</span>
                     <div>
@@ -197,6 +204,7 @@ export default function HotelSearch({ trip, members = [], tripId }) {
                     </div>
                   )}
                 </div>
+                </button>
                 <div className="flex flex-col sm:flex-row gap-2">
                   {b.bookingUrl && (
                     <a
@@ -285,6 +293,19 @@ export default function HotelSearch({ trip, members = [], tripId }) {
           {TIPS.map((t) => <TipCard key={t.title} {...t} />)}
         </div>
       </div>
+
+      {/* Modal de reserva existente */}
+      {selectedBooking && (
+        <BookingDetailModal
+          booking={selectedBooking}
+          tripId={tripId}
+          onClose={() => setSelectedBooking(null)}
+          onUpdated={(updated) => {
+            setExistingBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+            setSelectedBooking(updated);
+          }}
+        />
+      )}
 
       {/* Modal de detalles */}
       {selectedHotel && (

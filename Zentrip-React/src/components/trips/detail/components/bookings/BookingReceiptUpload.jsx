@@ -1,116 +1,136 @@
 import { useRef, useState } from 'react';
-import { Upload, X, Image } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { uploadImage, validateImageFile } from '../../../../../services/cloudinaryService';
 
-export default function BookingReceiptUpload({ onUpload, label = 'Adjuntar captura de la reserva', optional = true }) {
+const MAX = 3;
+
+export default function BookingReceiptUpload({
+  initialUrls = [],
+  onUpdate,
+  label = 'Capturas de la reserva',
+  optional = true,
+}) {
   const fileInputRef = useRef(null);
-  const [preview, setPreview] = useState(null);
-  const [file, setFile] = useState(null);
-  const [dragging, setDragging] = useState(false);
+  const [urls, setUrls] = useState(initialUrls);
+  const [pending, setPending] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [uploaded, setUploaded] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState(null);
+
+  const canAdd = urls.length < MAX && !pending;
 
   const handleFile = (f) => {
     if (!f) return;
-    const validationError = validateImageFile(f);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    const err = validateImageFile(f);
+    if (err) { setError(err); return; }
+    setPending({ file: f, preview: URL.createObjectURL(f) });
     setError(null);
-    setUploaded(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    handleFile(e.dataTransfer.files[0]);
   };
 
   const handleUpload = async () => {
-    if (!file || uploading) return;
+    if (!pending || uploading) return;
     setUploading(true);
     setError(null);
     try {
-      const url = await uploadImage(file);
-      setUploaded(true);
-      onUpload?.(url);
+      const url = await uploadImage(pending.file);
+      const next = [...urls, url];
+      setUrls(next);
+      setPending(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      onUpdate?.(next);
     } catch (err) {
-      setError(err?.message || 'No se pudo subir la imagen. Inténtalo de nuevo.');
+      setError(err?.message || 'No se pudo subir la imagen.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleRemove = () => {
-    setFile(null);
-    setPreview(null);
+  const handleRemove = (idx) => {
+    const next = urls.filter((_, i) => i !== idx);
+    setUrls(next);
+    onUpdate?.(next);
+  };
+
+  const cancelPending = () => {
+    setPending(null);
     setError(null);
-    setUploaded(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-1.5">
-        <Image className="w-3.5 h-3.5 text-neutral-4" />
-        <p className="body-3 font-semibold text-neutral-5">
+      <div className="flex items-center justify-between">
+        <p className="body-3 font-semibold text-neutral-5 flex items-center gap-1">
           {label}
-          {optional && <span className="ml-1 font-normal text-neutral-3">(opcional)</span>}
+          {optional && <span className="font-normal text-neutral-3">(opcional)</span>}
         </p>
+        <span className="body-3 text-neutral-3">{urls.length}/{MAX}</span>
       </div>
 
-      {!preview ? (
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors
-            ${dragging ? 'border-secondary-3 bg-secondary-1/40' : 'border-neutral-2 hover:border-secondary-3 hover:bg-secondary-1/20'}`}
-        >
-          <Upload className="w-5 h-5 text-neutral-3 pointer-events-none" />
-          <p className="body-3 text-neutral-4 text-center pointer-events-none">
-            Arrastra aquí o <span className="text-secondary-3 font-medium">selecciona imagen</span>
-          </p>
-          <p className="text-[11px] text-neutral-3 pointer-events-none">JPG, PNG, WebP · máx. 5 MB</p>
-        </div>
-      ) : (
-        <div className="relative rounded-xl overflow-hidden border border-neutral-2 h-36">
-          <img src={preview} alt="Captura de reserva" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-neutral-7/30 flex items-center justify-center gap-2">
-            {uploaded ? (
-              <span className="px-3 py-1.5 bg-auxiliary-green-4 text-white body-3 font-semibold rounded-full">
-                ✓ Subida correctamente
-              </span>
-            ) : (
+      {/* Existing images */}
+      {urls.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {urls.map((url, i) => (
+            <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-neutral-2 bg-neutral-1">
+              <img src={url} alt={`Captura ${i + 1}`} className="w-full h-full object-cover" />
               <button
                 type="button"
-                onClick={handleUpload}
-                disabled={uploading}
-                className="px-4 py-2 bg-secondary-3 text-white body-3 font-semibold rounded-full hover:bg-secondary-4 transition disabled:opacity-60"
+                onClick={() => handleRemove(i)}
+                className="absolute top-1 right-1 w-6 h-6 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-neutral-5 transition"
               >
-                {uploading ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Subiendo…
-                  </span>
-                ) : 'Subir captura'}
+                <X className="w-3 h-3" />
               </button>
-            )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pending preview */}
+      {pending && (
+        <div className="relative rounded-xl overflow-hidden border border-neutral-2 h-36">
+          <img src={pending.preview} alt="Vista previa" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-neutral-7/30 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={handleUpload}
+              disabled={uploading}
+              className="px-4 py-2 bg-secondary-3 text-white body-3 font-semibold rounded-full hover:bg-secondary-4 transition disabled:opacity-60"
+            >
+              {uploading ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Subiendo…
+                </span>
+              ) : 'Subir captura'}
+            </button>
           </div>
           {!uploading && (
             <button
               type="button"
-              onClick={handleRemove}
+              onClick={cancelPending}
               className="absolute top-2 right-2 w-7 h-7 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-neutral-5 transition"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
+        </div>
+      )}
+
+      {/* Drop zone */}
+      {canAdd && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }}
+          onClick={() => fileInputRef.current?.click()}
+          className={`h-20 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 cursor-pointer transition-colors
+            ${dragging ? 'border-secondary-3 bg-secondary-1/40' : 'border-neutral-2 hover:border-secondary-3 hover:bg-secondary-1/20'}`}
+        >
+          <Plus className="w-4 h-4 text-neutral-3 pointer-events-none" />
+          <span className="body-3 text-neutral-4 pointer-events-none">
+            <span className="text-secondary-3 font-medium">Añadir imagen</span>
+            <span className="text-neutral-3"> · JPG, PNG, WebP · máx. 5 MB</span>
+          </span>
         </div>
       )}
 

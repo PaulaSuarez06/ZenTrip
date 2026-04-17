@@ -383,9 +383,9 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                 ✓ Reserva guardada
               </div>
               <BookingReceiptUpload
-                onUpload={async (url) => {
+                onUpdate={async (urls) => {
                   if (bookingId) {
-                    await updateBooking(tripId, bookingId, { receiptUrl: url });
+                    await updateBooking(tripId, bookingId, { receiptUrls: urls });
                   }
                 }}
               />
