@@ -1,4 +1,6 @@
-const { findHotels, getHotelDetails, getHotelPolicies, getHotelPhotos, getChildrenPolicies } = require('../services/external/hotelService');
+//exporto al servicio
+
+const { findHotels, getHotelDetails, getHotelPolicies, getHotelPhotos, getChildrenPolicies, getRoomList } = require('../services/external/hotelService');
 const { AppError } = require('../errors');
 
 const isValidDateString = (value) => {
@@ -73,6 +75,7 @@ const getHotelDetailsController = async (req, res, next) => {
   }
 
   try {
+    // llamada al sevicio como con Spring 
     const details = await getHotelDetails({ hotelId, arrivalDate, departureDate, adults, childrenAge, roomQty, units, temperatureUnit, languageCode, currencyCode });
     res.json(details);
   } catch (error) {
@@ -129,4 +132,20 @@ const getChildrenPoliciesController = async (req, res, next) => {
   }
 };
 
-module.exports = { searchHotelsController, getHotelDetailsController, getHotelPoliciesController, getHotelPhotosController, getChildrenPoliciesController };
+// habitaciones disponibles
+const getRoomListController = async (req, res, next) => {
+  const { hotelId, arrivalDate, departureDate, adults, childrenAge, roomQty, units, temperatureUnit, languageCode, currencyCode } = req.query;
+
+  if (!hotelId) {
+    return next(new AppError('hotelId es obligatorio.', 400, 'VALIDATION_ERROR'));
+  }
+
+  try {
+    const rooms = await getRoomList({ hotelId, arrivalDate, departureDate, adults, childrenAge, roomQty, units, temperatureUnit, languageCode, currencyCode });
+    res.json(rooms);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+module.exports = { searchHotelsController, getHotelDetailsController, getHotelPoliciesController, getHotelPhotosController, getChildrenPoliciesController, getRoomListController };

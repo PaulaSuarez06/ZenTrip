@@ -76,9 +76,13 @@ RAPIDAPI_KEY=tu_clave_de_rapidapi
 MAILJET_API_KEY=tu_clave_mailjet
 MAILJET_API_SECRET=tu_secreto_mailjet
 JWT_SECRET=tu_secreto_jwt
+FIREBASE_PROJECT_ID=tu_project_id
+FIREBASE_CLIENT_EMAIL=tu_client_email
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+CORS_ORIGIN=http://localhost:5173,https://tu-frontend.vercel.app
 ```
 
-Además coloca el archivo de credenciales de Firebase (`serviceAccountKey.json`) en la ruta configurada en `server.js`.
+`CORS_ORIGIN` admite varios origenes separados por coma.
 ---
 
 ## Ejecución
@@ -172,3 +176,7 @@ Authorization: Bearer <firebase_id_token>
 | `MAILJET_API_KEY` | Clave pública de Mailjet |
 | `MAILJET_API_SECRET` | Clave secreta de Mailjet |
 | `JWT_SECRET` | Secreto para firmar tokens de invitación |
+| `FIREBASE_PROJECT_ID` | ID del proyecto de Firebase |
+| `FIREBASE_CLIENT_EMAIL` | Client email del service account de Firebase |
+| `FIREBASE_PRIVATE_KEY` | Private key del service account (con `\n`) |
+| `CORS_ORIGIN` | Uno o varios origenes permitidos separados por coma |

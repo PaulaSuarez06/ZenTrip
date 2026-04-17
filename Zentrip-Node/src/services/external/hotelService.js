@@ -39,40 +39,7 @@ const resolveDestinationByCity = async ({ city, languageCode = 'es' }) => {
     destination: matchedDestination,
   };
 };
-
-const searchHotels = async ({
-  destId,
-  searchType = 'CITY',
-  arrivalDate,
-  departureDate,
-  adults = 1,
-  roomQty = 1,
-  languageCode = 'es',
-  currencyCode = 'EUR',
-  pageNumber = 1,
-  pageSize = 5,
-}) => {
-  const response = await axios.get(`${BASE_URL}/hotels/searchHotels`, {
-    headers: rapidApiHeaders,
-    params: {
-      dest_id: destId,
-      search_type: searchType,
-      arrival_date: arrivalDate,
-      departure_date: departureDate,
-      adults,
-      room_qty: roomQty,
-      page_number: pageNumber,
-      page_size: pageSize,
-      languagecode: languageCode,
-      currency_code: currencyCode,
-      units: 'metric',
-      temperature_unit: 'c',
-    },
-  });
-
-  return response.data;
-};
-
+// ENDPOINT DETALLES DE HOTEL
 const getHotelDetails = async ({ hotelId, arrivalDate, departureDate, adults = 1, childrenAge = '', roomQty = 1, units = 'metric', temperatureUnit = 'c', languageCode = 'en-us', currencyCode = 'EUR' }) => {
   const response = await axios.get(`${BASE_URL}/hotels/getHotelDetails`, {
     headers: rapidApiHeaders,
@@ -92,7 +59,7 @@ const getHotelDetails = async ({ hotelId, arrivalDate, departureDate, adults = 1
 
   return response.data;
 };
-
+// ENDPOINT POLITICAS HOTEL
 const getHotelPolicies = async ({ hotelId, languageCode = 'en-us' }) => {
   const response = await axios.get(`${BASE_URL}/hotels/getHotelPolicies`, {
     headers: rapidApiHeaders,
@@ -106,8 +73,8 @@ const getHotelPolicies = async ({ hotelId, languageCode = 'en-us' }) => {
 };
 
  
-
-const findHotels = async ({ city, destId, arrivalDate, departureDate, adults, roomQty, languageCode, currencyCode, pageNumber }) => {
+// ENDPOINT BUSCAR HOTELES
+const findHotels = async ({ city, destId, arrivalDate, departureDate, adults, roomQty, languageCode = 'es', currencyCode = 'EUR', pageNumber }) => {
   const toUtcDate = (value) => new Date(`${value}T00:00:00Z`);
 
   const arrival = toUtcDate(arrivalDate);
@@ -116,11 +83,11 @@ const findHotels = async ({ city, destId, arrivalDate, departureDate, adults, ro
   const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
 
   if (departure <= arrival) {
-    throw new AppError('departureDate debe ser posterior a arrivalDate.', 400, 'VALIDATION_ERROR');
+    throw new AppError('La fecha de salida debe ser posterior a la fecha de entrada.', 400, 'VALIDATION_ERROR');
   }
 
   if (arrival < todayUtc) {
-    throw new AppError('arrivalDate no puede ser una fecha pasada.', 400, 'VALIDATION_ERROR');
+    throw new AppError('La fecha de entrada no puede ser una fecha pasada.', 400, 'VALIDATION_ERROR');
   }
 
   let resolvedDestId = destId;
@@ -139,20 +106,26 @@ const findHotels = async ({ city, destId, arrivalDate, departureDate, adults, ro
   const pageSize = 5;
   const page = pageNumber || 1;
 
-  const hotels = await searchHotels({
-    destId: resolvedDestId,
-    arrivalDate,
-    departureDate,
-    adults,
-    roomQty,
-    languageCode,
-    currencyCode,
-    pageNumber: page,
-    pageSize,
+  const response = await axios.get(`${BASE_URL}/hotels/searchHotels`, {
+    headers: rapidApiHeaders,
+    params: {
+      dest_id: resolvedDestId,
+      search_type: 'CITY',
+      arrival_date: arrivalDate,
+      departure_date: departureDate,
+      adults: adults ?? 1,
+      room_qty: roomQty ?? 1,
+      page_number: page,
+      page_size: pageSize,
+      languagecode: languageCode,
+      currency_code: currencyCode,
+      units: 'metric',
+      temperature_unit: 'c',
+    },
   });
 
   return {
-    ...hotels,
+    ...response.data,
     meta: {
       city: city || destination?.cityName || destination?.name || null,
       destination,
@@ -165,6 +138,8 @@ const findHotels = async ({ city, destId, arrivalDate, departureDate, adults, ro
   };
 };
 
+
+// ENDPOINT FOTOS DE HOTEL
 const getHotelPhotos = async ({ hotelId }) => {
   const response = await axios.get(`${BASE_URL}/hotels/getHotelPhotos`, {
     headers: rapidApiHeaders,
@@ -175,7 +150,7 @@ const getHotelPhotos = async ({ hotelId }) => {
 
   return response.data;
 };
-
+// ENDPOINT POLITICAS DE NIÑOS
 const getChildrenPolicies = async ({ hotelId, languageCode = 'en-us' }) => {
   const response = await axios.get(`${BASE_URL}/hotels/propertyChildrenPolicies`, {
     headers: rapidApiHeaders,
@@ -188,4 +163,28 @@ const getChildrenPolicies = async ({ hotelId, languageCode = 'en-us' }) => {
   return response.data;
 };
 
-module.exports = { findHotels, getHotelDetails, getHotelPolicies, getHotelPhotos, getChildrenPolicies };
+
+
+
+// ENDPOINT HABITACIONES DISPONIBLES
+const getRoomList = async ({ hotelId, arrivalDate, departureDate, adults = 1, childrenAge = '', roomQty = 1, units = 'metric', temperatureUnit = 'c', languageCode = 'es', currencyCode = 'EUR' }) => {
+  const response = await axios.get(`${BASE_URL}/hotels/getRoomListWithAvailability`, {
+    headers: rapidApiHeaders,
+    params: {
+      hotel_id: hotelId,
+      arrival_date: arrivalDate,
+      departure_date: departureDate,
+      adults,
+      children_age: childrenAge,
+      room_qty: roomQty,
+      units,
+      temperature_unit: temperatureUnit,
+      languagecode: languageCode,
+      currency_code: currencyCode,
+    },
+  });
+
+  return response.data;
+};
+
+module.exports = { findHotels, getHotelDetails, getHotelPolicies, getHotelPhotos, getChildrenPolicies, getRoomList };
