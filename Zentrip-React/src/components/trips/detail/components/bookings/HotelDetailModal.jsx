@@ -275,7 +275,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
             {(checkinTime || checkoutTime) && (
               <div className="bg-secondary-1/40 rounded-xl p-4 mb-5">
                 <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Horarios</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {checkinTime && (
                     <div>
                       <p className="body-3 text-neutral-4 mb-0.5">Check-in</p>
@@ -316,7 +316,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                 <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Habitaciones disponibles</p>
                 <div className="flex flex-col gap-2">
                   {roomList.map((r, i) => (
-                    <div key={i} className="border border-neutral-1 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div key={i} className="border border-neutral-1 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="min-w-0">
                         <p className="body-3 font-semibold text-neutral-7 truncate">{r.name}</p>
                         <div className="flex flex-wrap gap-1.5 mt-1">
@@ -370,7 +370,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         </div>
 
         {/* Footer fijo con acciones */}
-        <div className="px-5 py-4 border-t border-neutral-1 flex gap-3 shrink-0 bg-white">
+        <div className="px-5 py-4 border-t border-neutral-1 flex flex-col sm:flex-row gap-3 shrink-0 bg-white">
           {duplicate ? (
             <div className="flex-1 h-11 rounded-lg bg-feedback-warning border border-feedback-warning-strong text-feedback-warning-strong flex items-center justify-center gap-2 body-2-semibold">
               ⚠️ Ya tienes este hotel reservado
@@ -396,7 +396,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
             href={`https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-11 px-4 rounded-lg border border-secondary-3 text-secondary-3 flex items-center gap-2 body-2-semibold hover:bg-secondary-1 transition"
+            className="h-11 px-4 rounded-lg border border-secondary-3 text-secondary-3 flex items-center justify-center gap-2 body-2-semibold hover:bg-secondary-1 transition"
           >
             <ExternalLink className="w-4 h-4" /> Booking.com
           </a>

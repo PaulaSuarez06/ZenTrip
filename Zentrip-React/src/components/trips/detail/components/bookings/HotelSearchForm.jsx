@@ -49,7 +49,7 @@ export default function HotelSearchForm({
   onSearch,
 }) {
   return (
-    <div className="bg-white border border-neutral-1 rounded-2xl p-6 shadow-sm">
+    <div className="bg-white border border-neutral-1 rounded-2xl p-4 sm:p-6 shadow-sm">
       <SectionLabel>Buscar alojamiento</SectionLabel>
 
       {/* Destino */}
@@ -70,7 +70,7 @@ export default function HotelSearchForm({
       </div>
 
       {/* Fechas */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <FormField label="Entrada" icon={Calendar}>
           <DateInput value={checkIn} onChange={(e) => onCheckInChange(e.target.value)} />
         </FormField>
@@ -80,7 +80,7 @@ export default function HotelSearchForm({
       </div>
 
       {/* Ocupación */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <FormField label="Habitaciones" icon={BedDouble}>
           <NumberInput value={rooms} onChange={(e) => onRoomsChange(Math.max(1, Number(e.target.value)))} />
         </FormField>

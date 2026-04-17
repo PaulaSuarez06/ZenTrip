@@ -70,7 +70,7 @@ function CancelBookingButton({ booking, tripId, onCancelled }) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="h-9 px-3 rounded-lg border border-feedback-error text-feedback-error-strong body-3 font-bold flex items-center justify-center hover:bg-red-50 transition"
+        className="h-9 px-3 rounded-lg border border-feedback-error text-feedback-error-strong body-3 font-bold flex items-center justify-center hover:bg-red-50 transition w-full sm:w-auto"
       >
         Cancelar reserva
       </button>
@@ -182,7 +182,7 @@ export default function HotelSearch({ trip, members = [], tripId }) {
           <div className="flex flex-col gap-3">
             {existingBookings.map((b) => (
               <div key={b.id} className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl px-4 py-3">
-                <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🏨</span>
                     <div>
@@ -197,13 +197,13 @@ export default function HotelSearch({ trip, members = [], tripId }) {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   {b.bookingUrl && (
                     <a
                       href={b.bookingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 h-9 rounded-lg border border-auxiliary-green-4 text-auxiliary-green-5 body-3 font-bold flex items-center justify-center gap-1.5 hover:bg-auxiliary-green-2 transition"
+                      className="w-full sm:flex-1 h-9 rounded-lg border border-auxiliary-green-4 text-auxiliary-green-5 body-3 font-bold flex items-center justify-center gap-1.5 hover:bg-auxiliary-green-2 transition"
                     >
                       Ver en Booking.com
                     </a>

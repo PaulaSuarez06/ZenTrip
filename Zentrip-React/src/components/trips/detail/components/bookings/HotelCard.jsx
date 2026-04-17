@@ -3,9 +3,9 @@ import { ScoreBadge, StarRow } from './HotelAtoms';
 
 export default function HotelCard({ hotel, onView }) {
   return (
-    <div className="flex bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-md transition-all cursor-pointer">
+    <div className="flex flex-col sm:flex-row bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-md transition-all cursor-pointer">
       {/* Imagen */}
-      <div className="w-28 shrink-0 bg-secondary-1 flex items-center justify-center overflow-hidden">
+      <div className="w-full h-40 sm:h-auto sm:w-28 sm:shrink-0 bg-secondary-1 flex items-center justify-center overflow-hidden">
         {hotel.photo
           ? <img src={hotel.photo} alt={hotel.name} className="w-full h-full object-cover" />
           : <span className="text-4xl">🏨</span>
@@ -13,7 +13,7 @@ export default function HotelCard({ hotel, onView }) {
       </div>
 
       {/* Info */}
-      <div className="flex-1 p-3 border-r border-neutral-1 min-w-0">
+      <div className="flex-1 p-3 sm:border-r border-neutral-1 min-w-0">
         <p className="body-2-semibold text-neutral-7 leading-tight mb-1">{hotel.name}</p>
 
         {hotel.loc && (
@@ -43,8 +43,8 @@ export default function HotelCard({ hotel, onView }) {
       </div>
 
       {/* Precio + acción */}
-      <div className="w-36 shrink-0 p-3 flex flex-col justify-between items-end">
-        <div className="text-right">
+      <div className="w-full sm:w-36 sm:shrink-0 p-3 border-t sm:border-t-0 border-neutral-1 flex flex-col gap-3 sm:gap-0 sm:justify-between items-start sm:items-end">
+        <div className="text-left sm:text-right">
           <ScoreBadge score={hotel.score} />
           {hotel.price != null ? (
             <div className="mt-2">
@@ -59,13 +59,13 @@ export default function HotelCard({ hotel, onView }) {
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-1.5">
+        <div className="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto">
           <span className="text-[11px] font-bold px-2 py-1 bg-auxiliary-green-2 text-auxiliary-green-5 rounded-full font-titles">
             {hotel.avail}
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); onView(hotel); }}
-            className="body-3 font-semibold px-3 py-1.5 rounded-lg border border-primary-3 text-primary-3 bg-white hover:bg-primary-1 transition whitespace-nowrap"
+            className="body-3 font-semibold px-3 py-1.5 rounded-lg border border-primary-3 text-primary-3 bg-white hover:bg-primary-1 transition whitespace-nowrap w-full sm:w-auto"
           >
             Ver hotel →
           </button>
