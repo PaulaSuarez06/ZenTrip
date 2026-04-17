@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { apiClient } from '../../services/apiClient';
-import { mapApiHotel, getNights, TIPS } from '../trips/detail/components/bookings/hotelUtils';
-import { SectionLabel, TipCard } from '../trips/detail/components/bookings/HotelAtoms';
-import HotelSearchForm from '../trips/detail/components/bookings/HotelSearchForm';
-import HotelResults from '../trips/detail/components/bookings/HotelResults';
-import HotelDetailModal from '../trips/detail/components/bookings/HotelDetailModal';
+import { mapApiHotel, getNights, TIPS } from '../trips/detail/components/bookings/hotels/hotelUtils';
+import { SectionLabel, TipCard } from '../trips/detail/components/bookings/hotels/HotelAtoms';
+import HotelSearchForm from '../trips/detail/components/bookings/hotels/HotelSearchForm';
+import HotelResults from '../trips/detail/components/bookings/hotels/HotelResults';
+import HotelDetailModal from '../trips/detail/components/bookings/hotels/HotelDetailModal';
 
 export default function HotelsExplorer() {
   const today = new Date().toISOString().split('T')[0];
