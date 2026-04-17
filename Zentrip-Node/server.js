@@ -14,8 +14,13 @@ const errorHandler = require('./src/middlewares/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const envOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,
+  ...envOrigins,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:4173',

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
 import { useAuth } from '../../../../../context/AuthContext';
 import Button from '../../../../ui/Button';
 import AlertMessage from '../../../../ui/AlertMessage';
@@ -14,6 +15,10 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', invitados = [], 
   const [fieldErrors, setFieldErrors] = useState({});
   const [copyMessage, setCopyMessage] = useState('');
   const [seleccionado, setSeleccionado] = useState(null);
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [qrImage, setQrImage] = useState('');
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrError, setQrError] = useState('');
   const currentUserUid = user?.uid || '';
   const currentUserEmail = (user?.email || '').trim().toLowerCase();
 
@@ -142,8 +147,36 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', invitados = [], 
     }
   };
 
+  const handleOpenQr = async () => {
+    if (!enlaceInvitacion || qrLoading) return;
+
+    setIsQrOpen(true);
+    setQrError('');
+
+    if (qrImage) return;
+
+    setQrLoading(true);
+    try {
+      const dataUrl = await QRCode.toDataURL(enlaceInvitacion, {
+        width: 280,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+      });
+      setQrImage(dataUrl);
+    } catch {
+      setQrError('No se pudo generar el código QR.');
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const closeQrModal = () => {
+    setIsQrOpen(false);
+  };
+
   return (
-    <div>
+    <>
+      <div>
       <div className="mb-5">
         <h3 className="body-bold text-secondary-5 mb-1">Invitar por correo electrónico</h3>
         <p className="body-2 text-neutral-3 mb-3">Escribe un correo para invitar. Si ya tiene cuenta en ZenTrip, se gestionará como miembro.</p>
@@ -216,13 +249,13 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', invitados = [], 
 
       <div>
         <h3 className="body-bold text-secondary-5 mb-2">Enlace de invitación</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             type="text"
             readOnly
             value={enlaceInvitacion}
             placeholder="https://zentrip.com/join/..."
-            className="flex-1 bg-neutral-1 border border-neutral-1 rounded-lg px-4 py-2 body-2 text-neutral-3 cursor-default focus:outline-none"
+            className="flex-1 min-w-[220px] bg-neutral-1 border border-neutral-1 rounded-lg px-4 py-2 body-2 text-neutral-3 cursor-default focus:outline-none"
           />
           <button
             type="button"
@@ -235,9 +268,66 @@ export default function TabEnlaceEmail({ enlaceInvitacion = '', invitados = [], 
             </svg>
             Copiar
           </button>
+          <button
+            type="button"
+            onClick={handleOpenQr}
+            disabled={!enlaceInvitacion || qrLoading}
+            className="flex items-center gap-2 bg-neutral-1 border border-neutral-2 rounded-lg px-4 py-2 body-2-semibold text-neutral-5 hover:bg-neutral-2 transition shrink-0 disabled:opacity-60"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm11 0h1m-1 3h1m3-3h1m-4 3h4m-6 3h6" />
+            </svg>
+            {qrLoading ? 'Generando...' : 'QR'}
+          </button>
         </div>
         {copyMessage && <p className="mt-2 body-3 text-secondary-5">{copyMessage}</p>}
       </div>
-    </div>
+      </div>
+
+      {isQrOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeQrModal} />
+
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="title-h3-desktop text-secondary-5">Código QR</h3>
+                <p className="mt-1 body-3 text-neutral-4">Escanéalo para abrir el enlace de invitación.</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeQrModal}
+                className="text-neutral-4 hover:text-neutral-6 transition"
+                aria-label="Cerrar modal QR"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-neutral-1 bg-neutral-1 p-4 flex items-center justify-center min-h-[220px]">
+              {qrLoading && <p className="body-2 text-neutral-4">Generando QR...</p>}
+              {!qrLoading && qrError && <AlertMessage message={qrError} variant="error" />}
+              {!qrLoading && !qrError && qrImage && (
+                <img
+                  src={qrImage}
+                  alt="QR para unirse al viaje"
+                  className="w-56 h-56 rounded-lg bg-white p-2"
+                />
+              )}
+            </div>
+
+            <p className="mt-3 body-3 text-neutral-4 break-all">{enlaceInvitacion}</p>
+
+            <div className="mt-5 flex justify-end">
+              <Button variant="ghost" className="w-auto! px-5" type="button" onClick={closeQrModal}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
