@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { apiClient } from '../../../../../services/apiClient';
-import { mapApiHotel, getNights, TIPS } from './hotelUtils';
+import { apiClient } from '../../../../../../services/apiClient';
+import { mapApiHotel, getNights, fmtDate, TIPS } from './hotelUtils';
 import { SectionLabel, TipCard } from './HotelAtoms';
 import HotelSearchForm from './HotelSearchForm';
 import HotelResults from './HotelResults';
 import HotelDetailModal from './HotelDetailModal';
-import { useAuth } from '../../../../../context/AuthContext';
-import { getBookings, deleteBooking, deleteActivity } from '../../../../../services/tripService';
+import BookingDetailModal from './BookingDetailModal';
+import { useAuth } from '../../../../../../context/AuthContext';
+import { getBookings, deleteBooking, deleteActivity } from '../../../../../../services/tripService';
 
 function CancelBookingModal({ booking, tripId, onConfirm, onClose }) {
   const [deleting, setDeleting] = useState(false);
@@ -70,7 +71,7 @@ function CancelBookingButton({ booking, tripId, onCancelled }) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="h-9 px-3 rounded-lg border border-feedback-error text-feedback-error-strong body-3 font-bold flex items-center justify-center hover:bg-red-50 transition"
+        className="h-9 px-3 rounded-lg border border-feedback-error text-feedback-error-strong body-3 font-bold flex items-center justify-center hover:bg-red-50 transition w-full sm:w-auto"
       >
         Cancelar reserva
       </button>
@@ -107,6 +108,7 @@ export default function HotelSearch({ trip, members = [], tripId }) {
   const [page, setPage]       = useState(1);
 
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const [existingBookings, setExistingBookings] = useState([]);
 
   useEffect(() => {
@@ -182,12 +184,17 @@ export default function HotelSearch({ trip, members = [], tripId }) {
           <div className="flex flex-col gap-3">
             {existingBookings.map((b) => (
               <div key={b.id} className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl px-4 py-3">
-                <div className="flex items-center justify-between gap-3 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBooking(b)}
+                  className="w-full text-left mb-3 hover:opacity-80 transition"
+                >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🏨</span>
                     <div>
                       <p className="body-2-semibold text-neutral-7">{b.hotelName}</p>
-                      <p className="body-3 text-neutral-4">{b.checkIn} → {b.checkOut} · {b.nights} noche{b.nights !== 1 ? 's' : ''}</p>
+                      <p className="body-3 text-neutral-4">{fmtDate(b.checkIn)} → {fmtDate(b.checkOut)} · {b.nights} noche{b.nights !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
                   {b.pricePerNight != null && (
@@ -197,13 +204,14 @@ export default function HotelSearch({ trip, members = [], tripId }) {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
                   {b.bookingUrl && (
                     <a
                       href={b.bookingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 h-9 rounded-lg border border-auxiliary-green-4 text-auxiliary-green-5 body-3 font-bold flex items-center justify-center gap-1.5 hover:bg-auxiliary-green-2 transition"
+                      className="w-full sm:flex-1 h-9 rounded-lg border border-auxiliary-green-4 text-auxiliary-green-5 body-3 font-bold flex items-center justify-center gap-1.5 hover:bg-auxiliary-green-2 transition"
                     >
                       Ver en Booking.com
                     </a>
@@ -285,6 +293,19 @@ export default function HotelSearch({ trip, members = [], tripId }) {
           {TIPS.map((t) => <TipCard key={t.title} {...t} />)}
         </div>
       </div>
+
+      {/* Modal de reserva existente */}
+      {selectedBooking && (
+        <BookingDetailModal
+          booking={selectedBooking}
+          tripId={tripId}
+          onClose={() => setSelectedBooking(null)}
+          onUpdated={(updated) => {
+            setExistingBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+            setSelectedBooking(updated);
+          }}
+        />
+      )}
 
       {/* Modal de detalles */}
       {selectedHotel && (

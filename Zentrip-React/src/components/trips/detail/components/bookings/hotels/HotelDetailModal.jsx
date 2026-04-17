@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink } from 'lucide-react';
-import { apiClient } from '../../../../../services/apiClient';
-import { addActivity, addBooking, getBookings, sendBookingNotifications } from '../../../../../services/tripService';
-import { useAuth } from '../../../../../context/AuthContext';
+import { apiClient } from '../../../../../../services/apiClient';
+import { addActivity, addBooking, getBookings, sendBookingNotifications, updateBooking } from '../../../../../../services/tripService';
+import { useAuth } from '../../../../../../context/AuthContext';
 import { ScoreBadge, StarRow } from './HotelAtoms';
+import BookingReceiptUpload from '../BookingReceiptUpload';
 
 // ─── HotelDetailModal ─────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
   const [loadingDetails, setLoadingDetails] = useState(true);
   const [booking, setBooking]   = useState(false);
   const [booked, setBooked]     = useState(false);
+  const [bookingId, setBookingId] = useState(null);
   const [duplicate, setDuplicate] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
 
@@ -120,6 +122,11 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         currency: hotel.currency,
         status: 'reservado',
         bookingUrl,
+        createdBy: {
+          uid: user.uid,
+          name: profile?.displayName || profile?.firstName || user.email,
+          photoURL: profile?.photoURL || null,
+        },
       };
       const activityId = await addActivity(tripId, {
         date: checkIn,
@@ -130,15 +137,15 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         notes: hotel.price != null ? `Reservado · ${hotel.price} ${hotel.currency}/noche · ${nights} noche${nights !== 1 ? 's' : ''}` : 'Reservado',
         status: 'reservado',
       });
-      await addBooking(tripId, { ...bookingData, activityId });
+      const newBookingId = await addBooking(tripId, { ...bookingData, activityId });
       await sendBookingNotifications(tripId, {
         bookerUid: user.uid,
         bookerName: profile?.displayName || profile?.firstName || 'Un miembro',
         hotelName: hotel.name,
         tripName: trip?.name || '',
       });
+      setBookingId(newBookingId);
       setBooked(true);
-      setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
       console.error('[HotelDetailModal] Error al guardar reserva:', err);
     } finally {
@@ -275,7 +282,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
             {(checkinTime || checkoutTime) && (
               <div className="bg-secondary-1/40 rounded-xl p-4 mb-5">
                 <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Horarios</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {checkinTime && (
                     <div>
                       <p className="body-3 text-neutral-4 mb-0.5">Check-in</p>
@@ -316,7 +323,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                 <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Habitaciones disponibles</p>
                 <div className="flex flex-col gap-2">
                   {roomList.map((r, i) => (
-                    <div key={i} className="border border-neutral-1 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div key={i} className="border border-neutral-1 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="min-w-0">
                         <p className="body-3 font-semibold text-neutral-7 truncate">{r.name}</p>
                         <div className="flex flex-wrap gap-1.5 mt-1">
@@ -370,36 +377,54 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         </div>
 
         {/* Footer fijo con acciones */}
-        <div className="px-5 py-4 border-t border-neutral-1 flex gap-3 shrink-0 bg-white">
+        <div className="px-5 py-4 border-t border-neutral-1 flex flex-col gap-3 shrink-0 bg-white">
           {duplicate ? (
-            <div className="flex-1 h-11 rounded-lg bg-feedback-warning border border-feedback-warning-strong text-feedback-warning-strong flex items-center justify-center gap-2 body-2-semibold">
+            <div className="h-11 rounded-lg bg-feedback-warning border border-feedback-warning-strong text-feedback-warning-strong flex items-center justify-center gap-2 body-2-semibold">
               ⚠️ Ya tienes este hotel reservado
             </div>
           ) : booked ? (
-            <div className="flex-1 h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
-              ✓ Reserva guardada
-            </div>
+            <>
+              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
+                ✓ Reserva guardada
+              </div>
+              <BookingReceiptUpload
+                onUpdate={async (urls) => {
+                  if (bookingId) {
+                    await updateBooking(tripId, bookingId, { receiptUrls: urls });
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition"
+              >
+                Continuar
+              </button>
+            </>
           ) : (
-            <button
-              onClick={handleBooked}
-              disabled={booking || !tripId}
-              className={`flex-1 h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${
-                booking || !tripId ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'
-              }`}
-            >
-              {booking ? (
-                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Comprobando…</>
-              ) : '✓ He reservado'}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleBooked}
+                disabled={booking || !tripId}
+                className={`flex-1 h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${
+                  booking || !tripId ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'
+                }`}
+              >
+                {booking ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Comprobando…</>
+                ) : '✓ He reservado'}
+              </button>
+              <a
+                href={`https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-11 px-4 rounded-lg border border-secondary-3 text-secondary-3 flex items-center justify-center gap-2 body-2-semibold hover:bg-secondary-1 transition"
+              >
+                <ExternalLink className="w-4 h-4" /> Booking.com
+              </a>
+            </div>
           )}
-          <a
-            href={`https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-11 px-4 rounded-lg border border-secondary-3 text-secondary-3 flex items-center gap-2 body-2-semibold hover:bg-secondary-1 transition"
-          >
-            <ExternalLink className="w-4 h-4" /> Booking.com
-          </a>
         </div>
 
       </div>
