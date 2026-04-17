@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Hotel, Plane, Car, Train, Compass, Map, Utensils } from 'lucide-react';
-import HotelSearch from '../bookings/HotelSearch';
+import HotelSearch from '../bookings/hotels/HotelSearch';
 import PlaceholderTab from './PlaceholderTab';
 
 const SUBTABS = [
@@ -55,7 +55,7 @@ export default function ReservasTab({ trip, members, tripId, initialSubTab = 'ho
       </div>
 
       {/* Contenido del sub-tab activo */}
-      <div className="bg-white rounded-2xl border border-neutral-1 p-6">
+      <div className="bg-white rounded-2xl border border-neutral-1 p-4 sm:p-6">
         {renderContent()}
       </div>
     </div>

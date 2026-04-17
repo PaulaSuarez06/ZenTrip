@@ -215,6 +215,10 @@ export async function getBookings(tripId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+export async function updateBooking(tripId, bookingId, data) {
+  await updateDoc(doc(db, 'trips', tripId, 'bookings', bookingId), data);
+}
+
 export async function deleteBooking(tripId, bookingId) {
   await deleteDoc(doc(db, 'trips', tripId, 'bookings', bookingId));
 }
