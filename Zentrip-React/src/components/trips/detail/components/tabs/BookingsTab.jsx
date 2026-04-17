@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Hotel, Plane, Car, Train, Compass, Map, Utensils } from 'lucide-react';
-import HotelSearch from '../bookings/HotelSearch';
+import HotelSearch from '../bookings/hotels/HotelSearch';
 import PlaceholderTab from './PlaceholderTab';
 
 const SUBTABS = [

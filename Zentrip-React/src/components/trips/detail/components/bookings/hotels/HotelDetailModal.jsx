@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink } from 'lucide-react';
-import { apiClient } from '../../../../../services/apiClient';
-import { addActivity, addBooking, getBookings, sendBookingNotifications, updateBooking } from '../../../../../services/tripService';
-import { useAuth } from '../../../../../context/AuthContext';
+import { apiClient } from '../../../../../../services/apiClient';
+import { addActivity, addBooking, getBookings, sendBookingNotifications, updateBooking } from '../../../../../../services/tripService';
+import { useAuth } from '../../../../../../context/AuthContext';
 import { ScoreBadge, StarRow } from './HotelAtoms';
-import BookingReceiptUpload from './BookingReceiptUpload';
+import BookingReceiptUpload from '../BookingReceiptUpload';
 
 // ─── HotelDetailModal ─────────────────────────────────────────────────────────
 

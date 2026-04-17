@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { apiClient } from '../../../../../services/apiClient';
+import { apiClient } from '../../../../../../services/apiClient';
 import { mapApiHotel, getNights, TIPS } from './hotelUtils';
 import { SectionLabel, TipCard } from './HotelAtoms';
 import HotelSearchForm from './HotelSearchForm';
 import HotelResults from './HotelResults';
 import HotelDetailModal from './HotelDetailModal';
-import { useAuth } from '../../../../../context/AuthContext';
-import { getBookings, deleteBooking, deleteActivity } from '../../../../../services/tripService';
+import { useAuth } from '../../../../../../context/AuthContext';
+import { getBookings, deleteBooking, deleteActivity } from '../../../../../../services/tripService';
 
 function CancelBookingModal({ booking, tripId, onConfirm, onClose }) {
   const [deleting, setDeleting] = useState(false);
