@@ -8,14 +8,45 @@ const BASE_URL = `https://${RAPIDAPI_HOST}/api/v1`;
 const rapidApiHeaders = {
   'x-rapidapi-key': RAPIDAPI_KEY,
   'x-rapidapi-host': RAPIDAPI_HOST,
+  'Content-Type': 'application/json',
 };
 
 const searchCarLocation = async ({ query }) => {
-  const response = await axios.get(`${BASE_URL}/cars/searchDestination`, {
-    headers: rapidApiHeaders,
-    params: { query },
+  const nominatimHeaders = { 'User-Agent': 'ZenTrip/1.0 (contact@zentrip.app)' };
+
+  const [cityRes, airportRes] = await Promise.all([
+    axios.get('https://nominatim.openstreetmap.org/search', {
+      params: { q: query, format: 'json', limit: 4, addressdetails: 1 },
+      headers: nominatimHeaders,
+    }),
+    axios.get('https://nominatim.openstreetmap.org/search', {
+      params: { q: `${query} airport`, format: 'json', limit: 3, addressdetails: 1 },
+      headers: nominatimHeaders,
+    }),
+  ]);
+
+  const toResult = (r, isAirport) => ({
+    name: isAirport
+      ? (r.display_name.split(',')[0].trim())
+      : (r.display_name.split(',')[0].trim()),
+    city: r.address?.city || r.address?.town || r.address?.village || r.address?.county || null,
+    country: r.address?.country || null,
+    type: isAirport ? 'airport' : (r.type || r.class || 'city'),
+    coordinates: { latitude: parseFloat(r.lat), longitude: parseFloat(r.lon) },
   });
-  return response.data;
+
+  const airports = (airportRes.data ?? []).map((r) => toResult(r, true));
+  const cities   = (cityRes.data ?? []).map((r) => toResult(r, false));
+
+  const seen = new Set();
+  const results = [...airports, ...cities].filter((r) => {
+    const key = `${r.coordinates.latitude.toFixed(3)},${r.coordinates.longitude.toFixed(3)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return { status: true, message: 'Success', data: results };
 };
 
 const searchCarRentals = async ({

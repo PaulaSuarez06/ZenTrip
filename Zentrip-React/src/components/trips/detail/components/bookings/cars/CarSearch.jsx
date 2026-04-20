@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { searchCars } from '../../../../../../services/carService';
+import { useState, useEffect } from 'react';
+import { searchCars, getCarLocations } from '../../../../../../services/carService';
 import { mapApiCar, getDays, fmtDate, TIPS } from './carUtils';
 import { SectionLabel, TipCard } from '../hotels/HotelAtoms';
 import CarSearchForm from './CarSearchForm';
@@ -29,7 +29,18 @@ export default function CarSearch({ trip, members = [], tripId }) {
   const [sortKey,  setSortKey]  = useState('price-asc');
   const [page,     setPage]     = useState(1);
 
-  const [selectedCar, setSelectedCar] = useState(null);
+  const cityOnly = (str) => str?.split(',')[0]?.trim() || '';
+
+  const [selectedCar,  setSelectedCar]  = useState(null);
+  const [pickUpText,   setPickUpText]   = useState(cityOnly(trip?.destination));
+  const [dropOffText,  setDropOffText]  = useState(cityOnly(trip?.destination));
+
+  useEffect(() => {
+    if (!trip?.destination) return;
+    const city = cityOnly(trip.destination);
+    setPickUpText(city);
+    setDropOffText(city);
+  }, [trip?.destination]);
 
   if (!user) {
     return (
@@ -43,15 +54,23 @@ export default function CarSearch({ trip, members = [], tripId }) {
     );
   }
 
-  const effectiveDropOff = sameLocation ? pickUpLocation : dropOffLocation;
+  const effectiveDropOffText = sameLocation ? pickUpText : dropOffText;
   const days = getDays(pickUpDate, dropOffDate);
 
   const canSearch = Boolean(
-    pickUpLocation?.coordinates &&
-    effectiveDropOff?.coordinates &&
+    pickUpText.trim().length >= 2 &&
+    effectiveDropOffText.trim().length >= 2 &&
     pickUpDate && dropOffDate && days > 0 &&
     driverAge >= 18,
   );
+
+  const resolveCoords = async (location, text) => {
+    if (location?.coordinates) return location;
+    const data = await getCarLocations(text);
+    const results = data?.data ?? data ?? [];
+    if (!results.length) throw new Error(`No se encontró ubicación para "${text}".`);
+    return results[0];
+  };
 
   const handleSearch = async () => {
     if (!canSearch) return;
@@ -60,11 +79,18 @@ export default function CarSearch({ trip, members = [], tripId }) {
     setCars([]);
     setSearched(false);
     try {
+      const resolvedPickUp  = await resolveCoords(pickUpLocation, pickUpText);
+      const resolvedDropOff = sameLocation ? resolvedPickUp : await resolveCoords(dropOffLocation, dropOffText);
+
+      if (!resolvedPickUp?.coordinates || !resolvedDropOff?.coordinates) {
+        throw new Error('No se encontraron coordenadas para la ubicación indicada. Selecciona una sugerencia del desplegable.');
+      }
+
       const data = await searchCars({
-        pickUpLatitude:   pickUpLocation.coordinates.latitude,
-        pickUpLongitude:  pickUpLocation.coordinates.longitude,
-        dropOffLatitude:  effectiveDropOff.coordinates.latitude,
-        dropOffLongitude: effectiveDropOff.coordinates.longitude,
+        pickUpLatitude:   resolvedPickUp.coordinates.latitude,
+        pickUpLongitude:  resolvedPickUp.coordinates.longitude,
+        dropOffLatitude:  resolvedDropOff.coordinates.latitude,
+        dropOffLongitude: resolvedDropOff.coordinates.longitude,
         pickUpDate,
         dropOffDate,
         pickUpTime,
@@ -79,9 +105,7 @@ export default function CarSearch({ trip, members = [], tripId }) {
       const rawCars   = data?.data?.search_results ?? [];
 
       setCars(rawCars.map((c) => ({ ...mapApiCar(c, days), searchKey })));
-      setSearchedLocation(
-        pickUpLocation.name + (pickUpLocation.city ? ` – ${pickUpLocation.city}` : ''),
-      );
+      setSearchedLocation(resolvedPickUp.name + (resolvedPickUp.city ? ` – ${resolvedPickUp.city}` : ''));
       setFilter('all');
       setPage(1);
       setSearched(true);
@@ -117,6 +141,8 @@ export default function CarSearch({ trip, members = [], tripId }) {
           pickUpTime={pickUpTime}             onPickUpTimeChange={setPickUpTime}
           dropOffTime={dropOffTime}           onDropOffTimeChange={setDropOffTime}
           driverAge={driverAge}               onDriverAgeChange={setDriverAge}
+          pickUpQuery={pickUpText}            onPickUpQueryChange={setPickUpText}
+          dropOffQuery={dropOffText}          onDropOffQueryChange={setDropOffText}
           loading={loading}
           canSearch={canSearch}
           onSearch={handleSearch}

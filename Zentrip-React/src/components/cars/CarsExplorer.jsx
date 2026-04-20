@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { searchCars } from '../../services/carService';
+import { searchCars, getCarLocations } from '../../services/carService';
 import { mapApiCar, getDays, TIPS } from '../trips/detail/components/bookings/cars/carUtils';
 import { SectionLabel, TipCard } from '../trips/detail/components/bookings/hotels/HotelAtoms';
 import CarSearchForm from '../trips/detail/components/bookings/cars/CarSearchForm';
@@ -29,17 +29,27 @@ export default function CarsExplorer() {
   const [sortKey,  setSortKey]  = useState('price-asc');
   const [page,     setPage]     = useState(1);
 
-  const [selectedCar, setSelectedCar] = useState(null);
+  const [selectedCar,  setSelectedCar]  = useState(null);
+  const [pickUpText,   setPickUpText]   = useState('');
+  const [dropOffText,  setDropOffText]  = useState('');
 
-  const effectiveDropOff = sameLocation ? pickUpLocation : dropOffLocation;
   const days = getDays(pickUpDate, dropOffDate);
+  const effectiveDropOffText = sameLocation ? pickUpText : dropOffText;
 
   const canSearch = Boolean(
-    pickUpLocation?.coordinates &&
-    effectiveDropOff?.coordinates &&
+    pickUpText.trim().length >= 2 &&
+    effectiveDropOffText.trim().length >= 2 &&
     pickUpDate && dropOffDate && days > 0 &&
     driverAge >= 18,
   );
+
+  const resolveCoords = async (location, text) => {
+    if (location?.coordinates) return location;
+    const data = await getCarLocations(text);
+    const results = data?.data ?? data ?? [];
+    if (!results.length) throw new Error(`No se encontró ubicación para "${text}".`);
+    return results[0];
+  };
 
   const handleSearch = async () => {
     if (!canSearch) return;
@@ -48,11 +58,18 @@ export default function CarsExplorer() {
     setCars([]);
     setSearched(false);
     try {
+      const resolvedPickUp  = await resolveCoords(pickUpLocation, pickUpText);
+      const resolvedDropOff = sameLocation ? resolvedPickUp : await resolveCoords(dropOffLocation, dropOffText);
+
+      if (!resolvedPickUp?.coordinates || !resolvedDropOff?.coordinates) {
+        throw new Error('No se encontraron coordenadas. Selecciona una sugerencia del desplegable.');
+      }
+
       const data = await searchCars({
-        pickUpLatitude:   pickUpLocation.coordinates.latitude,
-        pickUpLongitude:  pickUpLocation.coordinates.longitude,
-        dropOffLatitude:  effectiveDropOff.coordinates.latitude,
-        dropOffLongitude: effectiveDropOff.coordinates.longitude,
+        pickUpLatitude:   resolvedPickUp.coordinates.latitude,
+        pickUpLongitude:  resolvedPickUp.coordinates.longitude,
+        dropOffLatitude:  resolvedDropOff.coordinates.latitude,
+        dropOffLongitude: resolvedDropOff.coordinates.longitude,
         pickUpDate,
         dropOffDate,
         pickUpTime,
@@ -67,9 +84,7 @@ export default function CarsExplorer() {
       const rawCars    = data?.data?.search_results ?? [];
 
       setCars(rawCars.map((c) => ({ ...mapApiCar(c, days), searchKey })));
-      setSearchedLocation(
-        pickUpLocation.name + (pickUpLocation.city ? ` – ${pickUpLocation.city}` : ''),
-      );
+      setSearchedLocation(resolvedPickUp.name + (resolvedPickUp.city ? ` – ${resolvedPickUp.city}` : ''));
       setFilter('all');
       setPage(1);
       setSearched(true);
@@ -107,6 +122,8 @@ export default function CarsExplorer() {
             pickUpTime={pickUpTime}             onPickUpTimeChange={setPickUpTime}
             dropOffTime={dropOffTime}           onDropOffTimeChange={setDropOffTime}
             driverAge={driverAge}               onDriverAgeChange={setDriverAge}
+            pickUpQuery={pickUpText}            onPickUpQueryChange={setPickUpText}
+            dropOffQuery={dropOffText}          onDropOffQueryChange={setDropOffText}
             loading={loading}
             canSearch={canSearch}
             onSearch={handleSearch}

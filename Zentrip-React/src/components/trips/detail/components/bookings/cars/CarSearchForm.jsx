@@ -11,14 +11,14 @@ export default function CarSearchForm({
   pickUpTime, onPickUpTimeChange,
   dropOffTime, onDropOffTimeChange,
   driverAge, onDriverAgeChange,
+  pickUpQuery, onPickUpQueryChange,
+  dropOffQuery, onDropOffQueryChange,
   loading, canSearch, onSearch,
 }) {
-  const [pickUpQuery, setPickUpQuery]   = useState(pickUpLocation?.name ?? '');
-  const [dropOffQuery, setDropOffQuery] = useState(dropOffLocation?.name ?? '');
-  const [pickUpSugg, setPickUpSugg]     = useState([]);
-  const [dropOffSugg, setDropOffSugg]   = useState([]);
-  const [pickUpOpen, setPickUpOpen]     = useState(false);
-  const [dropOffOpen, setDropOffOpen]   = useState(false);
+  const [pickUpSugg, setPickUpSugg]   = useState([]);
+  const [dropOffSugg, setDropOffSugg] = useState([]);
+  const [pickUpOpen, setPickUpOpen]   = useState(false);
+  const [dropOffOpen, setDropOffOpen] = useState(false);
   const pickUpTimer  = useRef(null);
   const dropOffTimer = useRef(null);
 
@@ -33,15 +33,15 @@ export default function CarSearchForm({
   };
 
   const handlePickUpInput = (val) => {
-    setPickUpQuery(val);
     onPickUpLocationChange(null);
+    onPickUpQueryChange?.(val);
     clearTimeout(pickUpTimer.current);
     pickUpTimer.current = setTimeout(() => fetchSugg(val, setPickUpSugg), 350);
   };
 
   const handleDropOffInput = (val) => {
-    setDropOffQuery(val);
     onDropOffLocationChange(null);
+    onDropOffQueryChange?.(val);
     clearTimeout(dropOffTimer.current);
     dropOffTimer.current = setTimeout(() => fetchSugg(val, setDropOffSugg), 350);
   };
@@ -50,19 +50,20 @@ export default function CarSearchForm({
 
   const selectPickUp = (loc) => {
     const label = locLabel(loc);
-    setPickUpQuery(label);
     onPickUpLocationChange(loc);
+    onPickUpQueryChange?.(label);
     setPickUpSugg([]);
     setPickUpOpen(false);
     if (sameLocation) {
-      setDropOffQuery(label);
       onDropOffLocationChange(loc);
+      onDropOffQueryChange?.(label);
     }
   };
 
   const selectDropOff = (loc) => {
-    setDropOffQuery(locLabel(loc));
+    const label = locLabel(loc);
     onDropOffLocationChange(loc);
+    onDropOffQueryChange?.(label);
     setDropOffSugg([]);
     setDropOffOpen(false);
   };
@@ -78,7 +79,7 @@ export default function CarSearchForm({
           onChange={(e) => {
             onSameLocationChange(e.target.checked);
             if (e.target.checked && pickUpLocation) {
-              setDropOffQuery(pickUpQuery);
+              onDropOffQueryChange?.(pickUpQuery);
               onDropOffLocationChange(pickUpLocation);
             }
           }}
@@ -94,7 +95,7 @@ export default function CarSearchForm({
         </label>
         <input
           type="text"
-          value={pickUpQuery}
+          value={pickUpQuery ?? ''}
           onChange={(e) => handlePickUpInput(e.target.value)}
           onFocus={() => setPickUpOpen(true)}
           onBlur={() => setTimeout(() => setPickUpOpen(false), 200)}
@@ -127,7 +128,7 @@ export default function CarSearchForm({
           </label>
           <input
             type="text"
-            value={dropOffQuery}
+            value={dropOffQuery ?? ''}
             onChange={(e) => handleDropOffInput(e.target.value)}
             onFocus={() => setDropOffOpen(true)}
             onBlur={() => setTimeout(() => setDropOffOpen(false), 200)}
