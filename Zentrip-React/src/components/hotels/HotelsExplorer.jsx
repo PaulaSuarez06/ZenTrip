@@ -1,17 +1,21 @@
-import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
 import { mapApiHotel, getNights, TIPS } from '../trips/detail/components/bookings/hotels/hotelUtils';
 import { SectionLabel, TipCard } from '../trips/detail/components/bookings/hotels/HotelAtoms';
 import HotelSearchForm from '../trips/detail/components/bookings/hotels/HotelSearchForm';
 import HotelResults from '../trips/detail/components/bookings/hotels/HotelResults';
 import HotelDetailModal from '../trips/detail/components/bookings/hotels/HotelDetailModal';
+import { ROUTES } from '../../config/routes';
+import { useAuth } from '../../context/AuthContext';
 
 export default function HotelsExplorer() {
+  const navigate = useNavigate();
   const { state } = useLocation();
   const tripContext = state?.tripContext ?? {};
 
   const today = new Date().toISOString().split('T')[0];
+  const { user } = useAuth();
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
   const [dest, setDest]         = useState(tripContext.destination || '');
@@ -32,6 +36,27 @@ export default function HotelsExplorer() {
   const [page, setPage]       = useState(1);
 
   const [selectedHotel, setSelectedHotel] = useState(null);
+
+  // Nuevo estado para los viajes del usuario
+  const [userTrips, setUserTrips] = useState([]);
+  const [loadingUserTrips, setLoadingUserTrips] = useState(false);
+
+  // Cargar los viajes del usuario al montar el componente
+  useEffect(() => {
+    if (!user) return;
+    const fetchUserTrips = async () => {
+      setLoadingUserTrips(true);
+      try {
+        const response = await apiClient.get('/trips/my-trips');
+        setUserTrips(response?.data || (Array.isArray(response) ? response : []));
+      } catch (err) {
+        console.error('Error al cargar los viajes del usuario:', err);
+      } finally {
+        setLoadingUserTrips(false);
+      }
+    };
+    fetchUserTrips();
+  }, [user]); 
 
   const nights = getNights(checkIn, checkOut);
   const canSearch = Boolean(dest.trim() && checkIn && checkOut && nights > 0);
@@ -69,9 +94,32 @@ export default function HotelsExplorer() {
   const handleFilterChange = (key) => { setFilter(key); setPage(1); };
   const handleSortChange   = (key) => { setSortKey(key); setPage(1); };
 
+  const handleSaveHotelToExistingTrip = async (tripId, hotelBookingData) => {
+    await apiClient.post(`/trips/${tripId}/bookings/hotels`, hotelBookingData);
+  };
+
+  const handleCreateNewTripWithHotel = (destination, startDate, endDate, bookingData) => {
+    if (bookingData) sessionStorage.setItem('zt_pending_hotel_booking', JSON.stringify(bookingData));
+    navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination, startDate, endDate } } });
+    setSelectedHotel(null);
+  };
+
+
+
   return (
     <div className="min-h-screen bg-neutral-1/50">
       <div className="max-w-2xl mx-auto px-4 py-8">
+
+        {/* Botón Volver */}
+        <button
+          onClick={() => navigate(ROUTES.HOME)}
+          className="flex items-center gap-2 text-neutral-4 hover:text-primary-3 transition-colors mb-6 group cursor-pointer border-none bg-transparent p-0"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-1">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          <span className="body-2-semibold">Volver</span>
+        </button>
 
         {/* Hero */}
         <div className="text-center mb-8">
@@ -121,10 +169,7 @@ export default function HotelsExplorer() {
         {/* Tips */}
         {!searched && (
           <div className="mt-2">
-            <SectionLabel>Consejos para tu búsqueda</SectionLabel>
-            <div className="grid grid-cols-2 gap-3">
-              {TIPS.map((t) => <TipCard key={t.title} {...t} />)}
-            </div>
+            
           </div>
         )}
 
@@ -137,6 +182,10 @@ export default function HotelsExplorer() {
           searchParams={{ checkIn, checkOut, adults, rooms, currency: tripContext.currency || 'EUR' }}
           tripId={tripContext.tripId ?? null}
           trip={tripContext.tripId ? { name: tripContext.tripName, currency: tripContext.currency } : null}
+          userTrips={userTrips} // Pasar los viajes del usuario
+          loadingUserTrips={loadingUserTrips} // Pasar el estado de carga
+          onSaveToExistingTrip={handleSaveHotelToExistingTrip} // Pasar la función para guardar
+          onCreateNewTrip={handleCreateNewTripWithHotel} // Pasar la función para crear nuevo viaje
           onClose={() => setSelectedHotel(null)}
         />
       )}

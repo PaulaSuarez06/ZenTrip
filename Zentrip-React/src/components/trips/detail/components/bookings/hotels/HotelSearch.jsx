@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../../../../services/apiClient';
 import { mapApiHotel, getNights, TIPS } from './hotelUtils';
 import { SectionLabel, TipCard } from './HotelAtoms';
@@ -10,9 +11,11 @@ import HotelBookingCard from './HotelBookingCard';
 import BookingBanner from '../BookingBanner';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { getBookings } from '../../../../../../services/tripService';
+import { ROUTES } from '../../../../../../config/routes';
 
 export default function HotelSearch({ trip, members = [], tripId }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [dest, setDest]         = useState(trip?.destination || '');
   const [checkIn, setCheckIn]   = useState(trip?.startDate || '');
@@ -34,6 +37,25 @@ export default function HotelSearch({ trip, members = [], tripId }) {
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [existingBookings, setExistingBookings] = useState([]);
+
+  // Estado para gestionar viajes del usuario en el modal
+  const [userTrips, setUserTrips] = useState([]);
+  const [loadingUserTrips, setLoadingUserTrips] = useState(false);
+
+  useEffect(() => {
+    const fetchUserTrips = async () => {
+      setLoadingUserTrips(true);
+      try {
+        const response = await apiClient.get('/trips/my-trips');
+        setUserTrips(response.data || []);
+      } catch (err) {
+        console.error('Error al cargar viajes:', err);
+      } finally {
+        setLoadingUserTrips(false);
+      }
+    };
+    if (user) fetchUserTrips();
+  }, [user]);
 
   useEffect(() => {
     if (!tripId || !user) return;
@@ -89,6 +111,20 @@ export default function HotelSearch({ trip, members = [], tripId }) {
 
   const handleFilterChange = (key) => { setFilter(key); setPage(1); };
   const handleSortChange   = (key) => { setSortKey(key); setPage(1); };
+
+  const handleSaveHotelToExistingTrip = async (targetTripId, hotelBookingData) => {
+    await apiClient.post(`/trips/${targetTripId}/bookings/hotels`, hotelBookingData);
+    if (targetTripId === tripId) {
+      const updated = await getBookings(tripId);
+      setExistingBookings(updated.filter(b => b.type === 'hotel'));
+    }
+  };
+
+  const handleCreateNewTripWithHotel = (destination, startDate, endDate, bookingData) => {
+    if (bookingData) sessionStorage.setItem('zt_pending_hotel_booking', JSON.stringify(bookingData));
+    navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination, startDate, endDate } } });
+    setSelectedHotel(null);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
@@ -177,6 +213,10 @@ export default function HotelSearch({ trip, members = [], tripId }) {
           searchParams={{ checkIn, checkOut, adults, rooms, currency: trip?.currency || 'EUR' }}
           tripId={tripId}
           trip={trip}
+          userTrips={userTrips}
+          loadingUserTrips={loadingUserTrips}
+          onSaveToExistingTrip={handleSaveHotelToExistingTrip}
+          onCreateNewTrip={handleCreateNewTripWithHotel}
           onClose={() => setSelectedHotel(null)}
         />
       )}

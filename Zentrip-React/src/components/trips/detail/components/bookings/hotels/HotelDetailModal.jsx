@@ -8,11 +8,16 @@ import BookingReceiptUpload from '../BookingReceiptUpload';
 
 // ─── HotelDetailModal ─────────────────────────────────────────────────────────
 
-export default function HotelDetailModal({ hotel, searchParams, tripId, trip, onClose }) {
+export default function HotelDetailModal({ hotel, searchParams, tripId, trip, onClose, userTrips = [], loadingUserTrips = false, onSaveToExistingTrip, onCreateNewTrip }) {
   const { checkIn, checkOut, adults, rooms, currency } = searchParams;
   const { user, profile } = useAuth();
 
   const [details, setDetails]   = useState(null);
+  const [internalTrips, setInternalTrips] = useState([]);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [showTripSelector, setShowTripSelector] = useState(false);
+  const [savingToTrip, setSavingToTrip] = useState(null);
+  const [saveError, setSaveError] = useState(null);
   const [photos, setPhotos]     = useState(hotel.photo ? [hotel.photo] : []);
   const [policies, setPolicies] = useState([]);
   const [roomList, setRoomList] = useState([]);
@@ -113,8 +118,60 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     return () => { cancelled = true; };
   }, [hotel.id, checkIn, checkOut, adults, rooms, currency]);
 
+  // Si no estamos en un viaje específico, comprobamos en la BD los viajes del usuario
+  useEffect(() => {
+    if (tripId || !user) return;
+
+    const fetchMyTrips = async () => {
+      setInternalLoading(true);
+      try {
+        const res = await apiClient.get('/trips/my-trips');
+        setInternalTrips(res?.data || (Array.isArray(res) ? res : []));
+      } catch (err) {
+        console.error('[HotelDetailModal] Error al recuperar viajes:', err);
+      } finally {
+        setInternalLoading(false);
+      }
+    };
+    fetchMyTrips();
+  }, [tripId, user, userTrips]);
+
+  const nights = Math.max(0, Math.round((new Date(checkOut + 'T00:00:00') - new Date(checkIn + 'T00:00:00')) / 86400000));
+
+  const getBookingData = () => {
+    const bookingUrl = `https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`;
+    return {
+      type: 'hotel',
+      hotelId: hotel.id,
+      name: hotel.name, // Requerido por el controlador Node
+      city: hotel.loc || '', // Requerido por el controlador Node
+      hotelName: hotel.name,
+      hotelStars: hotel.stars,
+      hotelScore: hotel.score,
+      checkIn,
+      checkOut,
+      adults,
+      rooms,
+      nights,
+      pricePerNight: hotel.price,
+      totalPrice: hotel.price != null ? hotel.price * nights : null,
+      currency: hotel.currency,
+      status: 'reservado',
+      bookingUrl,
+      createdBy: {
+        uid: user.uid,
+        name: profile?.displayName || profile?.firstName || user.email,
+        photoURL: profile?.photoURL || null,
+      },
+    };
+  };
+
   const handleBooked = async () => {
-    if (!tripId) return;
+    if (!tripId) {
+      setShowTripSelector(true);
+      return;
+    }
+
     setBooking(true);
     try {
       const existing = await getBookings(tripId);
@@ -125,29 +182,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         setDuplicate(true);
         return;
       }
-      const bookingUrl = `https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`;
-      const bookingData = {
-        type: 'hotel',
-        hotelId: hotel.id,
-        hotelName: hotel.name,
-        hotelStars: hotel.stars,
-        hotelScore: hotel.score,
-        checkIn,
-        checkOut,
-        adults,
-        rooms,
-        nights,
-        pricePerNight: hotel.price,
-        totalPrice: hotel.price != null ? hotel.price * nights : null,
-        currency: hotel.currency,
-        status: 'reservado',
-        bookingUrl,
-        createdBy: {
-          uid: user.uid,
-          name: profile?.displayName || profile?.firstName || user.email,
-          photoURL: profile?.photoURL || null,
-        },
-      };
+      const bookingData = getBookingData();
       const activityId = await addActivity(tripId, {
         date: checkIn,
         startTime: details?.data?.property?.checkin?.fromTime || '15:00',
@@ -173,6 +208,19 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     }
   };
 
+  const handleSelectTrip = async (targetTripId) => {
+    setSavingToTrip(targetTripId);
+    setSaveError(null);
+    try {
+      await onSaveToExistingTrip(targetTripId, getBookingData());
+      setBooked(true);
+      setShowTripSelector(false);
+    } catch {
+      setSaveError('No se pudo guardar la reserva. Inténtalo de nuevo.');
+    } finally {
+      setSavingToTrip(null);
+    }
+  };
 
   const prop = details?.data?.property ?? details?.property ?? {};
   const description = prop.description?.intro || prop.shortDescription || null;
@@ -183,8 +231,6 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
   const reviewScore = prop.reviewScore ?? hotel.score;
   const reviewCount = prop.reviewCount ?? hotel.reviewCount;
   const reviewWord = prop.reviewScoreWord ?? hotel.reviewScoreWord;
-
-  const nights = Math.max(0, Math.round((new Date(checkOut + 'T00:00:00') - new Date(checkIn + 'T00:00:00')) / 86400000));
 
   const FACILITY_ICONS = {
     'wifi': <Wifi className="w-4 h-4" />, 'internet': <Wifi className="w-4 h-4" />,
@@ -224,6 +270,66 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Selector de viaje (Modal interno) */}
+        {showTripSelector && (
+          <div className="absolute inset-0 z-20 bg-white flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-1">
+              <h3 className="body-2-semibold text-neutral-7">Añadir a un viaje</h3>
+              <button onClick={() => setShowTripSelector(false)} className="p-1 hover:bg-neutral-1 rounded-full">
+                <X className="w-5 h-5 text-neutral-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <p className="body-3 text-neutral-4 mb-4">Selecciona el viaje donde quieres guardar este alojamiento:</p>
+              
+              {(loadingUserTrips || internalLoading) ? (
+                <div className="flex justify-center py-10">
+                  <span className="w-6 h-6 border-2 border-primary-3 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {(() => {
+                    const allTrips = [...(userTrips || []), ...(internalTrips || [])];
+                    const uniqueTrips = Array.from(new Map(allTrips.map(t => [t.id, t])).values());
+
+                    const normalize = (str) =>
+                      str?.split(',')[0]?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim() || '';
+                    const hotelCity = normalize(hotel.loc);
+                    const matchingTrips = hotelCity
+                      ? uniqueTrips.filter(t => {
+                          const dest = normalize(t.destination);
+                          return dest.includes(hotelCity) || hotelCity.includes(dest);
+                        })
+                      : uniqueTrips;
+
+                    if (uniqueTrips.length === 0) return <p className="body-3 text-neutral-4 text-center py-4 italic">No tienes viajes activos actualmente.</p>;
+                    if (matchingTrips.length === 0) return <p className="body-3 text-neutral-4 text-center py-4 italic">No tienes viajes con destino a {hotel.loc?.split(',')[0] || 'este lugar'}.</p>;
+
+                    return matchingTrips.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleSelectTrip(t.id)}
+                        disabled={!!savingToTrip}
+                        className="w-full text-left p-4 border border-neutral-1 rounded-xl hover:border-primary-3 hover:bg-primary-1 transition flex items-center justify-between group disabled:opacity-60"
+                      >
+                        <div>
+                          <p className="body-2-semibold text-neutral-7 group-hover:text-primary-4">{t.name}</p>
+                          <p className="body-3 text-neutral-4">{t.destination}</p>
+                        </div>
+                        {savingToTrip === t.id ? <span className="w-4 h-4 border-2 border-primary-3 border-t-transparent rounded-full animate-spin" /> : <ChevronRight className="w-4 h-4 text-neutral-3" />}
+                      </button>
+                    ));
+                  })()}
+                  {saveError && (
+                    <p className="body-3 text-feedback-error-strong text-center py-1">{saveError}</p>
+                  )}
+                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Crear un nuevo viaje</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Contenido scrollable */}
         <div className="overflow-y-auto flex-1">
@@ -426,14 +532,14 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleBooked}
-                disabled={booking || !tripId}
+                disabled={booking}
                 className={`flex-1 h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${
-                  booking || !tripId ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'
+                  booking ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'
                 }`}
               >
                 {booking ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Comprobando…</>
-                ) : '✓ He reservado'}
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando…</>
+                ) : !tripId ? 'Reservar' : '✓ He reservado'}
               </button>
               <a
                 href={`https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`}

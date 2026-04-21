@@ -29,16 +29,21 @@ function loadDraft() {
 
 export { STORAGE_KEY, INITIAL_FORM };
 
-export function useTripDraft() {
+export function useTripDraft(prefill = null) {
   const navigate = useNavigate();
   const pageIsUnloadingRef = useRef(false);
 
   const [step, setStep] = useState(() => {
+    if (prefill) return 0;
     const saved = loadDraft();
     return Number.isInteger(saved?.step) ? Math.min(Math.max(saved.step, 0), 2) : 0;
   });
 
   const [form, setForm] = useState(() => {
+    if (prefill) {
+      localStorage.removeItem(STORAGE_KEY);
+      return { ...INITIAL_FORM, ...prefill };
+    }
     const saved = loadDraft();
     return saved?.form ? { ...INITIAL_FORM, ...saved.form } : INITIAL_FORM;
   });

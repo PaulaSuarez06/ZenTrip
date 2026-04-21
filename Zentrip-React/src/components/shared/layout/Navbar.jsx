@@ -105,13 +105,13 @@ const Header = () => {
                             {item}
                         </button>
                     ) : (
-                        <a
+                        <button
                             key={item}
-                            href="#"
-                            className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200"
+                            onClick={handleGoHome}
+                            className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer"
                         >
                             {item}
-                        </a>
+                        </button>
                     )
                 ))}
             </nav>
@@ -230,13 +230,13 @@ const Header = () => {
                                 {item}
                             </button>
                         ) : (
-                            <a
+                            <button
                                 key={item}
-                                href="#"
-                                className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200"
+                                onClick={handleGoHome}
+                                className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer text-left"
                             >
                                 {item}
-                            </a>
+                            </button>
                         )
                     ))}
                 </div>

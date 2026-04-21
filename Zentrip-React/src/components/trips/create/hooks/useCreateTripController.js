@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
-import { createTrip, deleteTrip, getTripPublicInviteLink, getTripPublicInvitePreview, saveTripDraft, sendTripInvitations, updateTrip } from '../../../../services/tripService';
+import { addActivity, addBooking, createTrip, deleteTrip, getTripPublicInviteLink, getTripPublicInvitePreview, saveTripDraft, sendTripInvitations, updateTrip } from '../../../../services/tripService';
 import { ROUTES } from '../../../../config/routes';
 import { STORAGE_KEY, useTripDraft } from './useTripDraft';
 import { useRecentMembers } from './useRecentMembers';
@@ -9,7 +9,8 @@ import { useRecentMembers } from './useRecentMembers';
 export function useCreateTripController() {
   const { user } = useAuth();
   const location = useLocation();
-  const { step, form, setForm, fieldErrors, handleChange, handleNext, handleBack, handleGoToStep, handleCancel, navigate } = useTripDraft();
+  const prefill = location.state?.prefill ?? null;
+  const { step, form, setForm, fieldErrors, handleChange, handleNext, handleBack, handleGoToStep, handleCancel, navigate } = useTripDraft(prefill);
   const { recientes, addToRecentMembers } = useRecentMembers(user);
 
   const draftIdRef = useRef(location.state?.draftId || null);
@@ -112,6 +113,29 @@ export function useCreateTripController() {
       const tripId = await createTrip(user.uid, form);
       tripCreated = true;
       setTripCreationLocked(true);
+
+      const pendingHotelRaw = sessionStorage.getItem('zt_pending_hotel_booking');
+      if (pendingHotelRaw) {
+        try {
+          const bookingData = JSON.parse(pendingHotelRaw);
+          const activityId = await addActivity(tripId, {
+            date: bookingData.checkIn,
+            startTime: '15:00',
+            endTime: '11:00',
+            name: bookingData.hotelName,
+            type: 'hotel',
+            notes: bookingData.pricePerNight != null
+              ? `Reservado · ${bookingData.pricePerNight} ${bookingData.currency}/noche · ${bookingData.nights} noche${bookingData.nights !== 1 ? 's' : ''}`
+              : 'Reservado',
+            status: 'reservado',
+          });
+          await addBooking(tripId, { ...bookingData, activityId });
+        } catch {
+          // si falla la reserva no bloqueamos la creación del viaje
+        } finally {
+          sessionStorage.removeItem('zt_pending_hotel_booking');
+        }
+      }
 
       for (const member of form.members) {
         if (member?.uid) addToRecentMembers(member);
