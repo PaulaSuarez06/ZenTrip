@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Minus, Plus } from 'lucide-react';
 import { searchRestaurants } from '../../../../../../services/restaurantService';
 import { SectionLabel } from '../hotels/HotelAtoms';
 import RestaurantCard from './RestaurantCard';
@@ -9,6 +9,8 @@ import { useAuth } from '../../../../../../context/AuthContext';
 export default function RestaurantSearch({ trip, tripId }) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
+  const [date, setDate] = useState(trip?.startDate || '');
+  const [people, setPeople] = useState(2);
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,10 +18,9 @@ export default function RestaurantSearch({ trip, tripId }) {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
 
   useEffect(() => {
-    if (trip?.destination) {
-      setQuery(trip.destination.split(',')[0].trim());
-    }
-  }, [trip?.destination]);
+    if (trip?.destination) setQuery(trip.destination.split(',')[0].trim());
+    if (trip?.startDate) setDate(trip.startDate);
+  }, [trip?.destination, trip?.startDate]);
 
   if (!user) {
     return (
@@ -48,9 +49,7 @@ export default function RestaurantSearch({ trip, tripId }) {
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
+  const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
 
   return (
     <>
@@ -61,9 +60,9 @@ export default function RestaurantSearch({ trip, tripId }) {
         <p className="body-2 text-neutral-4">Busca los mejores restaurantes para tu grupo</p>
       </div>
 
-      {/* Buscador */}
-      <div className="mb-7">
-        <SectionLabel>Buscar restaurantes</SectionLabel>
+      {/* Formulario */}
+      <div className="mb-7 flex flex-col gap-3">
+        {/* Buscador de ciudad */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -78,13 +77,47 @@ export default function RestaurantSearch({ trip, tripId }) {
             disabled={loading || query.trim().length < 2}
             className="h-11 px-5 rounded-xl bg-primary-3 text-white body-3 font-bold hover:bg-primary-4 transition disabled:opacity-50 flex items-center gap-2"
           >
-            {loading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
+            {loading
+              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <Search className="w-4 h-4" />}
             Buscar
           </button>
+        </div>
+
+        {/* Fecha y personas */}
+        <div className="flex gap-3">
+          {/* Fecha de reserva */}
+          <div className="flex-1 relative">
+            <label className="absolute -top-2 left-3 bg-white px-1 body-3 text-neutral-4 z-10">Fecha</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-neutral-2 rounded-xl px-3 py-3 body-3 text-neutral-7 bg-transparent outline-none focus:border-primary-3 transition-colors"
+            />
+          </div>
+
+          {/* Número de personas */}
+          <div className="relative flex-1">
+            <label className="absolute -top-2 left-3 bg-white px-1 body-3 text-neutral-4 z-10">Personas</label>
+            <div className="flex items-center border border-neutral-2 rounded-xl px-3 py-2.5 h-11 gap-3">
+              <button
+                type="button"
+                onClick={() => setPeople((p) => Math.max(1, p - 1))}
+                className="w-6 h-6 rounded-full border border-neutral-2 flex items-center justify-center hover:bg-neutral-1 transition shrink-0"
+              >
+                <Minus className="w-3 h-3 text-neutral-5" />
+              </button>
+              <span className="flex-1 text-center body-3 font-semibold text-neutral-7">{people}</span>
+              <button
+                type="button"
+                onClick={() => setPeople((p) => Math.min(20, p + 1))}
+                className="w-6 h-6 rounded-full border border-neutral-2 flex items-center justify-center hover:bg-neutral-1 transition shrink-0"
+              >
+                <Plus className="w-3 h-3 text-neutral-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -134,6 +167,7 @@ export default function RestaurantSearch({ trip, tripId }) {
         <RestaurantDetailModal
           restaurant={selectedRestaurant}
           tripId={tripId}
+          bookingParams={{ date, people }}
           onClose={() => setSelectedRestaurant(null)}
         />
       )}

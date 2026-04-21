@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
 import { X, ExternalLink, Phone, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getRestaurantDetails } from '../../../../../../services/restaurantService';
-import { addActivity, addBooking, getBookings } from '../../../../../../services/tripService';
+import { addActivity, addBooking, getBookings, updateBooking } from '../../../../../../services/tripService';
 import { useAuth } from '../../../../../../context/AuthContext';
+import BookingReceiptUpload from '../BookingReceiptUpload';
 
 const PRICE_LABELS = { 1: '€ Económico', 2: '€€ Moderado', 3: '€€€ Caro', 4: '€€€€ Muy caro' };
 
-export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
+function fmtDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+export default function RestaurantDetailModal({ restaurant, tripId, bookingParams = {}, onClose }) {
   const { user, profile } = useAuth();
+  const { date, people } = bookingParams;
+
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [bookingId, setBookingId] = useState(null);
   const [duplicate, setDuplicate] = useState(false);
 
   useEffect(() => {
@@ -42,16 +52,20 @@ export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
       if (isDuplicate) { setDuplicate(true); return; }
 
       const activityId = await addActivity(tripId, {
-        date: '',
+        date: date || '',
         startTime: '',
         endTime: '',
         name: info.name,
         type: 'restaurant',
-        notes: info.rating != null ? `Anotado · ${info.rating}★` : 'Anotado',
+        notes: [
+          info.rating != null ? `${info.rating}★` : null,
+          people ? `${people} persona${people !== 1 ? 's' : ''}` : null,
+          date ? fmtDate(date) : null,
+        ].filter(Boolean).join(' · ') || 'Anotado',
         status: 'reservado',
       });
 
-      await addBooking(tripId, {
+      const newBookingId = await addBooking(tripId, {
         type: 'restaurant',
         placeId: restaurant.placeId,
         restaurantName: info.name,
@@ -60,6 +74,8 @@ export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
         website: info.website ?? null,
         rating: info.rating ?? null,
         priceLevel: info.priceLevel ?? null,
+        date: date ?? null,
+        people: people ?? null,
         mapsUrl,
         status: 'reservado',
         activityId,
@@ -70,6 +86,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
         },
       });
 
+      setBookingId(newBookingId);
       setBooked(true);
     } catch (err) {
       console.error('[RestaurantDetailModal] Error al guardar:', err);
@@ -127,6 +144,27 @@ export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
               </div>
             )}
 
+            {/* Datos de reserva */}
+            {(date || people) && (
+              <div className="bg-secondary-1/40 rounded-xl p-4 mb-5">
+                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Tu reserva</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {date && (
+                    <div>
+                      <p className="body-3 text-neutral-4 mb-0.5">Fecha</p>
+                      <p className="body-2-semibold text-neutral-7">{fmtDate(date)}</p>
+                    </div>
+                  )}
+                  {people && (
+                    <div>
+                      <p className="body-3 text-neutral-4 mb-0.5">Personas</p>
+                      <p className="body-2-semibold text-neutral-7">{people} persona{people !== 1 ? 's' : ''}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Info básica */}
             <div className="flex flex-col gap-2 mb-5">
               {info.address && <p className="body-3 text-neutral-5">📍 {info.address}</p>}
@@ -178,17 +216,24 @@ export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-neutral-1 shrink-0 bg-white">
+        <div className="px-5 py-4 border-t border-neutral-1 shrink-0 bg-white flex flex-col gap-3">
           {duplicate ? (
             <div className="h-11 rounded-lg bg-feedback-warning border border-feedback-warning-strong text-feedback-warning-strong flex items-center justify-center gap-2 body-2-semibold">
               ⚠️ Ya tienes este restaurante anotado
             </div>
           ) : booked ? (
             <>
-              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold mb-3">
+              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
                 ✓ Restaurante guardado en el viaje
               </div>
-              <button type="button" onClick={() => window.location.reload()} className="w-full h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition">
+              <BookingReceiptUpload
+                onUpdate={async (urls) => {
+                  if (bookingId) {
+                    await updateBooking(tripId, bookingId, { receiptUrls: urls });
+                  }
+                }}
+              />
+              <button type="button" onClick={() => window.location.reload()} className="h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition">
                 Continuar
               </button>
             </>
@@ -200,9 +245,9 @@ export default function RestaurantDetailModal({ restaurant, tripId, onClose }) {
                   disabled={booking}
                   className={`flex-1 h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${booking ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'}`}
                 >
-                  {booking ? (
-                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando…</>
-                  ) : '✓ Añadir al viaje'}
+                  {booking
+                    ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando…</>
+                    : '✓ Añadir al viaje'}
                 </button>
               )}
               <a
