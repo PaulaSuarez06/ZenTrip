@@ -9,6 +9,7 @@ import HotelSearch from '../bookings/hotels/HotelSearch';
 import CarSearch from '../bookings/cars/CarSearch';
 import RestaurantSearch from '../bookings/restaurants/RestaurantSearch';
 import FlightsExplorer from '../../../../flights/FlightsExplorer';
+import BookingBanner from '../bookings/BookingBanner';
 import PlaceholderTab from './PlaceholderTab';
 
 const BOOKING_LABELS = {
@@ -44,18 +45,28 @@ export default function ItinerarioTab({
     if (activeBooking === 'vuelos') {
       const acceptedCount = members.filter((m) => m.invitationStatus === 'accepted').length;
       return (
-        <FlightsExplorer
-          embedded
-          tripContext={{
-            tripId,
-            tripName: trip?.name,
-            origin: trip?.origin,
-            destination: trip?.destination,
-            memberCount: acceptedCount || 1,
-            startDate: trip?.startDate,
-            endDate: trip?.endDate,
-          }}
-        />
+        <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
+          <BookingBanner
+            src="/img/background/bookings/plane.jpg"
+            alt="Vuelos"
+            title="¿Cómo llegáis?"
+            subtitle="Busca vuelos para tu grupo en cualquier destino del mundo"
+          />
+          <div className="p-4 sm:p-6">
+            <FlightsExplorer
+              embedded
+              tripContext={{
+                tripId,
+                tripName: trip?.name,
+                origin: trip?.origin,
+                destination: trip?.destination,
+                memberCount: acceptedCount || 1,
+                startDate: trip?.startDate,
+                endDate: trip?.endDate,
+              }}
+            />
+          </div>
+        </div>
       );
     }
     return <PlaceholderTab label={BOOKING_LABELS[activeBooking] ?? 'Próximamente'} emoji="🚧" />;
