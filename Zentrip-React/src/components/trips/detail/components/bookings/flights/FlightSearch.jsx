@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plane, ExternalLink } from 'lucide-react';
+import { Plane } from 'lucide-react';
 import { getBookings } from '../../../../../../services/tripService';
 import { useAuth } from '../../../../../../context/AuthContext';
 import FlightBookingCard from './FlightBookingCard';
 import { SectionLabel, TipCard } from './FlightAtoms';
 import { todayStr, getFirstDep, TIPS } from './flightBookingUtils';
 
-export default function FlightSearch({ trip, members = [], tripId }) {
+export default function FlightSearch({ members = [], tripId, onGoBook }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
@@ -18,24 +16,6 @@ export default function FlightSearch({ trip, members = [], tripId }) {
       .then((data) => setBookings(data.filter((b) => b.type === 'vuelo')))
       .catch(() => {});
   }, [tripId, user]);
-
-  const handleSearch = () => {
-    const acceptedCount = members.filter((m) => m.invitationStatus === 'accepted').length;
-    navigate('/flights', {
-      state: {
-        tripContext: {
-          tripId,
-          tripName: trip?.name,
-          origin: trip?.origin,
-          destination: trip?.destination,
-          stops: trip?.stops ?? [],
-          memberCount: acceptedCount || 1,
-          startDate: trip?.startDate,
-          endDate: trip?.endDate,
-        },
-      },
-    });
-  };
 
   const removeBooking = (id) => setBookings((prev) => prev.filter((x) => x.id !== id));
 
@@ -87,7 +67,7 @@ export default function FlightSearch({ trip, members = [], tripId }) {
 
       {/* CTA buscar */}
       <button
-        onClick={handleSearch}
+        onClick={() => onGoBook?.('vuelos')}
         className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl border-2 border-dashed border-secondary-2 hover:border-secondary-3 hover:bg-secondary-1 transition group"
       >
         <div className="w-10 h-10 rounded-full bg-secondary-1 group-hover:bg-secondary-2 flex items-center justify-center transition shrink-0">
@@ -95,9 +75,7 @@ export default function FlightSearch({ trip, members = [], tripId }) {
         </div>
         <div className="text-left">
           <p className="body-semibold text-secondary-4">Buscar vuelos</p>
-          <p className="body-3 text-neutral-4 flex items-center gap-1">
-            Abre el buscador de vuelos <ExternalLink className="w-3 h-3" />
-          </p>
+          <p className="body-3 text-neutral-4">Abre el buscador de vuelos</p>
         </div>
       </button>
 
