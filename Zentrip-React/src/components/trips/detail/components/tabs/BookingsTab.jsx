@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Hotel, Plane, Car, Train, Compass, Map, Utensils } from 'lucide-react';
-import HotelSearch from '../bookings/hotels/HotelSearch';
+import HotelBookings from '../bookings/hotels/HotelBookings';
 import CarSearch from '../bookings/cars/CarSearch';
 import FlightSearch from '../bookings/flights/FlightSearch';
 import PlaceholderTab from './PlaceholderTab';
@@ -15,12 +15,12 @@ const SUBTABS = [
   { key: 'restaurantes', label: 'Restaurantes',  Icon: Utensils,available: false },
 ];
 
-export default function ReservasTab({ trip, members, tripId, initialSubTab = 'hoteles' }) {
+export default function ReservasTab({ trip, members, tripId, initialSubTab = 'hoteles', onGoBook }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
 
   const renderContent = () => {
     if (activeSubTab === 'hoteles') {
-      return <HotelSearch trip={trip} members={members} tripId={tripId} />;
+      return <HotelBookings trip={trip} members={members} tripId={tripId} onGoBook={onGoBook} />;
     }
     if (activeSubTab === 'coches') {
       return <CarSearch trip={trip} members={members} tripId={tripId} />;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import BookingBar from '../itinerary/BookingBar';
 import TripSummaryCard from '../itinerary/TripSummaryCard';
 import ParticipantsCard from '../itinerary/ParticipantsCard';
@@ -22,11 +23,17 @@ export default function ItinerarioTab({
   tripId,
   onAddActivity,
   onInvite,
+  initialActiveBooking = null,
+  onBookingOpened,
 }) {
   const [selectedDay, setSelectedDay] = useState(tripDays[0] ?? null);
-  const [activeBooking, setActiveBooking] = useState(null);
+  const [activeBooking, setActiveBooking] = useState(initialActiveBooking);
 
-  const handleBookingSelect = (key) => setActiveBooking((prev) => (prev === key ? null : key));
+  const handleBookingSelect = (key) => {
+    const opening = activeBooking !== key;
+    setActiveBooking((prev) => (prev === key ? null : key));
+    if (opening) onBookingOpened?.();
+  };
 
   const renderBookingContent = () => {
     if (activeBooking === 'hoteles') return <HotelSearch trip={trip} members={members} tripId={tripId} />;
@@ -58,8 +65,17 @@ export default function ItinerarioTab({
       </div>
 
       {activeBooking ? (
-        /* Booking seleccionado — reemplaza todo el contenido del itinerario */
-        renderBookingContent()
+        <>
+          <button
+            type="button"
+            onClick={() => setActiveBooking(null)}
+            className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-neutral-6 w-fit transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Volver al itinerario
+          </button>
+          {renderBookingContent()}
+        </>
       ) : (
         <>
           {/* Contenido principal: sidebar + calendario/actividades */}

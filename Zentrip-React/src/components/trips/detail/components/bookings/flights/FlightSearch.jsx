@@ -75,7 +75,7 @@ export default function FlightSearch({ members = [], tripId, onGoBook }) {
         </div>
         <div className="text-left">
           <p className="body-semibold text-secondary-4">Buscar vuelos</p>
-          <p className="body-3 text-neutral-4">Abre el buscador de vuelos</p>
+          <p className="body-3 text-neutral-4">Ir al buscador de vuelos del viaje</p>
         </div>
       </button>
 
