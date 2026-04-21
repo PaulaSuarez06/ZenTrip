@@ -41,7 +41,7 @@ export default function ItinerarioTab({
   const renderBookingContent = () => {
     if (activeBooking === 'hoteles') return <HotelSearch trip={trip} members={members} tripId={tripId} />;
     if (activeBooking === 'coches') return <CarSearch trip={trip} members={members} tripId={tripId} />;
-    if (activeBooking === 'restaurantes') return <RestaurantSearch trip={trip} tripId={tripId} />;
+    if (activeBooking === 'restaurantes') return <RestaurantSearch trip={trip} tripId={tripId} members={members} />;
     if (activeBooking === 'vuelos') {
       const acceptedCount = members.filter((m) => m.invitationStatus === 'accepted').length;
       return (

@@ -19,7 +19,7 @@ function FormField({ label, icon: Icon, children }) {
   );
 }
 
-export default function RestaurantSearch({ trip, tripId }) {
+export default function RestaurantSearch({ trip, tripId, members = [] }) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [date, setDate] = useState(trip?.startDate || '');
@@ -196,6 +196,7 @@ export default function RestaurantSearch({ trip, tripId }) {
           restaurant={selectedRestaurant}
           tripId={tripId}
           bookingParams={{ date, people }}
+          members={members}
           onClose={() => setSelectedRestaurant(null)}
         />
       )}
