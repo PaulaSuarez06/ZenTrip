@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { onSnapshot, doc } from 'firebase/firestore';
+import { db } from '../../../../config/firebaseConfig';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTripById, getTripMembers, getActivities } from '../../../../services/tripService';
 
@@ -61,6 +63,18 @@ export function useTripDetail(tripId) {
     };
 
     fetchAll();
+  }, [tripId, user?.uid]);
+
+  // Listener en tiempo real: si el coordinador elimina al usuario mientras está en la página
+  useEffect(() => {
+    if (!tripId || !user?.uid) return;
+    const memberRef = doc(db, 'trips', tripId, 'members', user.uid);
+    const unsub = onSnapshot(memberRef, (snap) => {
+      if (snap.exists() && snap.data().invitationStatus === 'removed') {
+        setAccessDenied(true);
+      }
+    });
+    return unsub;
   }, [tripId, user?.uid]);
 
   // Actividades agrupadas por fecha: { 'YYYY-MM-DD': [activity, ...] }
