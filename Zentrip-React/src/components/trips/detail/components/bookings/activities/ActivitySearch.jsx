@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, MapPin, Calendar } from 'lucide-react';
+import { Search, MapPin, Calendar, Users } from 'lucide-react';
 import { searchAttractions } from '../../../../../../services/attractionService';
 import { SectionLabel } from '../hotels/HotelAtoms';
 import BookingBanner from '../BookingBanner';
 import ActivityCard from './ActivityCard';
 import ActivityDetailModal from './ActivityDetailModal';
+import Pagination from '../../../../../ui/Pagination';
 import { useAuth } from '../../../../../../context/AuthContext';
+
+const PER_PAGE = 5;
 
 const FILTERS = [
   { key: 'all', label: 'Todas' },
@@ -35,6 +38,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [date, setDate] = useState(trip?.startDate || '');
+  const [people, setPeople] = useState(2);
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,6 +46,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [filter, setFilter] = useState('all');
   const [sortKey, setSortKey] = useState('rating');
+  const [page, setPage] = useState(1);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -74,6 +79,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
       setSearched(true);
       setFilter('all');
       setSortKey('rating');
+      setPage(1);
     } catch (err) {
       setError(err.message || 'No se pudo realizar la búsqueda. Inténtalo de nuevo.');
     } finally {
@@ -125,13 +131,23 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
             </FormField>
           </div>
 
-          <div className="mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <FormField label="Fecha" icon={Calendar}>
               <input
                 type="date"
                 value={date}
                 min={today}
                 onChange={(e) => setDate(e.target.value)}
+                className="w-full h-10 px-3 border border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-secondary-3 focus:ring-2 focus:ring-secondary-3/20 transition"
+              />
+            </FormField>
+            <FormField label="Personas" icon={Users}>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={people}
+                onChange={(e) => setPeople(Math.max(1, Math.min(20, Number(e.target.value))))}
                 className="w-full h-10 px-3 border border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-secondary-3 focus:ring-2 focus:ring-secondary-3/20 transition"
               />
             </FormField>
@@ -174,7 +190,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
               {FILTERS.map((f) => (
                 <button
                   key={f.key}
-                  onClick={() => setFilter(f.key)}
+                  onClick={() => { setFilter(f.key); setPage(1); }}
                   className={`h-8 px-3 rounded-full body-3 border transition ${
                     filter === f.key
                       ? 'border-primary-3 bg-primary-1 text-primary-4 font-bold'
@@ -192,7 +208,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
               </p>
               <select
                 value={sortKey}
-                onChange={(e) => setSortKey(e.target.value)}
+                onChange={(e) => { setSortKey(e.target.value); setPage(1); }}
                 className="h-8 px-3 rounded-lg border border-neutral-2 body-3 text-neutral-5 bg-white outline-none"
               >
                 {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -200,11 +216,18 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
             </div>
 
             {displayResults.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                {displayResults.map((a) => (
-                  <ActivityCard key={a.id ?? a.slug} activity={a} onView={setSelectedActivity} />
-                ))}
-              </div>
+              <>
+                <div className="flex flex-col gap-3">
+                  {displayResults.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((a) => (
+                    <ActivityCard key={a.id ?? a.slug} activity={a} onView={setSelectedActivity} />
+                  ))}
+                </div>
+                <Pagination
+                  page={page}
+                  totalPages={Math.max(1, Math.ceil(displayResults.length / PER_PAGE))}
+                  onPage={setPage}
+                />
+              </>
             ) : (
               <p className="text-center py-10 body-2 text-neutral-4">No se encontraron actividades con estos filtros.</p>
             )}
@@ -234,7 +257,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
           activity={selectedActivity}
           tripId={tripId}
           trip={trip}
-          bookingParams={{ date }}
+          bookingParams={{ date, people }}
           members={members}
           onClose={() => setSelectedActivity(null)}
         />
