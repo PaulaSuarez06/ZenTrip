@@ -246,6 +246,16 @@ export default function GalleryTab({ tripId }) {
     setSelectedPhotos((prev) => (prev.includes(photoId) ? prev.filter((id) => id !== photoId) : [...prev, photoId]));
   };
 
+  const allVisibleSelected = visiblePhotos.length > 0 && visiblePhotos.every((p) => selectedPhotos.includes(p.id));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedPhotos((prev) => prev.filter((id) => !visiblePhotos.some((p) => p.id === id)));
+    } else {
+      setSelectedPhotos((prev) => [...new Set([...prev, ...visiblePhotos.map((p) => p.id)])]);
+    }
+  };
+
   const handleDownloadSelected = async () => {
     const selected = photos.filter((p) => selectedPhotos.includes(p.id));
     if (selected.length === 0) {
@@ -284,7 +294,7 @@ export default function GalleryTab({ tripId }) {
       onConfirm: async () => {
         setConfirmModal(null);
         try {
-          await deleteGalleryPhoto(tripId, photo.id);
+          await deleteGalleryPhoto(tripId, photo.id, photo.publicId);
           setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
           const remaining = visiblePhotos.filter((p) => p.id !== photo.id);
           if (remaining.length === 0) {
@@ -314,7 +324,7 @@ export default function GalleryTab({ tripId }) {
           setConfirmModal(null);
           setSubmitting(true);
           try {
-            await Promise.all(photos.map((p) => deleteGalleryPhoto(tripId, p.id)));
+            await Promise.all(photos.map((p) => deleteGalleryPhoto(tripId, p.id, p.publicId)));
             setPhotos([]);
             setMessage('Todas las fotos han sido eliminadas.');
           } catch (err) {
@@ -364,17 +374,7 @@ export default function GalleryTab({ tripId }) {
             <h2 className="title-h3-desktop text-secondary-5">Galería del viaje</h2>
             <p className="body-3 text-neutral-4">Sube fotos, organízalas en carpetas y descarga solo las que quieras.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white border border-neutral-2 text-neutral-5">
-              {photos.length} foto{photos.length !== 1 ? 's' : ''}
-            </span>
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white border border-neutral-2 text-neutral-5">
-              {folderNames.length} carpeta{folderNames.length !== 1 ? 's' : ''}
-            </span>
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary-1 border border-primary-2 text-primary-4">
-              {selectedCount} seleccionada{selectedCount !== 1 ? 's' : ''}
-            </span>
-          </div>
+          
         </div>
       </div>
 
@@ -492,11 +492,20 @@ export default function GalleryTab({ tripId }) {
 
         {/* Botones de acción - siempre visibles */}
         <div className="flex items-center gap-2 pt-3 border-t border-neutral-2">
-          <label className="h-9 px-2 sm:px-3 rounded-xl bg-auxiliary-green-4 text-white text-xs font-semibold hover:bg-auxiliary-green-5 transition inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <label className="h-9 px-2 sm:px-3 rounded-xl bg-emerald-800 text-white text-xs font-semibold  transition inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
             <ImagePlus className="w-4 h-4 shrink-0" />
             <span className="hidden sm:inline">{submitting ? 'Subiendo...' : 'Subir foto'}</span>
             <input type="file" accept="image/*" multiple onChange={handleUpload} className="hidden" disabled={submitting} />
           </label>
+          <button
+            type="button"
+            onClick={toggleSelectAll}
+            disabled={visiblePhotos.length === 0}
+            className="h-9 px-2 sm:px-3 rounded-xl border border-neutral-2 text-neutral-5 text-xs font-semibold hover:bg-neutral-1 transition inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <input type="checkbox" checked={allVisibleSelected} readOnly className="w-3.5 h-3.5 pointer-events-none" />
+            <span className="hidden sm:inline">{allVisibleSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}</span>
+          </button>
           <button
             type="button"
             onClick={handleDownloadSelected}
@@ -562,9 +571,7 @@ export default function GalleryTab({ tripId }) {
                   </label>
                 </div>
 
-                <div className="p-3.5 flex flex-col gap-1.5">
-                  <p className="text-[11px] text-neutral-4"><span className="font-semibold text-neutral-5">Subida por:</span> {photo.uploadedByName || 'Usuario desconocido'}</p>
-                </div>
+               
               </article>
             );
           })}
