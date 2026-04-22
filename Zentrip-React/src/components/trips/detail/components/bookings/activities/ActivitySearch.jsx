@@ -97,7 +97,8 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
   return (
     <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
       <BookingBanner
-        src="/img/background/bookings/activity.jpg"
+        src="/img/background/bookings/attraction.jpg"
+        objectPosition="center 95%"
         alt="Actividades"
         title="¿Qué queréis hacer?"
         subtitle="Busca actividades y atracciones en vuestro destino"

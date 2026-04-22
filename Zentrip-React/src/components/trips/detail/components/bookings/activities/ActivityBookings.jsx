@@ -28,7 +28,8 @@ export default function ActivityBookings({ tripId, onGoBook }) {
   return (
     <>
       <BookingBanner
-        src="/img/background/bookings/activity.jpg"
+        src="/img/background/bookings/attraction.jpg"
+        objectPosition="center 95%"
         alt="Actividades"
         title="Actividades"
         subtitle="Gestiona las actividades anotadas para el viaje"

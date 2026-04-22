@@ -6,7 +6,7 @@ export default function ActivityCard({ activity, onView }) {
       {/* Foto */}
       <div className="w-full h-36 sm:h-auto sm:w-36 sm:shrink-0 bg-primary-1 flex items-center justify-center overflow-hidden">
         {photo
-          ? <img src={photo} alt={name} className="w-full h-full object-cover" />
+          ? <img src={photo} alt={name} className="w-full h-full object-cover object-top" />
           : <span className="text-4xl">🎯</span>}
       </div>
 
