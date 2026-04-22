@@ -181,7 +181,7 @@ async function createInvitation({ tripId, tripName, email, creatorId, creatorNam
     const doc = existing.docs[0];
     const data = doc.data();
 
-    // Ya aceptó → comprobar si fue eliminado del viaje después
+    // Ya aceptó → comprobar si sigue siendo miembro activo
     if (data.status === 'accepted') {
       const acceptedById = data.acceptedById;
       if (acceptedById) {
@@ -189,8 +189,9 @@ async function createInvitation({ tripId, tripName, email, creatorId, creatorNam
           .collection('trips').doc(tripId)
           .collection('members').doc(acceptedById)
           .get();
-        if (memberSnap.exists && memberSnap.data().invitationStatus === 'removed') {
-          // Fue eliminado → permitir re-invitar reseteando la invitación
+        const memberStatus = memberSnap.exists ? memberSnap.data().invitationStatus : null;
+        // Si ya no está como 'accepted' (fue eliminado o re-invitado), permitir reenviar
+        if (memberStatus !== 'accepted') {
           const newToken = signInvitationJwt(
             { kind: 'email', invitationId: doc.id, tripId, email: normalizedEmail },
             EMAIL_INVITATION_TTL_SECONDS,
