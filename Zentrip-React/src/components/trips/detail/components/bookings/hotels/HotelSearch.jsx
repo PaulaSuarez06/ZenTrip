@@ -15,9 +15,14 @@ export default function HotelSearch({ trip, members = [], tripId }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const today = new Date().toISOString().split('T')[0];
+  const maxDate = new Date(); maxDate.setFullYear(maxDate.getFullYear() + 2);
+  const maxDateStr = maxDate.toISOString().split('T')[0];
+  const clampDate = (d) => (!d || d < today || d > maxDateStr) ? '' : d;
+
   const [dest, setDest]         = useState(trip?.destination?.split(',')[0]?.trim() || '');
-  const [checkIn, setCheckIn]   = useState(trip?.startDate || '');
-  const [checkOut, setCheckOut] = useState(trip?.endDate || '');
+  const [checkIn, setCheckIn]   = useState(clampDate(trip?.startDate));
+  const [checkOut, setCheckOut] = useState(clampDate(trip?.endDate));
   const [rooms, setRooms]       = useState(1);
   const [adults, setAdults]     = useState(members.length > 0 ? members.length : 2);
   const [children, setChildren] = useState(0);
