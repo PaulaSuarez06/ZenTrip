@@ -39,6 +39,20 @@ function newWp(value = '', fromActivity = false) {
   return { id: `wp-${++_wpCounter}`, value, fromActivity };
 }
 
+// Extracts "Madrid (MAD)" from "✈ Madrid (MAD) → Barcelona (BCN) — passengers"
+function extractFlightDeparture(name) {
+  const m = name?.match(/✈\s*(.+?)\s+(?:→|⇄)/);
+  return m ? m[1].trim() : null;
+}
+
+function activityToWaypoint(activity) {
+  if (activity.type === 'vuelo') {
+    const airport = extractFlightDeparture(activity.name);
+    return newWp(airport || activity.name, true);
+  }
+  return newWp(activity.name, true);
+}
+
 function WaypointRow({ wp, index, total, onChange, onRemove, isLoaded }) {
   const acRef = useRef(null);
 
@@ -250,7 +264,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   const fillFromDay = useCallback((day) => {
     if (!day) return;
     const acts = (activitiesByDate[day] || [])
-      .filter((a) => a.type !== 'vuelo' && a.type !== 'ruta')
+      .filter((a) => a.type !== 'ruta')
       .slice()
       .sort((a, b) => {
         if (!a.startTime) return 1;
@@ -258,9 +272,9 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
         return a.startTime.localeCompare(b.startTime);
       });
     if (acts.length >= 2) {
-      setWaypoints(acts.map((a) => newWp(a.name, true)));
+      setWaypoints(acts.map(activityToWaypoint));
     } else if (acts.length === 1) {
-      setWaypoints([newWp(acts[0].name, true), newWp()]);
+      setWaypoints([activityToWaypoint(acts[0]), newWp()]);
     } else {
       const dest = trip?.destination?.split(',')[0]?.trim() || '';
       setWaypoints([newWp(dest), newWp()]);
