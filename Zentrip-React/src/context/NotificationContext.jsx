@@ -78,9 +78,9 @@ export function NotificationProvider({ children }) {
   // Escucha aceptaciones desde el flujo de login/registro por enlace
   useEffect(() => {
     const handleEmailAccepted = (e) => {
-      const { tripName } = e.detail || {};
+      const { tripId, tripName } = e.detail || {};
       if (!tripName) return;
-      setAcceptedNotifications((prev) => [{ tripName }, ...prev]);
+      setAcceptedNotifications((prev) => [{ tripId, tripName, createdAt: new Date().toISOString() }, ...prev]);
       setUnseenCount((prev) => prev + 1);
     };
     window.addEventListener('zt-invitation-accepted-email', handleEmailAccepted);
@@ -96,7 +96,7 @@ export function NotificationProvider({ children }) {
   }, []);
 
   const addAcceptedNotification = useCallback((data) => {
-    setAcceptedNotifications((prev) => [data, ...prev]);
+    setAcceptedNotifications((prev) => [{ createdAt: new Date().toISOString(), ...data }, ...prev]);
   }, []);
 
   const clearAcceptedNotifications = useCallback(() => {

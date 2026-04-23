@@ -6,6 +6,20 @@ import NotificationItem from './NotificationItem';
 
 const flightImg = new URL('../../home/img/image 34.png', import.meta.url).href;
 
+function formatNotificationDate(value) {
+  if (!value) return '';
+  const date = value?.toDate ? value.toDate() : value?.seconds ? new Date(value.seconds * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('es-ES', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function getTripDetailPath(tripId) {
+  return ROUTES.TRIPS.DETAIL.replace(':tripId', tripId);
+}
+
 export default function NotificationPanel({ onClose }) {
   const { notifications, tripNotifications, acceptedNotifications, clearAcceptedNotifications, markAsSeen, markTripNotificationRead } = useNotifications();
   const navigate = useNavigate();
@@ -30,6 +44,12 @@ export default function NotificationPanel({ onClose }) {
   }, [onClose]);
 
   const hasAny = notifications.length > 0 || acceptedNotifications.length > 0 || tripNotifications.length > 0;
+
+  const goToTrip = (tripId) => {
+    if (!tripId) return;
+    navigate(getTripDetailPath(tripId));
+    onClose();
+  };
 
   return (
     <div
@@ -74,18 +94,33 @@ export default function NotificationPanel({ onClose }) {
                 <div className="flex items-start gap-3">
                   <img src={flightImg} alt="" className="w-8 h-8 object-contain shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="body-3 font-semibold text-secondary-5 mb-0.5">¡Ya estás a bordo! ✈️</p>
-                    <p className="body-3 text-neutral-5 leading-snug">
-                      Ahora formas parte de{' '}
-                      <span className="font-semibold text-secondary-5">"{n.tripName}"</span>.
-                      El aventurero que hay en ti está listo. Entra y ayuda a dar forma a la escapada perfecta.
-                    </p>
                     <button
                       type="button"
-                      onClick={() => { navigate(ROUTES.TRIPS.LIST); onClose(); }}
+                      onClick={() => goToTrip(n.tripId)}
+                      className="body-3 font-semibold text-secondary-5 mb-0.5 text-left hover:text-secondary-6 transition-colors cursor-pointer"
+                    >
+                      ¡Ya estás a bordo! ✈️
+                    </button>
+                    <p className="body-3 text-neutral-5 leading-snug">
+                      Ahora formas parte de{' '}
+                      <button
+                        type="button"
+                        onClick={() => goToTrip(n.tripId)}
+                        className="font-semibold text-secondary-5 hover:text-secondary-6 transition-colors cursor-pointer"
+                      >
+                        "{n.tripName}"
+                      </button>
+                      El aventurero que hay en ti está listo. Entra y ayuda a dar forma a la escapada perfecta.
+                    </p>
+                    {formatNotificationDate(n.createdAt) && (
+                      <p className="body-3 text-neutral-3 mt-2">{formatNotificationDate(n.createdAt)}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => goToTrip(n.tripId)}
                       className="mt-2 body-3 font-semibold text-primary-3 hover:text-primary-4 transition-colors cursor-pointer"
                     >
-                      Ver mis viajes →
+                      Ver viaje →
                     </button>
                   </div>
                 </div>
@@ -113,13 +148,28 @@ export default function NotificationPanel({ onClose }) {
                   <div className="flex items-start gap-3">
                     <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="body-3 font-semibold text-neutral-7 mb-0.5">{title}</p>
+                      <button
+                        type="button"
+                        onClick={() => goToTrip(n.tripId)}
+                        className="body-3 font-semibold text-neutral-7 mb-0.5 text-left hover:text-neutral-8 transition-colors cursor-pointer"
+                      >
+                        {title}
+                      </button>
                       <p className="body-3 text-neutral-5 leading-snug">
                         <span className={`font-semibold ${nameColor}`}>{n.bookerName}</span>
                         {' '}ha anotado{' '}
-                        <span className="font-semibold text-neutral-7">"{itemName}"</span>
+                        <button
+                          type="button"
+                          onClick={() => goToTrip(n.tripId)}
+                          className="font-semibold text-neutral-7 hover:text-neutral-8 transition-colors cursor-pointer"
+                        >
+                          "{itemName}"
+                        </button>
                         {n.tripName ? <> en <span className="font-semibold text-neutral-7">"{n.tripName}"</span></> : ''}
                       </p>
+                      {formatNotificationDate(n.createdAt) && (
+                        <p className="body-3 text-neutral-3 mt-2">{formatNotificationDate(n.createdAt)}</p>
+                      )}
                       <button
                         type="button"
                         onClick={() => { markTripNotificationRead(n.id); onClose(); }}
