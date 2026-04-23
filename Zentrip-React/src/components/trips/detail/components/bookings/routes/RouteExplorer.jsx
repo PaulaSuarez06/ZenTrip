@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useJsApiLoader, GoogleMap, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
 import { Plus, X, Navigation, Clock, Route, MapPin, Car, Shuffle, Footprints, Bike, Bus, Save, Check } from 'lucide-react';
 import BookingBanner from '../BookingBanner';
+import ImageLoadGate from '../../../../../shared/ImageLoadGate';
 import { addBooking } from '../../../../../../services/tripService';
 
 const LIBRARIES = ['places'];
@@ -81,7 +82,7 @@ function WaypointRow({ wp, index, total, onChange, onRemove, isLoaded }) {
     <div className="flex items-start gap-2 mb-1">
       <div className="flex flex-col items-center shrink-0 pt-3">
         <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-        {!isLast && <div className="w-px flex-1 min-h-[20px] bg-neutral-2 mt-1" />}
+        {!isLast && <div className="w-px flex-1 min-h-5 bg-neutral-2 mt-1" />}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -479,16 +480,17 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
-      <BookingBanner
-        src="/img/background/bookings/attraction.jpg"
-        objectPosition="center 60%"
-        alt="Rutas"
-        title="¿Qué ruta quereis explorar?"
-        subtitle="Calcula el recorrido óptimo para tu día de viaje"
-      />
+    <ImageLoadGate src="/img/background/bookings/attraction.jpg" alt="Rutas">
+      <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
+        <BookingBanner
+          src="/img/background/bookings/attraction.jpg"
+          objectPosition="center 60%"
+          alt="Rutas"
+          title="¿Qué ruta quereis explorar?"
+          subtitle="Calcula el recorrido óptimo para tu día de viaje"
+        />
 
-      <div className="p-4 sm:p-6 flex flex-col gap-5">
+        <div className="p-4 sm:p-6 flex flex-col gap-5">
 
         {/* Day selector */}
         {tripDays.length > 0 && (
@@ -720,7 +722,8 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               </div>
             )
         )}
+        </div>
       </div>
-    </div>
+    </ImageLoadGate>
   );
 }

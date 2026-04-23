@@ -19,6 +19,8 @@ const BOOKING_LABELS = {
   trenes: 'Trenes',
 };
 
+const FLIGHT_BANNER_SRC = '/img/background/bookings/plane.jpg';
+
 export default function ItinerarioTab({
   trip,
   members,
@@ -34,7 +36,10 @@ export default function ItinerarioTab({
 }) {
   const [selectedDay, setSelectedDay] = useState(tripDays[0] ?? null);
   const [activeBooking, setActiveBooking] = useState(initialActiveBooking);
+  const [flightBannerLoaded, setFlightBannerLoaded] = useState(false);
   const weatherByDate = useWeather(trip?.destination);
+
+  const isFlightBooking = activeBooking === 'vuelos';
 
   const handleBookingSelect = (key) => {
     const opening = activeBooking !== key;
@@ -60,10 +65,34 @@ export default function ItinerarioTab({
     }
     if (activeBooking === 'vuelos') {
       const acceptedCount = members.filter((m) => m.invitationStatus === 'accepted').length;
+
+      if (!flightBannerLoaded) {
+        return (
+          <>
+            <img
+              src={FLIGHT_BANNER_SRC}
+              alt=""
+              aria-hidden="true"
+              style={{ display: 'none' }}
+              onLoad={() => setFlightBannerLoaded(true)}
+            />
+            <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden animate-pulse">
+              <div className="h-44 sm:h-52 w-full bg-linear-to-br from-secondary-3 to-secondary-4" />
+              <div className="p-4 sm:p-6 space-y-3">
+                <div className="h-4 w-2/3 rounded-full bg-neutral-1" />
+                <div className="h-4 w-full rounded-full bg-neutral-1" />
+                <div className="h-4 w-5/6 rounded-full bg-neutral-1" />
+                <div className="h-56 rounded-2xl bg-neutral-1" />
+              </div>
+            </div>
+          </>
+        );
+      }
+
       return (
         <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
           <BookingBanner
-            src="/img/background/bookings/plane.jpg"
+            src={FLIGHT_BANNER_SRC}
             alt="Vuelos"
             title="¿Cómo llegáis?"
             subtitle="Busca vuelos para tu grupo en cualquier destino del mundo"
