@@ -21,13 +21,9 @@ function getTripDetailPath(tripId) {
 }
 
 export default function NotificationPanel({ onClose }) {
-  const { notifications, tripNotifications, acceptedNotifications, clearAcceptedNotifications, markAsSeen, markTripNotificationRead } = useNotifications();
+  const { notifications, tripNotifications, acceptedNotifications, unseenCount, clearAcceptedNotifications, markTripNotificationRead, consumeAcceptedNotification } = useNotifications();
   const navigate = useNavigate();
   const panelRef = useRef(null);
-
-  useEffect(() => {
-    markAsSeen();
-  }, [markAsSeen]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -59,7 +55,14 @@ export default function NotificationPanel({ onClose }) {
     >
       {/* Cabecera */}
       <div className="px-4 py-3 border-b border-neutral-1 flex items-center justify-between">
-        <span className="body-2-semibold text-secondary-5">Notificaciones</span>
+        <div className="flex items-center gap-2">
+          <span className="body-2-semibold text-secondary-5">Notificaciones</span>
+          {unseenCount > 0 && (
+            <span className="flex min-w-5 h-5 items-center justify-center rounded-full bg-primary-3 px-1 text-[10px] font-semibold leading-none text-white">
+              {unseenCount > 99 ? '99+' : unseenCount}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {notifications.length > 0 && (
             <span className="body-3 text-neutral-3">{notifications.length} pendiente{notifications.length > 1 ? 's' : ''}</span>
@@ -96,7 +99,7 @@ export default function NotificationPanel({ onClose }) {
                   <div className="flex-1 min-w-0">
                     <button
                       type="button"
-                      onClick={() => goToTrip(n.tripId)}
+                      onClick={() => consumeAcceptedNotification(n.uiId)}
                       className="body-3 font-semibold text-secondary-5 mb-0.5 text-left hover:text-secondary-6 transition-colors cursor-pointer"
                     >
                       ¡Ya estás a bordo! ✈️
@@ -105,7 +108,7 @@ export default function NotificationPanel({ onClose }) {
                       Ahora formas parte de{' '}
                       <button
                         type="button"
-                        onClick={() => goToTrip(n.tripId)}
+                        onClick={() => consumeAcceptedNotification(n.uiId)}
                         className="font-semibold text-secondary-5 hover:text-secondary-6 transition-colors cursor-pointer"
                       >
                         "{n.tripName}"
@@ -117,7 +120,7 @@ export default function NotificationPanel({ onClose }) {
                     )}
                     <button
                       type="button"
-                      onClick={() => goToTrip(n.tripId)}
+                      onClick={() => consumeAcceptedNotification(n.uiId)}
                       className="mt-2 body-3 font-semibold text-primary-3 hover:text-primary-4 transition-colors cursor-pointer"
                     >
                       Ver viaje →
@@ -150,7 +153,10 @@ export default function NotificationPanel({ onClose }) {
                     <div className="flex-1 min-w-0">
                       <button
                         type="button"
-                        onClick={() => goToTrip(n.tripId)}
+                        onClick={async () => {
+                          await markTripNotificationRead(n.id);
+                          goToTrip(n.tripId);
+                        }}
                         className="body-3 font-semibold text-neutral-7 mb-0.5 text-left hover:text-neutral-8 transition-colors cursor-pointer"
                       >
                         {title}
@@ -160,7 +166,10 @@ export default function NotificationPanel({ onClose }) {
                         {' '}ha anotado{' '}
                         <button
                           type="button"
-                          onClick={() => goToTrip(n.tripId)}
+                          onClick={async () => {
+                            await markTripNotificationRead(n.id);
+                            goToTrip(n.tripId);
+                          }}
                           className="font-semibold text-neutral-7 hover:text-neutral-8 transition-colors cursor-pointer"
                         >
                           "{itemName}"

@@ -22,7 +22,7 @@ function getTripDetailPath(tripId) {
 
 export default function NotificationItem({ notification }) {
   const navigate = useNavigate();
-  const { addAcceptedNotification } = useNotifications();
+  const { addAcceptedNotification, markInvitationNotificationSeen } = useNotifications();
   const [loading, setLoading] = useState(null); // 'accept' | 'reject' | null
   const [flash, setFlash] = useState(null); // 'already_member' | null
 
@@ -30,6 +30,7 @@ export default function NotificationItem({ notification }) {
 
   const goToTrip = () => {
     if (!tripId) return;
+    markInvitationNotificationSeen(invitationId);
     navigate(getTripDetailPath(tripId));
   };
 
