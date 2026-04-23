@@ -4,6 +4,7 @@ import { Plus, X, Navigation, Clock, Route, MapPin, Car, Shuffle, Footprints, Bi
 import BookingBanner from '../BookingBanner';
 import ImageLoadGate from '../../../../../shared/ImageLoadGate';
 import { addBooking } from '../../../../../../services/tripService';
+import { useAuth } from '../../../../../../context/AuthContext';
 
 const LIBRARIES = ['places'];
 const MAP_STYLE = { width: '100%', height: '420px' };
@@ -83,6 +84,7 @@ function WaypointRow({ wp, index, total, onChange, onRemove, isLoaded }) {
       <div className="flex flex-col items-center shrink-0 pt-3">
         <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
         {!isLast && <div className="w-px flex-1 min-h-5 bg-neutral-2 mt-1" />}
+        {!isLast && <div className="w-px flex-1 min-h-20px bg-neutral-2 mt-1" />}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -233,6 +235,7 @@ function TransitItinerary({ legs }) {
 }
 
 export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesByDate = {}, initialData = null }) {
+  const { user } = useAuth();
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY,
     libraries: LIBRARIES,
@@ -463,6 +466,11 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
         waypoints: waypoints.filter((w) => w.value.trim()).map((w) => w.value),
         distance: routeInfo.distance,
         duration: routeInfo.duration,
+        status: 'reservado',
+        createdBy: {
+          uid: user?.uid ?? null,
+          name: user?.displayName || user?.email || null,
+        },
       });
       setSaved(true);
       setSavingRoute(false);
