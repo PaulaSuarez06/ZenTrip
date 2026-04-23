@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Download, FolderPlus, ImagePlus, Menu, Trash2, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Download, Folder, FolderPlus, ImagePlus, Menu, Trash2, X } from 'lucide-react';
 import { useAuth } from '../../../../../context/AuthContext';
 import { uploadImageWithOptions, validateImageFile } from '../../../../../services/cloudinaryService';
 import {
@@ -31,6 +31,10 @@ function isSafariBrowser() {
   return /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
+function isMobileBrowser() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints || 0) > 1;
+}
+
 async function downloadImage(url, fileName) {
   if (isSafariBrowser()) {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -47,6 +51,31 @@ async function downloadImage(url, fileName) {
   a.click();
   a.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+async function shareImagesOnMobile(photosToShare) {
+  if (!isMobileBrowser() || !navigator.share) return false;
+
+  const files = [];
+
+  for (const photo of photosToShare) {
+    const response = await fetch(photo.url);
+    if (!response.ok) throw new Error('Could not download file');
+    const blob = await response.blob();
+    const ext = photo?.url?.split('.').pop()?.split('?')[0] || 'jpg';
+    const fileName = `${photo.fileName || 'trip-photo'}.${ext}`.replace(/\.+/g, '.');
+    files.push(new File([blob], fileName, { type: blob.type || 'image/jpeg' }));
+  }
+
+  if (!navigator.canShare || !navigator.canShare({ files })) return false;
+
+  await navigator.share({
+    files,
+    title: 'ZenTrip',
+    text: 'Fotos del viaje',
+  });
+
+  return true;
 }
 
 export default function GalleryTab({ tripId }) {
@@ -275,6 +304,12 @@ export default function GalleryTab({ tripId }) {
     setMessage('Preparando descargas...');
 
     try {
+      const shared = await shareImagesOnMobile(selected);
+      if (shared) {
+        setMessage('Abre la opción de guardar en tu móvil para añadir las fotos a la galería.');
+        return;
+      }
+
       for (const photo of selected) {
         const ext = photo?.url?.split('.').pop()?.split('?')[0] || 'jpg';
         const fileName = `${photo.fileName || 'trip-photo'}.${ext}`.replace(/\.+/g, '.');
@@ -289,9 +324,21 @@ export default function GalleryTab({ tripId }) {
   };
 
   const handleDownloadPhoto = async (photo) => {
-    const ext = photo?.url?.split('.').pop()?.split('?')[0] || 'jpg';
-    const fileName = `${photo.fileName || 'trip-photo'}.${ext}`.replace(/\.+/g, '.');
-    await downloadImage(photo.url, fileName);
+    try {
+      const shared = await shareImagesOnMobile([photo]);
+      if (shared) {
+        setMessage('Abre la opción de guardar en tu móvil para añadir la foto a la galería.');
+        return;
+      }
+
+      const ext = photo?.url?.split('.').pop()?.split('?')[0] || 'jpg';
+      const fileName = `${photo.fileName || 'trip-photo'}.${ext}`.replace(/\.+/g, '.');
+      await downloadImage(photo.url, fileName);
+    } catch {
+      const ext = photo?.url?.split('.').pop()?.split('?')[0] || 'jpg';
+      const fileName = `${photo.fileName || 'trip-photo'}.${ext}`.replace(/\.+/g, '.');
+      await downloadImage(photo.url, fileName);
+    }
   };
 
   const handleDeletePhoto = (photo) => {
@@ -412,7 +459,10 @@ export default function GalleryTab({ tripId }) {
                     selectedFolder === 'Todas' ? 'bg-primary-1 text-primary-4' : 'text-neutral-5 hover:bg-neutral-1'
                   }`}
                 >
-                  Todas
+                  <span className="inline-flex items-center gap-1.5">
+                    <Folder className="w-3.5 h-3.5 shrink-0" />
+                    <span>Todas</span>
+                  </span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
                     selectedFolder === 'Todas' ? 'bg-primary-2 text-primary-5' : 'bg-neutral-1 text-neutral-4'
                   }`}>{photos.length}</span>
@@ -429,7 +479,10 @@ export default function GalleryTab({ tripId }) {
                         isActive ? 'bg-primary-1 text-primary-4' : 'text-neutral-5 hover:bg-neutral-1'
                       }`}
                     >
-                      <span className="truncate mr-2">{folderLabel}</span>
+                      <span className="truncate mr-2 inline-flex items-center gap-1.5">
+                        <Folder className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{folderLabel}</span>
+                      </span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none shrink-0 ${
                         isActive ? 'bg-primary-2 text-primary-5' : 'bg-neutral-1 text-neutral-4'
                       }`}>{count}</span>
@@ -462,6 +515,7 @@ export default function GalleryTab({ tripId }) {
                 : 'bg-white text-neutral-5 border-neutral-2 hover:bg-neutral-1'
             }`}
           >
+            <Folder className="w-3.5 h-3.5 shrink-0" />
             Todas
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
               selectedFolder === 'Todas' ? 'bg-primary-2 text-primary-5' : 'bg-neutral-1 text-neutral-4'
@@ -481,6 +535,7 @@ export default function GalleryTab({ tripId }) {
                     : 'bg-white text-neutral-5 border-neutral-2 hover:bg-neutral-1'
                 }`}
               >
+                <Folder className="w-3.5 h-3.5 shrink-0" />
                 {folderLabel}
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
                   isActive ? 'bg-primary-2 text-primary-5' : 'bg-neutral-1 text-neutral-4'
@@ -512,7 +567,7 @@ export default function GalleryTab({ tripId }) {
             className="h-9 px-2 sm:px-3 rounded-xl border border-neutral-2 text-neutral-5 text-xs font-semibold hover:bg-neutral-1 transition inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <input type="checkbox" checked={allVisibleSelected} readOnly className="w-3.5 h-3.5 pointer-events-none" />
-            <span className="hidden sm:inline">{allVisibleSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}</span>
+            <span>{allVisibleSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}</span>
           </button>
           <button
             type="button"
