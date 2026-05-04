@@ -759,6 +759,8 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
   const currentUid = currentUser?.uid;
   const { expenses, payments, myPersonalBudget, allPersonalBudgets, loading, error } = useBudget(tripId, currentUid);
 
+  const groupExpenses = useMemo(() => expenses.filter((e) => !e.isPersonal), [expenses]);
+
   const [view,         setView]         = useState('group');
   const [expenseModal, setExpenseModal] = useState(null); // { mode: 'add'|'edit', expense?, personal: bool }
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -868,7 +870,7 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
         <GroupView
           trip={trip}
           members={members}
-          expenses={expenses}
+          expenses={groupExpenses}
           payments={payments}
           currency={currency}
           currentUid={currentUid}
