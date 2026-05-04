@@ -60,7 +60,7 @@ const getTripMembers = async (req, res, next) => {
               ...member,
               name: `${firstName} ${lastName}`.trim() || member.name || '',
               username: p.username || member.username || '',
-              avatar: p.profilePhoto || member.avatar || '',
+              avatar: 'profilePhoto' in p ? (p.profilePhoto ?? '') : (member.avatar || ''),
               avatarColor: p.avatarColor || member.avatarColor || '',
             };
           }
