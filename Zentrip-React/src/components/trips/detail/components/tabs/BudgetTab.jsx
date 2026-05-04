@@ -319,7 +319,8 @@ function SettlementPanel({ debts, members, tripId, currency, currentUid, showAll
         {visibleDebts.map((d, i) => {
           const from = members.find((m) => m.uid === d.from);
           const to   = members.find((m) => m.uid === d.to);
-          const isMe = d.from === currentUid;
+          const isMe      = d.from === currentUid;
+          const canMark   = d.from === currentUid || d.to === currentUid;
           const key  = `${d.from}-${d.to}`;
           const busy = marking === key;
 
@@ -345,15 +346,17 @@ function SettlementPanel({ debts, members, tripId, currency, currentUid, showAll
                 <span className={`hidden sm:inline body-2 font-bold shrink-0 ${isMe ? 'text-feedback-error' : 'text-neutral-7'}`}>
                   {fmt(d.amount, currency)}
                 </span>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setConfirmDebt(d)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-full body-3 font-medium bg-auxiliary-green-5 text-white hover:bg-auxiliary-green-5 transition-colors disabled:opacity-50"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {busy ? '...' : 'Marcar como pagado'}
-                </button>
+                {canMark && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setConfirmDebt(d)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 rounded-full body-3 font-medium bg-auxiliary-green-5 text-white hover:bg-auxiliary-green-5 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {busy ? '...' : 'Marcar como pagado'}
+                  </button>
+                )}
               </div>
             </div>
           );
