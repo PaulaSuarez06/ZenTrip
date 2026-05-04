@@ -205,6 +205,44 @@ export default function NotificationPanel({ onClose }) {
                   );
                 }
 
+                if (n.type === 'expense_added') {
+                  const handleNavigateExpense = async () => {
+                    await markTripNotificationRead(n.id);
+                    goToTrip(n.tripId, { activeTab: 'presupuesto' });
+                  };
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={handleNavigateExpense}
+                      className="px-4 py-3 rounded-xl border cursor-pointer hover:brightness-95 transition-all bg-primary-1 border-primary-2"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl shrink-0 mt-0.5">💸</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="body-3 font-semibold text-neutral-7 mb-0.5">Nuevo gasto compartido</p>
+                          <p className="body-3 text-neutral-5 leading-snug">
+                            <span className="font-semibold text-primary-4">{n.creatorName}</span>
+                            {' '}ha añadido{' '}
+                            <span className="font-semibold text-neutral-7">"{n.expenseDescription}"</span>
+                            {' '}({n.amount} {n.currency})
+                            {n.tripName ? <> en <span className="font-semibold text-neutral-7">"{n.tripName}"</span></> : ''}
+                          </p>
+                          {formatNotificationDate(n.createdAt) && (
+                            <p className="body-3 text-neutral-3 mt-2">{formatNotificationDate(n.createdAt)}</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); markTripNotificationRead(n.id); }}
+                            className="mt-2 body-3 font-semibold text-neutral-3 hover:text-neutral-5 transition-colors cursor-pointer"
+                          >
+                            Marcar como leído ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 const emoji = isFlight ? '✈️' : isRestaurant ? '🍽️' : isActivity ? '🎯' : isManualActivity ? '📌' : isRoute ? '🗺️' : '🏨';
                 const title = isFlight ? 'Nuevo vuelo reservado' : isRestaurant ? 'Nuevo restaurante anotado' : isActivity ? 'Nueva actividad anotada' : isManualActivity ? 'Nueva actividad en el itinerario' : isRoute ? 'Nueva ruta guardada' : 'Nueva reserva de hotel';
                 const itemName = isFlight ? n.flightLabel : isRestaurant ? n.restaurantName : isActivity || isManualActivity ? n.activityName : isRoute ? n.routeName : n.hotelName;

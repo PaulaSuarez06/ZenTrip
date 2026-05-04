@@ -6,7 +6,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useBudget, computeSettlement, computeCategoryTotals, getExpenseShare } from '../budget/useBudget';
-import { addExpense, updateExpense, deleteExpense, setPersonalBudget, addPayment } from '../../../../../services/budgetService';
+import { addExpense, updateExpense, deleteExpense, setPersonalBudget, addPayment, sendExpenseNotifications } from '../../../../../services/budgetService';
 import { updateActivity } from '../../../../../services/tripService';
 import AddExpenseModal, { CATEGORIES } from '../budget/AddExpenseModal';
 import { DIVISAS } from '../../../../../utils/divisas';
@@ -783,6 +783,17 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
       }
     } else {
       await addExpense(tripId, { ...data, createdBy: currentUid });
+      if (!data.isPersonal && data.splitAmong?.length > 0) {
+        sendExpenseNotifications(tripId, {
+          creatorUid:          currentUid,
+          creatorName:         currentUser?.displayName || currentUser?.name || 'Un miembro',
+          expenseDescription:  data.description,
+          amount:              data.amount,
+          currency:            data.currency,
+          splitAmong:          data.splitAmong,
+          tripName:            trip?.name || '',
+        }).catch(() => {});
+      }
     }
     setExpenseModal(null);
   };
