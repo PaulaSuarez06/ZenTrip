@@ -41,7 +41,7 @@ export default function PanelInvitados({ invitados = [], onEliminarInvitado }) {
                   {p.invitationStatus === 'pending_email' ? 'Invitado por email' : 'Miembro ZenTrip'}
                 </p>
               </div>
-              {onEliminarInvitado && p.role !== 'coordinator' && (
+              {onEliminarInvitado && p.role !== 'coordinator' && !p.isPreloaded && (
                 <button
                   type="button"
                   className="text-neutral-3 hover:text-neutral-5 transition shrink-0"

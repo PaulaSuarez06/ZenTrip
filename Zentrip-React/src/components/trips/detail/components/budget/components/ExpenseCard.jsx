@@ -96,14 +96,15 @@ export default function ExpenseCard({ expense, members, currentUid, tripCurrency
           {expense.receiptUrls?.length > 0 && (
             <div>
               <p className="body-3 text-neutral-4 mb-1.5">Comprobantes</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {expense.receiptUrls.map((url, i) => (
                   <a
                     key={i}
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="aspect-square rounded-lg overflow-hidden border border-neutral-2 bg-neutral-1 block"
+                    style={{ width: 64, height: 64, flexShrink: 0 }}
+                    className="rounded-lg overflow-hidden border border-neutral-2 bg-neutral-1 block"
                   >
                     <img src={url} alt={`Comprobante ${i + 1}`} className="w-full h-full object-cover" />
                   </a>

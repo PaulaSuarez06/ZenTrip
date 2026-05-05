@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../config/routes';
 import { STORAGE_KEY } from '../create/hooks/useTripDraft';
-import { getTripById } from '../../../services/tripService';
+import { getTripById, getTripMembersFirestore } from '../../../services/tripService';
 import Button from '../../ui/Button';
 import TripCard from './components/TripCard';
 import { useMyTrips } from './hooks/useMyTrips';
@@ -71,19 +71,34 @@ export default function MisViajes() {
   const { borradores, enCurso, proximos, pasados, loading, userId, handleDeleteTrip, handleUpdateTripCover } = useMyTrips();
 
   const handleEditTrip = async (trip) => {
-    // Cargar datos frescos del viaje desde la base de datos
-    const freshTrip = await getTripById(trip.id);
+    const [freshTrip, tripMembers] = await Promise.all([
+      getTripById(trip.id),
+      getTripMembersFirestore(trip.id),
+    ]);
+    const rawStops = freshTrip?.stops || [];
     const tripForm = {
       name: freshTrip?.name || '',
       origin: freshTrip?.origin || '',
       destination: freshTrip?.destination || '',
-      stops: freshTrip?.stops || [],
+      stops: rawStops,
+      hasMultipleStops: Boolean(freshTrip?.hasMultipleStops) && rawStops.length > 1,
       startDate: freshTrip?.startDate || '',
       endDate: freshTrip?.endDate || '',
       currency: freshTrip?.currency || '',
-      budget: freshTrip?.budget || '',
+      budget: freshTrip?.budget ?? '',
       hasPet: Boolean(freshTrip?.hasPet),
-      members: [],
+      members: tripMembers
+        .filter((m) => m.role !== 'coordinator' && !['rejected', 'removed'].includes(m.invitationStatus))
+        .map((m) => ({
+          id: m.id || m.uid || m.email,
+          uid: m.uid || null,
+          email: m.email || '',
+          name: m.name || m.firstName || m.email || '',
+          avatar: m.avatar || '',
+          role: m.role || 'member',
+          invitationStatus: m.invitationStatus || 'pending',
+          isPreloaded: true,
+        })),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: 0, form: tripForm }));
     navigate(ROUTES.TRIPS.CREATE, { state: { editTripId: trip.id, prefill: tripForm } });

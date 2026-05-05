@@ -1,5 +1,7 @@
 import Button from '../../../../ui/Button';
 import UserAvatar from '../../../../ui/UserAvatar';
+import { formatCurrency } from '../details/DetailsForm';
+import { DIVISAS } from '../../../../../utils/divisas';
 
 function calcNights(startDate, endDate) {
   if (!startDate || !endDate) return null;
@@ -91,10 +93,13 @@ export default function SummaryForm({
   isCreatingTrip = false,
   tripCreationLocked = false,
   isEditing = false,
+  budgetTotal = null,
 }) {
 
   const disableCreate = isCreatingTrip || tripCreationLocked;
   const hasBudget = form.budget && Number(form.budget) > 0;
+  const displayBudget = budgetTotal != null ? budgetTotal : (hasBudget ? Number(form.budget) : null);
+  const divisa = form.currency ? (DIVISAS.find((d) => d.code === form.currency) ?? null) : null;
 
   const routeText = form.hasMultipleStops && form.stops?.length > 0
     ? [form.origin, ...form.stops.map((s) => s.name)].filter(Boolean).join(' → ')
@@ -139,9 +144,11 @@ export default function SummaryForm({
           </SectionRow>
 
           <SectionRow label="Presupuesto">
-            {hasBudget
-              ? <p className="body text-primary-3">{form.budget} {form.currency}</p>
-              : <div className="flex items-center gap-2"><EmptyLine colorClass="bg-primary-3" />{form.currency && <span className="body text-primary-3">{form.currency}</span>}</div>}
+            {displayBudget != null
+              ? <p className="body text-primary-3">{formatCurrency(displayBudget, form.currency)}</p>
+              : divisa
+                ? <p className="body text-primary-3">{divisa.symbol} {divisa.code}</p>
+                : <EmptyLine colorClass="bg-primary-3" />}
           </SectionRow>
 
           <div className="mb-5">

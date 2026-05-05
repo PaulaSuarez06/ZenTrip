@@ -14,6 +14,7 @@ export default function CreateTrip() {
     tripCreationLocked,
     isEditing,
     inviteLink,
+    editBudgetTotal,
     handleChange,
     handleNext,
     handleBack,
@@ -70,6 +71,7 @@ export default function CreateTrip() {
             isCreatingTrip={isCreatingTrip}
             tripCreationLocked={tripCreationLocked}
             isEditing={isEditing}
+            budgetTotal={editBudgetTotal}
           />
         )}
       </div>

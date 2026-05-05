@@ -42,7 +42,9 @@ export function useTripDraft(prefill = null) {
   const [form, setForm] = useState(() => {
     if (prefill) {
       localStorage.removeItem(STORAGE_KEY);
-      const hasMultipleStops = Array.isArray(prefill.stops) && prefill.stops.length > 0;
+      const hasMultipleStops = prefill.hasMultipleStops !== undefined
+        ? Boolean(prefill.hasMultipleStops)
+        : Array.isArray(prefill.stops) && prefill.stops.length > 0;
       return { ...INITIAL_FORM, ...prefill, hasMultipleStops };
     }
     const saved = loadDraft();

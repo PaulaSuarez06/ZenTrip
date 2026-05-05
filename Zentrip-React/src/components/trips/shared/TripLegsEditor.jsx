@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle } from 'lucide-react';
 import CityAutocomplete from '../../ui/CityAutocomplete';
 import Input from '../../ui/Input';
 
@@ -64,41 +64,35 @@ function LegRow({ stop, index, total, originName, onOriginChange, onChange, onRe
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-end gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {isFirst ? (
-            <div className="flex-1 min-w-0">
-              <CityAutocomplete
-                label="Origen"
-                name="leg-origin"
-                value={originName}
-                placeholder="¿Desde dónde sales?"
-                onChange={(e) => onOriginChange?.(e.target.value)}
-              />
-            </div>
+            <CityAutocomplete
+              label="Origen"
+              name="leg-origin"
+              value={originName}
+              placeholder="¿Desde dónde sales?"
+              onChange={(e) => onOriginChange?.(e.target.value)}
+            />
           ) : (
-            <div className="flex-1 min-w-0">
+            <div>
               <p className="block text-slate-600 mb-1 body-bold text-sm">Origen</p>
               <div className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-400 truncate">
                 {originName || <span className="italic text-slate-300">Sin origen</span>}
               </div>
             </div>
           )}
-          <ArrowRight className="w-4 h-4 text-slate-300 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <CityAutocomplete
-              label="Destino"
-              name={`stop-${stop.id}`}
-              value={stop.name}
-              placeholder="Ej. París, Francia"
-              onChange={(e) => onChange({ ...stop, name: e.target.value })}
-            />
-          </div>
+          <CityAutocomplete
+            label="Destino"
+            name={`stop-${stop.id}`}
+            value={stop.name}
+            placeholder="Ej. París, Francia"
+            onChange={(e) => onChange({ ...stop, name: e.target.value })}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Input
             variant="light"
-            size="sm"
             label="Desde"
             type="date"
             value={stop.startDate}
@@ -108,7 +102,6 @@ function LegRow({ stop, index, total, originName, onOriginChange, onChange, onRe
           />
           <Input
             variant="light"
-            size="sm"
             label="Hasta"
             type="date"
             value={stop.endDate}
