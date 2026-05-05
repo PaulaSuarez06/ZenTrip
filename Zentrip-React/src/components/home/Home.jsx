@@ -6,6 +6,10 @@ import CategoryBar from "./CategoryBar";
 import SplashScreen from "../shared/SplashScreen";
 import HomeCalendar from "./HomeCalendar";
 import { useHomeCalendarData } from "./hooks/useHomeCalendarData";
+import { useMyTrips } from "../trips/list/hooks/useMyTrips";
+import TripCard from "../trips/list/components/TripCard";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../config/firebaseConfig";
 
 const heroImages = [
   '/img/background/home/hero/img_hero_1.jpg',
@@ -25,6 +29,30 @@ export default function Home() {
   const [imagenCargada, setImagenCargada] = useState(false);
   const heroImg = useMemo(() => heroImages[Math.floor(Math.random() * heroImages.length)], []);
   const { activeTripDayMap, tripNameMap, pastTripDaySet, activitiesByDate } = useHomeCalendarData();
+  const { enCurso, proximos, loading: tripsLoading } = useMyTrips();
+  const misViajes = [...enCurso, ...proximos].slice(0, 3);
+  const [tripMeta, setTripMeta] = useState({});
+
+  useEffect(() => {
+    if (misViajes.length === 0) return;
+    Promise.all(
+      misViajes.map(async (trip) => {
+        const snap = await getDocs(collection(db, 'trips', trip.id, 'members'));
+        const members = snap.docs.map((d) => d.data());
+        const accepted = members.filter((m) => m.invitationStatus === 'accepted' || !m.invitationStatus);
+        const coordinator = accepted.find((m) => m.role === 'coordinator');
+        return {
+          tripId: trip.id,
+          memberCount: accepted.length,
+          creatorName: coordinator?.name || coordinator?.username || '',
+        };
+      })
+    ).then((results) => {
+      const map = {};
+      results.forEach((r) => { map[r.tripId] = r; });
+      setTripMeta(map);
+    });
+  }, [misViajes.map((t) => t.id).join(',')]);
 
   useEffect(() => {
     if (!showInviteError) return;
@@ -81,7 +109,7 @@ export default function Home() {
         padding: 0,
         marginLeft: "-1rem",
         marginTop: "-6.5rem",
-        marginBottom: "-1.5rem",
+        marginBottom: "0",
       }}
     >
       <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.2)" }} />
@@ -133,6 +161,57 @@ export default function Home() {
         <CategoryBar />
       </div>
     </div>
+    {/* ── Mi espacio ── */}
+    <section className="py-12 px-10 sm:px-16 lg:px-20">
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Mi espacio</p>
+            <h2 className="title-h2-desktop text-secondary-5">Mis próximos viajes</h2>
+            <p className="body-2 text-neutral-4 mt-1">Continúa donde lo dejaste o empieza algo nuevo</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.TRIPS.LIST)}
+            className="shrink-0 mt-1 bg-primary-1 text-primary-3 hover:bg-primary-2 body-3 font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer"
+          >
+            Ver todos mis viajes →
+          </button>
+        </div>
+
+        {tripsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-14">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-neutral-1 rounded-2xl h-64 animate-pulse" />
+            ))}
+          </div>
+        ) : misViajes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-14 text-center bg-white rounded-2xl border border-neutral-1">
+            <p className="body-2 text-neutral-4">Aún no tienes viajes activos</p>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.TRIPS.CREATE)}
+              className="px-5 py-2 rounded-full bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold transition-colors cursor-pointer"
+            >
+              Crear un viaje
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-14">
+            {misViajes.map((trip) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                isDraft={false}
+                memberCount={tripMeta[trip.id]?.memberCount ?? 0}
+                creatorName={tripMeta[trip.id]?.creatorName ?? ''}
+                imageHeight="h-48"
+                contentGap="gap-3"
+                onClick={() => navigate(`/trips/${trip.id}`)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </>}
     </>
   );
