@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { AlertCircle, Users, Wallet } from 'lucide-react';
+import { AlertCircle, Plus, Users, Wallet } from 'lucide-react';
 import { useBudget } from '../budget/useBudget';
 import {
   addExpense, updateExpense, deleteExpense, sendExpenseNotifications,
@@ -132,6 +132,31 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
             <Icon className="w-4 h-4" />{label}
           </button>
         ))}
+      </div>
+
+      {/* Título + botón */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="title-h3-desktop text-neutral-7">
+            {view === 'group' ? 'Gastos del grupo' : 'Mis gastos'}
+          </h2>
+          <p className="body-3 text-neutral-4 mt-0.5">
+            {view === 'group'
+              ? 'Gestiona y divide los gastos del viaje entre todos'
+              : 'Controla tu parte del presupuesto del viaje'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => view === 'group'
+            ? setExpenseModal({ mode: 'add', personal: false })
+            : setExpenseModal({ mode: 'add', personal: true })
+          }
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary-3 text-white body-3 font-semibold hover:bg-primary-4 transition-colors shadow-sm shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          {view === 'group' ? 'Añadir gasto' : 'Añadir mi gasto'}
+        </button>
       </div>
 
       {view === 'group' ? (

@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Plus, TrendingUp, Users } from 'lucide-react';
+import { TrendingUp, Users } from 'lucide-react';
 import { computeSettlement, computeCategoryTotals } from '../utils/budgetUtils';
 import { CATEGORIES } from '../AddExpenseModal';
 import { getCatMeta, fmt, Avatar, ProgressBar } from './BudgetAtoms';
 import ExpenseList from './ExpenseList';
 import SettlementPanel from './SettlementPanel';
+import CustomDropdown from './CustomDropdown';
 
 export default function GroupView({
   trip, members, expenses, payments, currency, currentUid,
@@ -69,17 +70,6 @@ export default function GroupView({
             Total gastado: <span className="font-semibold text-neutral-7">{fmt(totalSpent, currency)}</span>
           </p>
         )}
-      </div>
-
-      {/* Botón añadir gasto */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onAddExpense}
-          className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-primary-3 text-white body-2 font-semibold hover:bg-primary-4 transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />Añadir gasto
-        </button>
       </div>
 
       {/* Balance de miembros + Categorías */}
@@ -171,22 +161,20 @@ export default function GroupView({
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2 items-center">
           <p className="body-3 text-neutral-4 font-medium uppercase tracking-wide mr-1">Filtrar</p>
-          <select
+          <CustomDropdown
+            className="w-full sm:w-56"
             value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-            className="w-full sm:w-auto cursor-pointer border border-neutral-2 rounded-full px-4 py-1.5 body-3 font-medium text-neutral-6 bg-neutral-1 hover:bg-neutral-2 focus:outline-none focus:ring-2 focus:ring-primary-3 transition-colors"
-          >
-            <option value="all">Todas las categorías</option>
-            {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
-          <select
+            onChange={setFilterCat}
+            placeholder="Todas las categorías"
+            options={CATEGORIES.map((c) => ({ value: c.key, label: c.label }))}
+          />
+          <CustomDropdown
+            className="w-full sm:w-56"
             value={filterMember}
-            onChange={(e) => setFilterMember(e.target.value)}
-            className="w-full sm:w-auto cursor-pointer border border-neutral-2 rounded-full px-4 py-1.5 body-3 font-medium text-neutral-6 bg-neutral-1 hover:bg-neutral-2 focus:outline-none focus:ring-2 focus:ring-primary-3 transition-colors"
-          >
-            <option value="all">Cualquier pagador</option>
-            {members.map((m) => <option key={m.uid} value={m.uid}>Pagó {m.name}</option>)}
-          </select>
+            onChange={setFilterMember}
+            placeholder="Cualquier pagador"
+            options={members.map((m) => ({ value: m.uid, label: `Pagó ${m.name}` }))}
+          />
           {(filterCat !== 'all' || filterMember !== 'all') && (
             <button
               type="button"

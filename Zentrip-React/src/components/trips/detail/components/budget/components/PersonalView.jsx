@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Plus, Lock, Pencil, AlertCircle, ArrowRight, CheckCircle2, Wallet } from 'lucide-react';
+import { Lock, Pencil, AlertCircle, ArrowRight, CheckCircle2, Wallet } from 'lucide-react';
 import { setPersonalBudget } from '../../../../../../services/budgetService';
 import { getExpenseShare, computeSettlement } from '../utils/budgetUtils';
 import { CATEGORIES } from '../AddExpenseModal';
 import { fmt, Avatar, ProgressBar } from './BudgetAtoms';
 import ExpenseList from './ExpenseList';
+import CustomDropdown from './CustomDropdown';
 
 export default function PersonalView({
   trip, members, expenses, payments, myPersonalBudget, currency,
@@ -193,29 +194,17 @@ export default function PersonalView({
         )}
       </div>
 
-      {/* Botón añadir mi gasto */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onAddPersonalExpense}
-          className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-primary-3 text-white body-2 font-semibold hover:bg-primary-4 transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />Añadir mi gasto
-        </button>
-      </div>
-
       {/* Mis gastos */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <p className="body-3 text-neutral-4 font-medium uppercase tracking-wide shrink-0">Mis gastos</p>
-          <select
+          <CustomDropdown
+            className="w-full sm:w-64 max-w-xs"
             value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-            className="flex-1 cursor-pointer border border-neutral-1 rounded-full px-4 py-1.5 body-3 font-medium text-neutral-6 bg-neutral-1 hover:bg-neutral-2 focus:outline-none focus:ring-2 focus:ring-primary-3 transition-colors"
-          >
-            <option value="all">Todas las categorías</option>
-            {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
+            onChange={setFilterCat}
+            placeholder="Todas las categorías"
+            options={CATEGORIES.map((c) => ({ value: c.key, label: c.label }))}
+          />
         </div>
 
         <ExpenseList

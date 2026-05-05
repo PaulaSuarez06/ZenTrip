@@ -6,6 +6,7 @@ import {
 import { DIVISAS } from '../../../../../utils/divisas';
 import { fetchExchangeRate } from '../../../../../utils/exchangeRate';
 import BookingReceiptUpload from '../bookings/BookingReceiptUpload';
+import CustomDropdown from './components/CustomDropdown';
 
 export const CATEGORIES = [
   { key: 'alojamiento',  label: 'Alojamiento',  Icon: BedDouble       },
@@ -193,18 +194,17 @@ export default function AddExpenseModal({
     }
   };
 
-  const memberName = (uid) => members.find((m) => m.uid === uid)?.name ?? uid;
-
   const fi  = 'w-full border rounded-xl px-3 py-2 body-2 focus:outline-none focus:ring-2 focus:ring-primary-3 transition';
   const ok  = 'border-neutral-2';
   const bad = 'border-feedback-error bg-feedback-error-bg';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto shadow-xl">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg overflow-hidden shadow-xl">
+        <div className="max-h-[92vh] overflow-y-auto">
 
         {/* Cabecera */}
-        <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-5 py-4 border-b border-neutral-1 rounded-t-2xl">
+        <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-5 py-4 border-b border-neutral-1">
           <h2 className="title-h3-desktop text-neutral-7">
             {initialExpense ? 'Editar gasto' : personalMode ? 'Añadir mi gasto' : 'Añadir gasto del grupo'}
           </h2>
@@ -239,7 +239,9 @@ export default function AddExpenseModal({
               </label>
               <div className="relative">
                 <input
-                  type="number" min="0.01" step="0.01"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
                   value={form.amount}
                   onChange={(e) => set('amount', e.target.value)}
                   placeholder="0.00"
@@ -254,15 +256,12 @@ export default function AddExpenseModal({
 
             <div>
               <label className="block body-2-semibold text-neutral-6 mb-1.5">Moneda</label>
-              <select
+              <CustomDropdown
                 value={form.currency}
-                onChange={(e) => set('currency', e.target.value)}
-                className={`${fi} ${ok} bg-white`}
-              >
-                {DIVISAS.map((d) => (
-                  <option key={d.code} value={d.code}>{d.code} ({d.symbol})</option>
-                ))}
-              </select>
+                onChange={(value) => set('currency', value)}
+                placeholder="Seleccionar moneda"
+                options={DIVISAS.map((d) => ({ value: d.code, label: `${d.code} (${d.symbol})` }))}
+              />
             </div>
           </div>
 
@@ -355,14 +354,12 @@ export default function AddExpenseModal({
                 <label className="block body-2-semibold text-neutral-6 mb-1.5">
                   Pagó <span className="text-feedback-error">*</span>
                 </label>
-                <select
+                <CustomDropdown
                   value={form.paidBy}
-                  onChange={(e) => set('paidBy', e.target.value)}
-                  className={`${fi} bg-white ${errors.paidBy ? bad : ok}`}
-                >
-                  <option value="">Seleccionar...</option>
-                  {members.map((m) => <option key={m.uid} value={m.uid}>{m.name}</option>)}
-                </select>
+                  onChange={(value) => set('paidBy', value)}
+                  placeholder="Seleccionar..."
+                  options={members.map((m) => ({ value: m.uid, label: m.name }))}
+                />
                 {errors.paidBy && <FieldError msg={errors.paidBy} />}
               </div>
             )}
@@ -537,6 +534,7 @@ export default function AddExpenseModal({
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
