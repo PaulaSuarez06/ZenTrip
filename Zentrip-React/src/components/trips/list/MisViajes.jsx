@@ -30,7 +30,7 @@ function TripRow({ trips, isDraft, onCardClick, onDelete, onEdit, onImageUpload,
             isDraft={isDraft}
             memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
             imageHeight="h-48"
-            contentGap="gap-3"
+            contentGap="gap-2"
             onClick={() => onCardClick(trip)}
             onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
             onEdit={onEdit && trip.uid === userId ? () => onEdit(trip) : undefined}

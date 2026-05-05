@@ -11,6 +11,7 @@ import TripCard from "../trips/list/components/TripCard";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { getUserProfile } from "../../services/profileService";
+import { getActiveDestinations } from "../../services/destinationsService";
 
 const heroImages = [
   '/img/background/home/hero/img_hero_1.jpg',
@@ -33,6 +34,14 @@ export default function Home() {
   const { enCurso, proximos, loading: tripsLoading } = useMyTrips();
   const misViajes = [...enCurso, ...proximos].slice(0, 3);
   const [tripMeta, setTripMeta] = useState({});
+  const [destinations, setDestinations] = useState([]);
+
+  useEffect(() => {
+    getActiveDestinations().then((all) => {
+      const shuffled = [...all].sort(() => Math.random() - 0.5);
+      setDestinations(shuffled.slice(0, 5));
+    });
+  }, []);
 
   useEffect(() => {
     if (misViajes.length === 0) return;
@@ -193,7 +202,7 @@ export default function Home() {
         </div>
 
         {tripsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-14">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-neutral-1 rounded-2xl h-64 animate-pulse" />
             ))}
@@ -210,7 +219,7 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-14">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {misViajes.map((trip) => (
               <TripCard
                 key={trip.id}
@@ -220,13 +229,60 @@ export default function Home() {
                 creatorName={tripMeta[trip.id]?.creatorName ?? ''}
                 totalSpent={tripMeta[trip.id]?.totalSpent}
                 imageHeight="h-48"
-                contentGap="gap-3"
+                contentGap="gap-2"
                 onClick={() => navigate(`/trips/${trip.id}`)}
               />
             ))}
           </div>
         )}
       </section>
+
+    {/* ── Inspiración ── */}
+    {destinations.length > 0 && (
+      <section className="pt-8 pb-16 px-16 sm:px-24 lg:px-32">
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Inspiración</p>
+            <h2 className="title-h2-desktop text-secondary-5">Destinos que te van a enamorar</h2>
+            <p className="body-2 text-neutral-4 mt-1">Tendencias reales basadas en lo que está reservando la gente ahora</p>
+          </div>
+        </div>
+
+        <div className="flex gap-10" style={{ height: '480px' }}>
+          {/* Tarjeta grande izquierda */}
+          {destinations[0] && (
+            <div
+              onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(destinations[0].name)}`)}
+              className="relative rounded-2xl overflow-hidden cursor-pointer flex-1"
+              style={{ backgroundImage: `url(${destinations[0].imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            >
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <p className="text-white title-h3-desktop leading-tight">{destinations[0].name}</p>
+                <p className="text-white/80 body-3 mt-1">Desde {destinations[0].priceFrom}{destinations[0].currency} · {destinations[0].season}</p>
+              </div>
+            </div>
+          )}
+          {/* 4 tarjetas pequeñas en 2x2 */}
+          <div className="grid grid-cols-2 grid-rows-2 gap-10 flex-1">
+            {destinations.slice(1, 5).map((dest) => (
+              <div
+                key={dest.id}
+                onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(dest.name)}`)}
+                className="relative rounded-2xl overflow-hidden cursor-pointer"
+                style={{ backgroundImage: `url(${dest.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <p className="text-white body-bold leading-tight">{dest.name}</p>
+                  <p className="text-white/80 text-[11px] mt-0.5">{dest.priceFrom}{dest.currency} · {dest.season}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
     </>}
     </>
   );
