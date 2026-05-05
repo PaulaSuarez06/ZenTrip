@@ -212,6 +212,11 @@ export async function getTripMembers(tripId) {
   return apiClient.get(`/trips/${tripId}/members`);
 }
 
+export async function getTripMembersFirestore(tripId) {
+  const snap = await getDocs(collection(db, 'trips', tripId, 'members'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 export async function removeMemberFromTrip(tripId, memberUid) {
   await updateDoc(doc(db, 'trips', tripId, 'members', memberUid), {
     invitationStatus: 'removed',

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import { addActivity, addBooking, createTrip, deleteTrip, getTripPublicInviteLink, getTripPublicInvitePreview, saveTripDraft, sendTripInvitations, updateTrip } from '../../../../services/tripService';
+import { subscribeToAllPersonalBudgets } from '../../../../services/budgetService';
 import { ROUTES } from '../../../../config/routes';
 import { STORAGE_KEY, useTripDraft } from './useTripDraft';
 import { useRecentMembers } from './useRecentMembers';
@@ -45,7 +46,16 @@ export function useCreateTripController() {
   const [inviteLink, setInviteLink] = useState('');
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const [tripCreationLocked, setTripCreationLocked] = useState(false);
+  const [editBudgetTotal, setEditBudgetTotal] = useState(null);
   const creatingTripRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEditing || !editTripIdRef.current) return;
+    return subscribeToAllPersonalBudgets(editTripIdRef.current, (budgets) => {
+      const total = budgets.reduce((s, b) => s + (b.budget ?? 0), 0);
+      setEditBudgetTotal(total > 0 ? total : null);
+    });
+  }, [isEditing]);
 
   useEffect(() => {
     let active = true;
@@ -235,6 +245,7 @@ export function useCreateTripController() {
     tripCreationLocked,
     isEditing,
     inviteLink,
+    editBudgetTotal,
     handleChange,
     handleNext,
     handleBack,

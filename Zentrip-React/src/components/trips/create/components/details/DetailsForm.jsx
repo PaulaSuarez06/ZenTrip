@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import currency from 'currency.js';
 import Select from 'react-select';
-import { ArrowRight } from 'lucide-react';
 import Input from '../../../../ui/Input';
 import Button from '../../../../ui/Button';
 import CityAutocomplete from '../../../../ui/CityAutocomplete';
@@ -180,36 +179,21 @@ export default function DetailsForm({
               }}
             />
           ) : (
-            <div className="flex items-end gap-2">
-              <div className="flex-1 min-w-0">
-                <CityAutocomplete
-                  label="Origen"
-                  name="origin"
-                  placeholder="¿Desde dónde sales?"
-                  value={form.origin}
-                  onChange={onChange}
-                />
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-300 shrink-0 mb-2.5" />
-              <div className="flex-1 min-w-0">
-                <CityAutocomplete
-                  label="Destino"
-                  name="destination"
-                  placeholder="¿A dónde vas?"
-                  value={form.destination}
-                  onChange={onChange}
-                />
-              </div>
-            </div>
-          )}
-          {fieldErrors.destination && (
-            <p className="mt-1 body-3 text-feedback-error">{fieldErrors.destination}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          {!form.hasMultipleStops && (
             <div className="grid grid-cols-2 gap-4">
+              <CityAutocomplete
+                label="Origen"
+                name="origin"
+                placeholder="¿Desde dónde sales?"
+                value={form.origin}
+                onChange={onChange}
+              />
+              <CityAutocomplete
+                label="Destino"
+                name="destination"
+                placeholder="¿A dónde vas?"
+                value={form.destination}
+                onChange={onChange}
+              />
               <div>
                 <Input
                   variant="light"
@@ -245,6 +229,12 @@ export default function DetailsForm({
               </div>
             </div>
           )}
+          {fieldErrors.destination && (
+            <p className="mt-1 body-3 text-feedback-error">{fieldErrors.destination}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className={labelClass}>
               Divisa <span className="text-red-500 ml-0.5">*</span>
@@ -264,11 +254,7 @@ export default function DetailsForm({
               <p className="mt-1 body-3 text-feedback-error">{fieldErrors.currency}</p>
             )}
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-          <div />
-          <div className="flex items-center gap-3 pb-2">
+          <div className="flex items-center gap-3 self-end pb-1.5">
             <span className="body text-slate-600">¿Viajas con Mascota?</span>
             <button
               type="button"

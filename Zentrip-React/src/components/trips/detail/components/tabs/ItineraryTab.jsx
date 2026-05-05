@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import { useBudget } from '../budget/useBudget';
 import BookingBar from '../itinerary/BookingBar';
 import TripSummaryCard from '../itinerary/TripSummaryCard';
 import ParticipantsCard from '../itinerary/ParticipantsCard';
@@ -47,6 +48,12 @@ export default function ItinerarioTab({
     initialSelectedDay ?? (tripDays.includes(today) ? today : (tripDays[0] ?? null))
   );
   const [activeBooking, setActiveBooking] = useState(initialActiveBooking);
+
+  const { allPersonalBudgets } = useBudget(tripId, null);
+  const groupBudget = useMemo(
+    () => allPersonalBudgets.reduce((s, b) => s + (b.budget ?? 0), 0),
+    [allPersonalBudgets],
+  );
 
   useEffect(() => {
     if (initialSelectedDay) setSelectedDay(initialSelectedDay);
@@ -135,7 +142,7 @@ export default function ItinerarioTab({
               <TripSummaryCard
                 trip={trip}
                 activityCount={activities.length}
-                budget={Number(trip?.budget) || 0}
+                budget={groupBudget}
               />
               <ParticipantsCard members={members} onInvite={onInvite} />
             </div>
@@ -178,7 +185,7 @@ export default function ItinerarioTab({
             <TripSummaryCard
               trip={trip}
               activityCount={activities.length}
-              budget={Number(trip?.budget) || 0}
+              budget={groupBudget}
             />
             <ParticipantsCard members={members} onInvite={onInvite} />
           </div>

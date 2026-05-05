@@ -96,6 +96,27 @@ export async function deletePayment(tripId, paymentId) {
   await deleteDoc(doc(db, 'trips', tripId, 'payments', paymentId));
 }
 
+// ─── Notificaciones de gastos ─────────────────────────────────────────────────
+
+export async function sendExpenseNotifications(tripId, { creatorUid, creatorName, expenseDescription, amount, currency, splitAmong, tripName }) {
+  const recipients = (splitAmong ?? []).filter((uid) => uid !== creatorUid);
+  if (recipients.length === 0) return;
+  await Promise.all(recipients.map((uid) =>
+    addDoc(collection(db, 'notifications'), {
+      recipientUid: uid,
+      type: 'expense_added',
+      tripId,
+      tripName: tripName || '',
+      expenseDescription,
+      amount,
+      currency,
+      creatorName: creatorName || 'Un miembro',
+      read: false,
+      createdAt: serverTimestamp(),
+    })
+  ));
+}
+
 // ─── Recibos de gastos vinculados a reservas ──────────────────────────────────
 
 export async function updateExpenseReceiptsByBooking(tripId, bookingId, receiptUrls) {
