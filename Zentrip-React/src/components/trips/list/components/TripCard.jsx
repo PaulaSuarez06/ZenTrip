@@ -175,17 +175,18 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
             </p>
           )}
 
-          <div className="flex items-center gap-1.5 body-3 text-neutral-4">
-            <IconCalendar />
-            <span className="truncate">{dateLabel}</span>
-          </div>
-
-          {memberCount != null && memberCount > 0 && (
-            <div className="flex items-center gap-1.5 body-3 text-neutral-4">
-              <IconPeople />
-              <span>{memberCount} {memberCount === 1 ? 'persona' : 'personas'}</span>
+          <div className="flex items-center gap-4 body-3 text-neutral-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <IconCalendar />
+              <span className="truncate">{dateLabel}</span>
             </div>
-          )}
+            {memberCount != null && memberCount > 0 && (
+              <div className="flex items-center gap-1.5">
+                <IconPeople />
+                <span>{memberCount} {memberCount === 1 ? 'persona' : 'personas'}</span>
+              </div>
+            )}
+          </div>
 
           {totalSpent != null && (
             <div className="flex items-center gap-1.5 body-3 text-neutral-4">
@@ -199,10 +200,6 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
 
           {isDraft && (
             <p className="body-3 text-primary-3 mt-auto pt-1">Toca para continuar →</p>
-          )}
-
-          {creatorName && (
-            <p className="body-3 text-neutral-3">Creado por <span className="font-semibold">{creatorName}</span></p>
           )}
 
           {!isDraft && startDate && endDate && (() => {
@@ -226,7 +223,10 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
                 <div className="w-full h-1 bg-neutral-1 rounded-full overflow-hidden">
                   <div className="h-full bg-primary-3 rounded-full transition-all" style={{ width: `${pct}%` }} />
                 </div>
-                {daysText && <p className="body-3 text-neutral-3">{daysText}</p>}
+                <div className="flex items-center justify-between gap-2">
+                  {daysText && <p className="body-3 text-neutral-3">{daysText}</p>}
+                  {creatorName && <p className="text-[10px] text-neutral-3 shrink-0">Creado por {creatorName}</p>}
+                </div>
               </div>
             );
           })()}
