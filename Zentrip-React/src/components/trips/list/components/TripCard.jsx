@@ -99,7 +99,7 @@ function deriveDatesFromTrip(trip) {
   return { startDate, endDate };
 }
 
-export default function TripCard({ trip, isDraft, memberCount, onClick, onDelete, onEdit, onImageUpload }) {
+export default function TripCard({ trip, isDraft, memberCount, creatorName, totalSpent, imageHeight = 'h-36', contentGap = 'gap-2', onClick, onDelete, onEdit, onImageUpload }) {
   const [confirming, setConfirming] = useState(false);
   const [nameConfirm, setNameConfirm] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -125,7 +125,7 @@ export default function TripCard({ trip, isDraft, memberCount, onClick, onDelete
       >
         {/* Imagen / gradiente */}
         <div
-          className={`h-36 relative flex items-start justify-between p-3 ${trip.coverImage ? '' : `bg-linear-to-br ${gradient}`}`}
+          className={`${imageHeight} relative flex items-start justify-between p-3 ${trip.coverImage ? '' : `bg-linear-to-br ${gradient}`}`}
           style={trip.coverImage ? { backgroundImage: `url(${trip.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
         >
           <span className={`body-3 px-2 py-0.5 rounded-full font-semibold ${statusCfg.className}`}>
@@ -166,7 +166,7 @@ export default function TripCard({ trip, isDraft, memberCount, onClick, onDelete
         </div>
 
         {/* Contenido */}
-        <div className="p-4 flex flex-col gap-2 flex-1">
+        <div className={`p-4 flex flex-col ${contentGap} flex-1`}>
           <h3 className="body-bold text-secondary-5 truncate">{name}</h3>
 
           {(origin || destination) && (
@@ -175,21 +175,61 @@ export default function TripCard({ trip, isDraft, memberCount, onClick, onDelete
             </p>
           )}
 
-          <div className="flex items-center gap-1.5 body-3 text-neutral-4">
-            <IconCalendar />
-            <span className="truncate">{dateLabel}</span>
+          <div className="flex items-center gap-4 body-3 text-neutral-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <IconCalendar />
+              <span className="truncate">{dateLabel}</span>
+            </div>
+            {memberCount != null && memberCount > 0 && (
+              <div className="flex items-center gap-1.5">
+                <IconPeople />
+                <span>{memberCount} {memberCount === 1 ? 'persona' : 'personas'}</span>
+              </div>
+            )}
           </div>
 
-          {memberCount != null && memberCount > 0 && (
+          {totalSpent != null && (
             <div className="flex items-center gap-1.5 body-3 text-neutral-4">
-              <IconPeople />
-              <span>{memberCount} {memberCount === 1 ? 'persona' : 'personas'}</span>
+              <span>💸</span>
+              {totalSpent > 0
+                ? <span>Gastado: {totalSpent.toLocaleString('es', { maximumFractionDigits: 0 })} {(trip.currency || 'EUR €').split(' ')[1] || (trip.currency || 'EUR €').split(' ')[0]}</span>
+                : <span className="text-neutral-3">Sin gastos registrados</span>
+              }
             </div>
           )}
 
           {isDraft && (
             <p className="body-3 text-primary-3 mt-auto pt-1">Toca para continuar →</p>
           )}
+
+          {!isDraft && startDate && endDate && (() => {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const start = new Date(startDate + 'T00:00:00');
+            const end   = new Date(endDate   + 'T00:00:00');
+            const totalDays   = Math.round((end - start) / 86400000) + 1;
+            const elapsedDays = Math.round((today - start) / 86400000) + 1;
+            const pct = status === 'en_curso'
+              ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)))
+              : status === 'pasado' ? 100 : 0;
+            const daysLeft  = Math.max(0, Math.round((end - today) / 86400000));
+            const daysUntil = Math.max(0, Math.round((start - today) / 86400000));
+            const daysText  = status === 'en_curso'
+              ? `${pct}% · ${daysLeft} día${daysLeft !== 1 ? 's' : ''} restante${daysLeft !== 1 ? 's' : ''}`
+              : status === 'proximo'
+              ? `Empieza en ${daysUntil} día${daysUntil !== 1 ? 's' : ''}`
+              : null;
+            return (
+              <div className="mt-auto pt-2 flex flex-col gap-1">
+                <div className="w-full h-1 bg-neutral-1 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary-3 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  {daysText && <p className="body-3 text-neutral-3">{daysText}</p>}
+                  {creatorName && <p className="text-[10px] text-neutral-3 shrink-0">Creado por {creatorName}</p>}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Overlay de confirmación de borrado */}

@@ -43,9 +43,10 @@ export async function closeVote(tripId, voteId) {
   });
 }
 
-export async function markVoteAddedToItinerary(tripId, voteId) {
+export async function markVoteAddedToItinerary(tripId, voteId, itineraryDate = null) {
   await updateDoc(doc(db, 'trips', tripId, 'votes', voteId), {
     addedToItinerary: true,
+    itineraryDate,
   });
 }
 
@@ -89,7 +90,7 @@ export async function castVote(tripId, voteId, uid, selectedOptionIds, memberCou
 
 async function getRecipients(tripId, excludeUid) {
   const snap = await getDocs(collection(db, 'trips', tripId, 'members'));
-  return snap.docs.map((d) => d.data()).filter((m) => m.uid && m.uid !== excludeUid);
+  return snap.docs.map((d) => d.data()).filter((m) => m.uid && m.uid !== excludeUid && m.invitationStatus === 'accepted');
 }
 
 export async function sendVoteCreatedNotifications(tripId, { creatorUid, creatorName, voteTitle, tripName }) {
@@ -112,7 +113,7 @@ export async function sendVoteCreatedNotifications(tripId, { creatorUid, creator
 // winners: string[] (labels de las opciones ganadoras — más de uno = empate)
 export async function sendVoteResultsNotifications(tripId, voteId, { voteTitle, winners, tripName }) {
   const snap = await getDocs(collection(db, 'trips', tripId, 'members'));
-  const recipients = snap.docs.map((d) => d.data()).filter((m) => m.uid);
+  const recipients = snap.docs.map((d) => d.data()).filter((m) => m.uid && m.invitationStatus === 'accepted');
   const isTie = winners.length > 1;
 
   await Promise.all(recipients.map((m) =>

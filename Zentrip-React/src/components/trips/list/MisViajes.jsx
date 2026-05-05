@@ -22,13 +22,15 @@ function TripRow({ trips, isDraft, onCardClick, onDelete, onEdit, onImageUpload,
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-14">
         {visible.map((trip, i) => (
           <TripCard
             key={trip.id || i}
             trip={trip}
             isDraft={isDraft}
             memberCount={isDraft ? (trip.members?.length ?? 0) + 1 : undefined}
+            imageHeight="h-48"
+            contentGap="gap-2"
             onClick={() => onCardClick(trip)}
             onDelete={onDelete && trip.uid === userId ? () => onDelete(trip.id) : undefined}
             onEdit={onEdit && trip.uid === userId ? () => onEdit(trip) : undefined}
