@@ -94,7 +94,7 @@ function RouteCard({ booking, tripId, highlighted = false, onDeleted, onOpenRout
                   <div className={`w-2 h-2 rounded-full ${isFirst ? 'bg-auxiliary-green-5' : isLast ? 'bg-feedback-error' : 'bg-primary-3'}`} />
                   {!isLast && <div className="w-px flex-1 min-h-3.5 bg-neutral-2 mt-0.5" />}
                 </div>
-                <p className="body-3 text-neutral-5 pb-1 truncate">{wp}</p>
+                <p className="body-3 text-neutral-5 pb-1 truncate">{typeof wp === 'string' ? wp : wp?.value}</p>
               </div>
             );
           })}

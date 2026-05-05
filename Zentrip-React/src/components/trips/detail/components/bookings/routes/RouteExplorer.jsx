@@ -10,6 +10,7 @@ import TransitItinerary from './TransitItinerary';
 import {
   LIBRARIES, MAP_STYLE, STATUS_MSGS, legColor,
   newWp, activityToWaypoint, formatDayLong, buildRouteInfo, buildGoogleMapsUrl,
+  waypointToStored, storedToWaypoint, activityLabel, extractAddressOrName,
 } from './routeUtils';
 
 const TRAVEL_MODES = [
@@ -26,16 +27,27 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
     libraries: LIBRARIES,
   });
 
-  const today = new Date().toISOString().split('T')[0];
   const [selectedDay, setSelectedDay] = useState(() => {
     if (initialData?.date) return initialData.date;
-    return tripDays.includes(today) ? today : (tripDays[0] ?? null);
+    return null;
   });
-  const [waypoints, setWaypoints] = useState(() =>
-    initialData?.waypoints?.length > 0
-      ? initialData.waypoints.map((v) => newWp(v))
-      : [newWp(), newWp()]
-  );
+  const [waypoints, setWaypoints] = useState(() => {
+    if (!initialData?.waypoints?.length) return [newWp(), newWp()];
+    const dayActs = initialData.date
+      ? (activitiesByDate[initialData.date] || []).filter((a) => a.type !== 'ruta')
+      : [];
+    return initialData.waypoints.map((stored) => {
+      const wp = storedToWaypoint(stored);
+      if (!wp.label && dayActs.length > 0) {
+        const match = dayActs.find((act) => {
+          const addr = extractAddressOrName(act);
+          return addr && addr.trim().toLowerCase() === wp.value.trim().toLowerCase();
+        });
+        if (match) { wp.label = activityLabel(match); wp.fromActivity = true; }
+      }
+      return wp;
+    });
+  });
   const [travelMode, setTravelMode] = useState(initialData?.travelMode || 'DRIVING');
   const [directions, setDirections] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -43,6 +55,8 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState(null);
   const existingId = initialData?.id ?? null;
+  const [loadedRouteId, setLoadedRouteId] = useState(existingId);
+  const dateChanged = !!existingId && selectedDay !== (initialData?.date ?? null);
   const [savingRoute, setSavingRoute] = useState(false);
   const [routeName, setRouteName] = useState(initialData?.name || '');
   const [saved, setSaved] = useState(false);
@@ -53,7 +67,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   const bookingsLoadedRef = useRef(false);
   const mapRef = useRef(null);
   const isMounted = useRef(false);
-  const skipNextFillRef = useRef(!!initialData);
+  const prevSelectedDayRef = useRef(initialData ? selectedDay : null);
   const shouldAutoCalculateRef = useRef(!!initialData);
 
   // Carga reservas para detectar hotel por rango de fechas
@@ -122,13 +136,15 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   }, [activitiesByDate, trip?.destination, bookings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (skipNextFillRef.current) { skipNextFillRef.current = false; return; }
+    if (selectedDay === prevSelectedDayRef.current) return;
+    prevSelectedDayRef.current = selectedDay;
+    setLoadedRouteId(null);
     fillFromDay(selectedDay);
   }, [selectedDay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-rellena cuando las reservas cargan por primera vez (para detectar hotel por rango)
   useEffect(() => {
-    if (bookings.length === 0 || skipNextFillRef.current) return;
+    if (bookings.length === 0 || initialData) return;
     fillFromDay(selectedDay);
   }, [bookings]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -142,6 +158,37 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   useEffect(() => {
     if (isDirty && existingId) setShowEditPanel(true);
   }, [isDirty, existingId]);
+
+  const savedRoutesForDay = selectedDay
+    ? bookings.filter((b) => b.type === 'ruta' && b.date === selectedDay && b.id !== loadedRouteId)
+    : [];
+
+  const handleLoadRoute = useCallback((booking) => {
+    const dayActs = booking.date
+      ? (activitiesByDate[booking.date] || []).filter((a) => a.type !== 'ruta')
+      : [];
+    const wps = (booking.waypoints || []).map((stored) => {
+      const wp = storedToWaypoint(stored);
+      if (!wp.label && dayActs.length > 0) {
+        const match = dayActs.find((act) => {
+          const addr = extractAddressOrName(act);
+          return addr && addr.trim().toLowerCase() === wp.value.trim().toLowerCase();
+        });
+        if (match) { wp.label = activityLabel(match); wp.fromActivity = true; }
+      }
+      return wp;
+    });
+    const finalWps = wps.length >= 2 ? wps : [...wps, newWp()];
+    // Reutilizar IDs existentes para que React actualice props sin remontar WaypointRow
+    setWaypoints((prev) => finalWps.map((wp, i) => ({ ...wp, id: prev[i]?.id ?? wp.id })));
+    setTravelMode(booking.travelMode || 'DRIVING');
+    setLoadedRouteId(booking.id);
+    setRouteName(booking.name || '');
+    setDirections(null);
+    setRouteInfo(null);
+    setError(null);
+    setSaved(false);
+  }, [activitiesByDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al editar manualmente un campo, limpia la etiqueta de actividad y marca como modificado
   const handleChange = useCallback((id, value) => {
@@ -289,7 +336,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
     name,
     date: selectedDay || null,
     travelMode,
-    waypoints: waypoints.filter((w) => w.value.trim()).map((w) => w.value),
+    waypoints: waypoints.filter((w) => w.value.trim()).map(waypointToStored),
     distance: routeInfo.distance,
     duration: routeInfo.duration,
   });
@@ -365,7 +412,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               </label>
               <select
                 value={selectedDay || ''}
-                onChange={(e) => { setSelectedDay(e.target.value || null); setIsDirty(true); }}
+                onChange={(e) => { setSelectedDay(e.target.value || null); }}
                 className="cursor-pointer w-full max-w-xs h-10 px-3 pr-8 border border-neutral-2 rounded-xl text-sm font-semibold text-secondary-5 bg-white outline-none focus:border-primary-3 focus:ring-2 focus:ring-primary-3/10 transition font-body appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23A19694%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[right_10px_center]"
               >
                 <option value="">Sin día seleccionado</option>
@@ -378,11 +425,26 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
                   );
                 })}
               </select>
+              {savedRoutesForDay.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {savedRoutesForDay.map((route) => (
+                    <button
+                      key={route.id}
+                      type="button"
+                      onClick={() => handleLoadRoute(route)}
+                      className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1 border border-neutral-2 hover:border-primary-3 hover:bg-primary-1 text-neutral-4 hover:text-primary-3 rounded-full body-3 font-semibold transition"
+                    >
+                      <Route className="w-3 h-3 shrink-0" />
+                      {route.name || formatDayLong(route.date)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Cabecera: nombre de ruta guardada + edición */}
-          {existingId && (
+          {existingId && !dateChanged && (
             saved ? (
               <p className="body-3 text-auxiliary-green-5 flex items-center gap-1.5">
                 <Check className="w-4 h-4" />
@@ -567,7 +629,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               })()}
 
               {/* Guardar ruta nueva */}
-              {tripId && !existingId && (
+              {tripId && (!existingId || dateChanged) && (
                 saved ? (
                   <p className="body-3 text-auxiliary-green-5 flex items-center gap-1.5">
                     <Check className="w-4 h-4" />

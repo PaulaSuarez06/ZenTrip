@@ -45,7 +45,7 @@ export function newWp(value = '', fromActivity = false, label = null) {
   return { id: `wp-${++_wpCounter}`, value, fromActivity, label };
 }
 
-const ACTIVITY_LABEL_CFG = {
+export const ACTIVITY_LABEL_CFG = {
   hotel:       { Icon: Hotel,    text: 'Hotel' },
   vuelo:       { Icon: Plane,    text: 'Aeropuerto' },
   actividad:   { Icon: Compass,  text: 'Actividad' },
@@ -97,7 +97,9 @@ export function activityToWaypoint(activity) {
 const GMAPS_TRAVEL_MODE = { DRIVING: 'driving', WALKING: 'walking', BICYCLING: 'bicycling', TRANSIT: 'transit' };
 
 export function buildGoogleMapsUrl(waypointValues, travelMode) {
-  const filled = waypointValues.filter((v) => v?.trim());
+  const filled = waypointValues
+    .map((v) => (typeof v === 'string' ? v : v?.value || ''))
+    .filter((v) => v.trim());
   if (filled.length < 2) return null;
   const mode = GMAPS_TRAVEL_MODE[travelMode] || 'driving';
   const origin = encodeURIComponent(filled[0]);
@@ -106,6 +108,23 @@ export function buildGoogleMapsUrl(waypointValues, travelMode) {
   let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${mode}`;
   if (mids.length > 0) url += `&waypoints=${mids.map(encodeURIComponent).join('|')}`;
   return url;
+}
+
+export function waypointToStored(wp) {
+  if (!wp.label) return wp.value;
+  const labelKey = Object.keys(ACTIVITY_LABEL_CFG).find(
+    (k) => ACTIVITY_LABEL_CFG[k].Icon === wp.label.Icon,
+  ) ?? null;
+  return { value: wp.value, fromActivity: wp.fromActivity || false, labelKey, labelName: wp.label.name || '' };
+}
+
+export function storedToWaypoint(stored) {
+  if (typeof stored === 'string') return newWp(stored);
+  const cfg = stored.labelKey ? ACTIVITY_LABEL_CFG[stored.labelKey] : null;
+  const label = cfg
+    ? { Icon: cfg.Icon, text: cfg.text, name: stored.labelName || '' }
+    : (stored.labelName ? { Icon: MapPin, text: '', name: stored.labelName } : null);
+  return newWp(stored.value || '', stored.fromActivity || false, label);
 }
 
 export function buildRouteInfo(allLegs) {
