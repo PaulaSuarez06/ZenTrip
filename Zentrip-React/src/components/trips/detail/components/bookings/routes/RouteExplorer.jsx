@@ -56,7 +56,6 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   const [error, setError] = useState(null);
   const existingId = initialData?.id ?? null;
   const [loadedRouteId, setLoadedRouteId] = useState(existingId);
-  const dateChanged = !!existingId && selectedDay !== (initialData?.date ?? null);
   const [savingRoute, setSavingRoute] = useState(false);
   const [routeName, setRouteName] = useState(initialData?.name || '');
   const [saved, setSaved] = useState(false);
@@ -69,6 +68,15 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   const isMounted = useRef(false);
   const prevSelectedDayRef = useRef(initialData ? selectedDay : null);
   const shouldAutoCalculateRef = useRef(!!initialData);
+  const activeRoute = loadedRouteId
+    ? (bookings.find((b) => b.id === loadedRouteId)
+      || (initialData?.id === loadedRouteId
+        ? { id: initialData.id, date: initialData.date || null, name: initialData.name || '' }
+        : null))
+    : null;
+  const activeRouteDate = activeRoute?.date ?? null;
+  const activeRouteName = routeName || activeRoute?.name || '';
+  const dateChanged = !!loadedRouteId && !!activeRouteDate && selectedDay !== activeRouteDate;
 
   // Carga reservas para detectar hotel por rango de fechas
   useEffect(() => {
@@ -156,11 +164,11 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   }, [isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (isDirty && existingId) setShowEditPanel(true);
-  }, [isDirty, existingId]);
+    if (isDirty && loadedRouteId) setShowEditPanel(true);
+  }, [isDirty, loadedRouteId]);
 
   const savedRoutesForDay = selectedDay
-    ? bookings.filter((b) => b.type === 'ruta' && b.date === selectedDay && b.id !== loadedRouteId)
+    ? bookings.filter((b) => b.type === 'ruta' && b.date === selectedDay)
     : [];
 
   const handleLoadRoute = useCallback((booking) => {
@@ -183,11 +191,14 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
     setWaypoints((prev) => finalWps.map((wp, i) => ({ ...wp, id: prev[i]?.id ?? wp.id })));
     setTravelMode(booking.travelMode || 'DRIVING');
     setLoadedRouteId(booking.id);
+    // Ensure the select shows the route's day when loading a saved route
+    setSelectedDay(booking.date || null);
     setRouteName(booking.name || '');
     setDirections(null);
     setRouteInfo(null);
     setError(null);
     setSaved(false);
+    setIsDirty(false);
   }, [activitiesByDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al editar manualmente un campo, limpia la etiqueta de actividad y marca como modificado
@@ -342,10 +353,13 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   });
 
   const handleUpdateRoute = async () => {
-    if (!existingId || !routeInfo) return;
-    const name = routeName.trim() || initialData?.name || (selectedDay ? formatDayLong(selectedDay) : 'Ruta guardada');
+    if (!loadedRouteId || !routeInfo) return;
+    const name = routeName.trim() || activeRoute?.name || initialData?.name || (selectedDay ? formatDayLong(selectedDay) : 'Ruta guardada');
+    const payload = buildRoutePayload(name);
     try {
-      await updateBooking(tripId, existingId, buildRoutePayload(name));
+      await updateBooking(tripId, loadedRouteId, payload);
+      setBookings((prev) => prev.map((b) => (b.id === loadedRouteId ? { ...b, ...payload } : b)));
+      setRouteName(name);
       setSaved(true);
       setSaveMode('updated');
       setIsDirty(false);
@@ -427,24 +441,46 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               </select>
               {savedRoutesForDay.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {savedRoutesForDay.map((route) => (
+                  {savedRoutesForDay.map((route) => {
+                    const isActive = route.id === loadedRouteId;
+                    return (
+                      <button
+                        key={route.id}
+                        type="button"
+                        onClick={() => handleLoadRoute(route)}
+                        className={`cursor-pointer flex items-center gap-1.5 px-2.5 py-1 border rounded-full body-3 font-semibold transition ${
+                          isActive
+                            ? 'border-primary-3 bg-primary-1 text-primary-3'
+                            : 'border-neutral-2 hover:border-primary-3 hover:bg-primary-1 text-neutral-4 hover:text-primary-3'
+                        }`}
+                      >
+                        <Route className="w-3 h-3 shrink-0" />
+                        {route.name || formatDayLong(route.date)}
+                      </button>
+                    );
+                  })}
+                  {loadedRouteId && selectedDay && (
                     <button
-                      key={route.id}
                       type="button"
-                      onClick={() => handleLoadRoute(route)}
+                      onClick={() => {
+                        setLoadedRouteId(null);
+                        fillFromDay(selectedDay);
+                        setRouteName('');
+                        setIsDirty(false);
+                        setShowEditPanel(false);
+                      }}
                       className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1 border border-neutral-2 hover:border-primary-3 hover:bg-primary-1 text-neutral-4 hover:text-primary-3 rounded-full body-3 font-semibold transition"
                     >
-                      <Route className="w-3 h-3 shrink-0" />
-                      {route.name || formatDayLong(route.date)}
+                      Cargar paradas del itinerario
                     </button>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
           )}
 
           {/* Cabecera: nombre de ruta guardada + edición */}
-          {existingId && !dateChanged && (
+          {loadedRouteId && !dateChanged && (
             saved ? (
               <p className="body-3 text-auxiliary-green-5 flex items-center gap-1.5">
                 <Check className="w-4 h-4" />
@@ -456,7 +492,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
                   autoFocus
                   value={routeName}
                   onChange={(e) => { setRouteName(e.target.value); setIsDirty(true); }}
-                  placeholder={initialData?.name || 'Nombre de la ruta'}
+                  placeholder={activeRoute?.name || 'Nombre de la ruta'}
                   className="w-full body-2 text-neutral-7 outline-none placeholder:text-neutral-3 border-b border-neutral-1 pb-2"
                   onKeyDown={(e) => { if (e.key === 'Enter' && isDirty) handleUpdateRoute(); }}
                 />
@@ -480,7 +516,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <p className="body-2-semibold text-neutral-7 truncate">{routeName || initialData?.name || 'Ruta guardada'}</p>
+                <p className="body-2-semibold text-neutral-7 truncate">{activeRouteName || 'Ruta guardada'}</p>
                 <button
                   type="button"
                   title="Editar nombre / guardar cambios"
@@ -629,7 +665,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               })()}
 
               {/* Guardar ruta nueva */}
-              {tripId && (!existingId || dateChanged) && (
+              {tripId && (!loadedRouteId || dateChanged) && (
                 saved ? (
                   <p className="body-3 text-auxiliary-green-5 flex items-center gap-1.5">
                     <Check className="w-4 h-4" />
