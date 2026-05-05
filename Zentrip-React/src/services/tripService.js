@@ -466,7 +466,7 @@ export async function sendBookingNotifications(tripId, { bookerUid, bookerName, 
   const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
   const recipients = membersSnap.docs
     .map((d) => d.data())
-    .filter((m) => m.uid && m.uid !== bookerUid);
+    .filter((m) => m.uid && m.uid !== bookerUid && m.invitationStatus === 'accepted');
 
   await Promise.all(recipients.map((m) =>
     addDoc(collection(db, 'notifications'), {
@@ -617,7 +617,7 @@ export async function sendFlightBookingNotifications(tripId, { bookerUid, booker
   const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
   const recipients = membersSnap.docs
     .map((d) => d.data())
-    .filter((m) => m.uid && m.uid !== bookerUid);
+    .filter((m) => m.uid && m.uid !== bookerUid && m.invitationStatus === 'accepted');
 
   await Promise.all(recipients.map((m) =>
     addDoc(collection(db, 'notifications'), {
@@ -637,7 +637,7 @@ export async function sendRestaurantBookingNotifications(tripId, { bookerUid, bo
   const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
   const recipients = membersSnap.docs
     .map((d) => d.data())
-    .filter((m) => m.uid && m.uid !== bookerUid);
+    .filter((m) => m.uid && m.uid !== bookerUid && m.invitationStatus === 'accepted');
 
   await Promise.all(recipients.map((m) =>
     addDoc(collection(db, 'notifications'), {
@@ -657,7 +657,7 @@ export async function sendActivityBookingNotifications(tripId, { bookerUid, book
   const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
   const recipients = membersSnap.docs
     .map((d) => d.data())
-    .filter((m) => m.uid && m.uid !== bookerUid);
+    .filter((m) => m.uid && m.uid !== bookerUid && m.invitationStatus === 'accepted');
 
   await Promise.all(recipients.map((m) =>
     addDoc(collection(db, 'notifications'), {
@@ -677,7 +677,7 @@ export async function sendManualActivityNotifications(tripId, { creatorUid, crea
   const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
   const recipients = membersSnap.docs
     .map((d) => d.data())
-    .filter((m) => m.uid && m.uid !== creatorUid);
+    .filter((m) => m.uid && m.uid !== creatorUid && m.invitationStatus === 'accepted');
   await Promise.all(recipients.map((m) =>
     addDoc(collection(db, 'notifications'), {
       recipientUid: m.uid,
@@ -698,7 +698,7 @@ export async function sendRouteNotifications(tripId, { creatorUid, creatorName, 
   const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
   const recipients = membersSnap.docs
     .map((d) => d.data())
-    .filter((m) => m.uid && m.uid !== creatorUid);
+    .filter((m) => m.uid && m.uid !== creatorUid && m.invitationStatus === 'accepted');
   await Promise.all(recipients.map((m) =>
     addDoc(collection(db, 'notifications'), {
       recipientUid: m.uid,
