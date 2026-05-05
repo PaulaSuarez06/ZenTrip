@@ -268,7 +268,7 @@ export default function Home() {
             {destinations.slice(1, 5).map((dest) => (
               <div
                 key={dest.id}
-                onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(dest.name)}`)}
+                onClick={() => navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination: dest.name } } })}
                 className="relative rounded-2xl overflow-hidden cursor-pointer"
                 style={{ backgroundImage: `url(${dest.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               >
