@@ -99,7 +99,7 @@ function deriveDatesFromTrip(trip) {
   return { startDate, endDate };
 }
 
-export default function TripCard({ trip, isDraft, memberCount, creatorName, imageHeight = 'h-36', contentGap = 'gap-2', onClick, onDelete, onEdit, onImageUpload }) {
+export default function TripCard({ trip, isDraft, memberCount, creatorName, totalSpent, imageHeight = 'h-36', contentGap = 'gap-2', onClick, onDelete, onEdit, onImageUpload }) {
   const [confirming, setConfirming] = useState(false);
   const [nameConfirm, setNameConfirm] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -187,15 +187,22 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, imag
             </div>
           )}
 
-          {Number(trip.budget) > 0 && (
+          {totalSpent != null && (
             <div className="flex items-center gap-1.5 body-3 text-neutral-4">
               <span>💸</span>
-              <span>{Number(trip.budget).toLocaleString('es')} {(trip.currency || 'EUR €').split(' ')[1] || (trip.currency || 'EUR €').split(' ')[0]}</span>
+              {totalSpent > 0
+                ? <span>Gastado: {totalSpent.toLocaleString('es', { maximumFractionDigits: 0 })} {(trip.currency || 'EUR €').split(' ')[1] || (trip.currency || 'EUR €').split(' ')[0]}</span>
+                : <span className="text-neutral-3">Sin gastos registrados</span>
+              }
             </div>
           )}
 
           {isDraft && (
             <p className="body-3 text-primary-3 mt-auto pt-1">Toca para continuar →</p>
+          )}
+
+          {creatorName && (
+            <p className="body-3 text-neutral-3">Creado por <span className="font-semibold">{creatorName}</span></p>
           )}
 
           {!isDraft && startDate && endDate && (() => {
@@ -216,9 +223,6 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, imag
               : null;
             return (
               <div className="mt-auto pt-2 flex flex-col gap-1">
-                {creatorName && (
-                  <p className="body-3 text-neutral-3">Creado por <span className="font-semibold">{creatorName}</span></p>
-                )}
                 <div className="w-full h-1 bg-neutral-1 rounded-full overflow-hidden">
                   <div className="h-full bg-primary-3 rounded-full transition-all" style={{ width: `${pct}%` }} />
                 </div>

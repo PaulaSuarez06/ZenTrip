@@ -10,6 +10,7 @@ import { useMyTrips } from "../trips/list/hooks/useMyTrips";
 import TripCard from "../trips/list/components/TripCard";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
+import { getUserProfile } from "../../services/profileService";
 
 const heroImages = [
   '/img/background/home/hero/img_hero_1.jpg',
@@ -37,14 +38,27 @@ export default function Home() {
     if (misViajes.length === 0) return;
     Promise.all(
       misViajes.map(async (trip) => {
-        const snap = await getDocs(collection(db, 'trips', trip.id, 'members'));
-        const members = snap.docs.map((d) => d.data());
+        const [membersSnap, expSnap] = await Promise.all([
+          getDocs(collection(db, 'trips', trip.id, 'members')),
+          getDocs(collection(db, 'trips', trip.id, 'expenses')),
+        ]);
+        const members = membersSnap.docs.map((d) => d.data());
         const accepted = members.filter((m) => m.invitationStatus === 'accepted' || !m.invitationStatus);
         const coordinator = accepted.find((m) => m.role === 'coordinator');
+        const totalSpent = expSnap.docs.reduce((sum, d) => {
+          const e = d.data();
+          return sum + (e.tripAmount ?? e.amount ?? 0);
+        }, 0);
+        let creatorName = '';
+        if (coordinator?.uid) {
+          const profile = await getUserProfile(coordinator.uid);
+          creatorName = profile?.firstName || profile?.displayName || coordinator.email?.split('@')[0] || '';
+        }
         return {
           tripId: trip.id,
           memberCount: accepted.length,
-          creatorName: coordinator?.name || coordinator?.username || '',
+          creatorName,
+          totalSpent,
         };
       })
     ).then((results) => {
@@ -162,7 +176,7 @@ export default function Home() {
       </div>
     </div>
     {/* ── Mi espacio ── */}
-    <section className="py-12 px-10 sm:px-16 lg:px-20">
+    <section className="pt-20 pb-12 px-16 sm:px-24 lg:px-32">
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>
             <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Mi espacio</p>
@@ -204,6 +218,7 @@ export default function Home() {
                 isDraft={false}
                 memberCount={tripMeta[trip.id]?.memberCount ?? 0}
                 creatorName={tripMeta[trip.id]?.creatorName ?? ''}
+                totalSpent={tripMeta[trip.id]?.totalSpent}
                 imageHeight="h-48"
                 contentGap="gap-3"
                 onClick={() => navigate(`/trips/${trip.id}`)}
