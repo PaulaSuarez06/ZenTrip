@@ -313,13 +313,9 @@ async function createExpenseFromBooking(tripId, booking, bookingId, tripData) {
     } catch { /* keep tripAmount = price */ }
   }
 
-  const date = booking.checkIn
-    || (booking.segments?.[0]?.departureTime ?? '').slice(0, 10)
-    || booking.pickUpDate
-    || booking.date
-    || new Date().toISOString().split('T')[0];
+  const date = new Date().toISOString().split('T')[0];
 
-  const description = booking.flightLabel || booking.carName || booking.name || 'Reserva';
+  const description = booking.flightLabel || booking.carName || booking.activityName || booking.name || 'Reserva';
 
   await addExpense(tripId, {
     description,

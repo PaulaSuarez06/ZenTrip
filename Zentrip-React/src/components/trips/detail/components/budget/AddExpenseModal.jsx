@@ -122,6 +122,7 @@ export default function AddExpenseModal({
   const totalPct    = form.splitAmong.reduce((s, u) => s + (form.percentages[u]   ?? 0), 0);
   const totalCustom = form.splitAmong.reduce((s, u) => s + (form.customAmounts[u] ?? 0), 0);
   const currSymbol  = DIVISAS.find((d) => d.code === form.currency)?.symbol ?? form.currency;
+  const memberName  = (uid) => members.find((m) => m.uid === uid)?.name ?? uid;
 
   const validate = () => {
     const e = {};
