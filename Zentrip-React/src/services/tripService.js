@@ -1,4 +1,4 @@
-import { addDoc, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, limit, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
 import { apiClient } from './apiClient';
 import { deleteCloudinaryPhoto } from './cloudinaryService';
@@ -979,4 +979,23 @@ export async function updateGroupLuggageItemPacked(tripId, itemId, uid, packed) 
       packed: Boolean(packed),
     });
   }
+}
+
+export async function sendMessage(tripId, uid, displayName, text) {
+  await addDoc(collection(db, 'trips', tripId, 'messages'), {
+    uid,
+    displayName,
+    text,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export function subscribeToMessages(tripId, callback) {
+  const q = query(
+    collection(db, 'trips', tripId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
 }
