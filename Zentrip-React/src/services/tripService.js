@@ -719,6 +719,44 @@ export async function sendRouteNotifications(tripId, { creatorUid, creatorName, 
   ));
 }
 
+export async function sendLuggageGroupItemAddedNotifications(tripId, { creatorUid, creatorName, itemName, tripName }) {
+  const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
+  const recipients = membersSnap.docs
+    .map((d) => d.data())
+    .filter((m) => m.uid && m.uid !== creatorUid && m.invitationStatus === 'accepted');
+  await Promise.all(recipients.map((m) =>
+    addDoc(collection(db, 'notifications'), {
+      recipientUid: m.uid,
+      type: 'luggage_group_added',
+      tripId,
+      tripName: tripName || '',
+      itemName,
+      creatorName: creatorName || 'Un miembro',
+      read: false,
+      createdAt: serverTimestamp(),
+    })
+  ));
+}
+
+export async function sendLuggageGroupItemPackedNotifications(tripId, { packerUid, packerName, itemName, tripName }) {
+  const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
+  const recipients = membersSnap.docs
+    .map((d) => d.data())
+    .filter((m) => m.uid && m.uid !== packerUid && m.invitationStatus === 'accepted');
+  await Promise.all(recipients.map((m) =>
+    addDoc(collection(db, 'notifications'), {
+      recipientUid: m.uid,
+      type: 'luggage_group_packed',
+      tripId,
+      tripName: tripName || '',
+      itemName,
+      packerName: packerName || 'Un miembro',
+      read: false,
+      createdAt: serverTimestamp(),
+    })
+  ));
+}
+
 // Trip gallery
 
 export async function getGalleryFolders(tripId) {

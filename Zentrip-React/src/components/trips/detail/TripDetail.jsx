@@ -350,7 +350,7 @@ export default function TripDetail() {
       return <GalleryTab tripId={tripId} />;
     }
     if (activeTab === 'equipaje') {
-      return <LuggageTab tripId={tripId} members={members} />;
+      return <LuggageTab tripId={tripId} members={members} tripName={trip?.name} />;
     }
     if (activeTab === 'presupuesto') {
       return (

@@ -14,9 +14,11 @@ import {
   addUserToGroupLuggageItem,
   removeOneGroupLuggageSelection,
   deleteGroupLuggageItem,
+  sendLuggageGroupItemAddedNotifications,
+  sendLuggageGroupItemPackedNotifications,
 } from '../../../../../services/tripService';
 
-export default function LuggageTab({ tripId }) {
+export default function LuggageTab({ tripId, tripName }) {
   const { user, profile } = useAuth();
 
   const [personalItems, setPersonalItems] = useState([]);
@@ -288,6 +290,17 @@ export default function LuggageTab({ tripId }) {
       const updatedItems = personalItems.map((item) => (itemIds.includes(item.id) ? { ...item, packed } : item));
       setPersonalItems(updatedItems);
 
+      if (packed) {
+        const packedItem = personalItems.find((item) => itemIds.includes(item.id));
+        const packedItemName = packedItem?.item;
+        const isGroupItem = packedItemName && groupItems.some(
+          (gi) => gi.item?.trim().toLowerCase() === packedItemName.trim().toLowerCase() && (gi.selections || []).length > 0
+        );
+        if (isGroupItem) {
+          sendLuggageGroupItemPackedNotifications(tripId, { packerUid: user.uid, packerName: userName, itemName: packedItemName, tripName }).catch(() => {});
+        }
+      }
+
       // Actualizar packedUserIds en groupItems
       setGroupItems((prev) =>
         prev.map((groupItem) => {
@@ -344,6 +357,7 @@ export default function LuggageTab({ tripId }) {
       setGroupItemDraft('');
       setMessage('Item añadido a las maletas.');
       setTimeout(() => setMessage(''), 3000);
+      sendLuggageGroupItemAddedNotifications(tripId, { creatorUid: user.uid, creatorName: userName, itemName: trimmed, tripName }).catch(() => {});
     } catch (err) {
       console.error('Error añadiendo item grupal:', err);
       setMessage(`Error: ${err.message || 'Error al añadir item.'}`);
@@ -366,6 +380,7 @@ export default function LuggageTab({ tripId }) {
       setPersonalItems((prev) => [...prev, { id: personalId, item, userId: user.uid, packed: false, createdAt: new Date() }]);
       setMessage('Item añadido a las maletas.');
       setTimeout(() => setMessage(''), 3000);
+      sendLuggageGroupItemAddedNotifications(tripId, { creatorUid: user.uid, creatorName: userName, itemName: item, tripName }).catch(() => {});
     } catch (err) {
       console.error('Error añadiendo item grupal:', err);
       setMessage(`Error: ${err.message || 'Error al añadir item.'}`);

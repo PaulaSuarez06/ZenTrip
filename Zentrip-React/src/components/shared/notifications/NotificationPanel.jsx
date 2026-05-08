@@ -205,6 +205,46 @@ export default function NotificationPanel({ onClose }) {
                   );
                 }
 
+                if (n.type === 'luggage_group_added' || n.type === 'luggage_group_packed') {
+                  const isAdded = n.type === 'luggage_group_added';
+                  const handleNavigateLuggage = async () => {
+                    await markTripNotificationRead(n.id);
+                    goToTrip(n.tripId, { activeTab: 'equipaje' });
+                  };
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={handleNavigateLuggage}
+                      className="px-4 py-3 rounded-xl border cursor-pointer hover:brightness-95 transition-all bg-primary-1 border-primary-2"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl shrink-0 mt-0.5">{isAdded ? '🧳' : '✅'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="body-3 font-semibold text-neutral-7 mb-0.5">
+                            {isAdded ? 'Nuevo item en la maleta grupal' : 'Item empaquetado'}
+                          </p>
+                          <p className="body-3 text-neutral-5 leading-snug">
+                            <span className="font-semibold text-primary-4">{isAdded ? n.creatorName : n.packerName}</span>
+                            {isAdded ? ' ha añadido ' : ' ha metido en su maleta '}
+                            <span className="font-semibold text-neutral-7">"{n.itemName}"</span>
+                            {n.tripName ? <> en <span className="font-semibold text-neutral-7">"{n.tripName}"</span></> : ''}
+                          </p>
+                          {formatNotificationDate(n.createdAt) && (
+                            <p className="body-3 text-neutral-3 mt-2">{formatNotificationDate(n.createdAt)}</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); markTripNotificationRead(n.id); }}
+                            className="mt-2 body-3 font-semibold text-neutral-3 hover:text-neutral-5 transition-colors cursor-pointer"
+                          >
+                            Marcar como leído ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 if (n.type === 'expense_added') {
                   const handleNavigateExpense = async () => {
                     await markTripNotificationRead(n.id);
