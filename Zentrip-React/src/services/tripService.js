@@ -799,6 +799,51 @@ export async function getGroupLuggage(tripId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+export async function getLuggageProgressSummary(tripId, userId) {
+  const [personalSnap, allPersonalSnap, groupSnap] = await Promise.all([
+    getDocs(query(collection(db, 'trips', tripId, 'luggage'), where('userId', '==', userId))),
+    getDocs(collection(db, 'trips', tripId, 'luggage')),
+    getDocs(collection(db, 'trips', tripId, 'luggageGroup')),
+  ]);
+
+  const personal = personalSnap.docs.map((d) => d.data());
+  const personalPct = personal.length > 0
+    ? Math.round((personal.filter((i) => i.packed).length / personal.length) * 100)
+    : null;
+
+  // Build packed lookup: uid -> Set of lowercase item names they've packed
+  const packedByUser = new Map();
+  for (const d of allPersonalSnap.docs) {
+    const { userId: uid, item, packed } = d.data();
+    if (packed) {
+      if (!packedByUser.has(uid)) packedByUser.set(uid, new Set());
+      packedByUser.get(uid).add(item?.trim().toLowerCase());
+    }
+  }
+
+  const groupItems = groupSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const selectionSnaps = await Promise.all(
+    groupItems.map((gi) => getDocs(collection(db, 'trips', tripId, 'luggageGroup', gi.id, 'selections')))
+  );
+
+  let totalAssignments = 0;
+  let totalPacked = 0;
+  for (let i = 0; i < groupItems.length; i++) {
+    const itemName = groupItems[i].item?.trim().toLowerCase();
+    const uniqueUserIds = new Set(selectionSnaps[i].docs.map((d) => d.data().userId));
+    for (const uid of uniqueUserIds) {
+      totalAssignments++;
+      if (packedByUser.get(uid)?.has(itemName)) totalPacked++;
+    }
+  }
+
+  const groupPct = totalAssignments > 0
+    ? Math.round((totalPacked / totalAssignments) * 100)
+    : null;
+
+  return { personalPct, groupPct };
+}
+
 export async function addUserLuggageItem(tripId, uid, item) {
   const docRef = await addDoc(collection(db, 'trips', tripId, 'luggage'), {
     userId: uid,
