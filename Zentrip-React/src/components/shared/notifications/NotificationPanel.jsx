@@ -283,6 +283,9 @@ export default function NotificationPanel({ onClose }) {
                   );
                 }
 
+                const isHotel = n.type === 'hotel_booked';
+                if (!isFlight && !isRestaurant && !isActivity && !isManualActivity && !isRoute && !isHotel) return null;
+
                 const emoji = isFlight ? '✈️' : isRestaurant ? '🍽️' : isActivity ? '🎯' : isManualActivity ? '📌' : isRoute ? '🗺️' : '🏨';
                 const title = isFlight ? 'Nuevo vuelo reservado' : isRestaurant ? 'Nuevo restaurante anotado' : isActivity ? 'Nueva actividad anotada' : isManualActivity ? 'Nueva actividad en el itinerario' : isRoute ? 'Nueva ruta guardada' : 'Nueva reserva de hotel';
                 const itemName = isFlight ? n.flightLabel : isRestaurant ? n.restaurantName : isActivity || isManualActivity ? n.activityName : isRoute ? n.routeName : n.hotelName;
