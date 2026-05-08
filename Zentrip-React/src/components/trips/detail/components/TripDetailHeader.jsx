@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Share2, Settings, Users } from 'lucide-react';
+import TripActionsMenu from './TripActionsMenu';
 
 const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
@@ -24,7 +26,8 @@ function countTripDays(startDate, endDate) {
   return Math.round((e - s) / 86400000) + 1;
 }
 
-export default function TripDetailHeader({ trip, members, currentWeather }) {
+export default function TripDetailHeader({ trip, members, currentWeather, isCreator, onEditTrip, onDeleteTrip, onLeaveTrip }) {
+  const [actionsOpen, setActionsOpen] = useState(false);
   const acceptedMembers = members.filter((m) => m.invitationStatus === 'accepted');
   const memberCount = acceptedMembers.length;
   const dateLabel = formatHeaderDateRange(trip.startDate, trip.endDate);
@@ -76,14 +79,26 @@ export default function TripDetailHeader({ trip, members, currentWeather }) {
           <span className="hidden sm:inline">Compartir</span>
         </button>
 
-        <button
-          type="button"
-          className="flex items-center gap-1.5 border border-neutral-2 rounded-full p-2 sm:px-4 sm:py-1.5 body-3 text-neutral-5 hover:bg-neutral-1 transition-colors"
-          aria-label="Acciones"
-        >
-          <Settings className="w-4 h-4" />
-          <span className="hidden sm:inline">Acciones</span>
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setActionsOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 border rounded-full p-2 sm:px-4 sm:py-1.5 body-3 transition-colors ${actionsOpen ? 'border-secondary-3 bg-secondary-1 text-secondary-5' : 'border-neutral-2 text-neutral-5 hover:bg-neutral-1'}`}
+            aria-label="Acciones"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Acciones</span>
+          </button>
+          {actionsOpen && (
+            <TripActionsMenu
+              isCreator={isCreator}
+              onEditTrip={onEditTrip}
+              onDeleteTrip={onDeleteTrip}
+              onLeaveTrip={onLeaveTrip}
+              onClose={() => setActionsOpen(false)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
