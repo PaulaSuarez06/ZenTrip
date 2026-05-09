@@ -1104,14 +1104,14 @@ export default function CommunityPostPublic() {
     const tabs = [];
     if (post.itinerary?.length > 0)
       tabs.push({ key: 'itinerario', label: 'Itinerario', icon: CalendarDays });
-    if (post.shareBudget && post.totalBudget != null)
-      tabs.push({ key: 'presupuesto', label: 'Presupuesto', icon: Wallet });
-    if (post.shareGallery && galleryPhotos.length > 0)
-      tabs.push({ key: 'galeria', label: 'Galería', icon: ImageIcon });
-    if (post.shareLuggage && (post.luggageCategories?.length > 0 || post.personalLuggageCategories?.length > 0))
-      tabs.push({ key: 'equipaje', label: 'Equipaje', icon: Package });
     if (post.shareBookings && post.bookings?.length > 0)
       tabs.push({ key: 'reservas', label: 'Reservas', icon: Ticket });
+    if (post.shareBudget && post.totalBudget != null)
+      tabs.push({ key: 'presupuesto', label: 'Presupuesto', icon: Wallet });
+    if (post.shareLuggage && (post.luggageCategories?.length > 0 || post.personalLuggageCategories?.length > 0))
+      tabs.push({ key: 'equipaje', label: 'Equipaje', icon: Package });
+    if (post.shareGallery && galleryPhotos.length > 0)
+      tabs.push({ key: 'galeria', label: 'Galería', icon: ImageIcon });
 
     return { tripDays, activitiesByDate, perDay, galleryPhotos, tabs };
   }, [post]);

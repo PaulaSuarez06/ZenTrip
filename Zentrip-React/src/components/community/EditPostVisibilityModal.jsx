@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X, Image, Wallet, Package, Shield, Folder, Users } from 'lucide-react';
-import { getGalleryPhotos, getGroupLuggage, getTripById, getAllPersonalLuggage } from '../../services/tripService';
+import { getGalleryPhotos, getGroupLuggage, getTripById, getUserLuggage } from '../../services/tripService';
 import { getPersonalBudgetsTotal } from '../../services/budgetService';
 import { updatePostVisibility } from '../../services/communityService';
 
@@ -59,7 +59,7 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
     Promise.all([
       getGalleryPhotos(post.tripId).catch(() => []),
       getGroupLuggage(post.tripId).catch(() => []),
-      getAllPersonalLuggage(post.tripId).catch(() => []),
+      getUserLuggage(post.tripId, post.userId).catch(() => []),
       getTripById(post.tripId).catch(() => null),
       getPersonalBudgetsTotal(post.tripId).catch(() => 0),
     ]).then(([photos, groupLuggage, personalLuggage, trip, budgetTotal]) => {

@@ -197,13 +197,18 @@ export async function getCommunityPostById(postId) {
 }
 
 export async function getUserCommunityPosts(userId) {
+  // Uses orderBy(createdAt) — same auto-indexed field as getCommunityPosts — then
+  // filters by userId in JS. Avoids composite-index / security-rule issues that
+  // can silently block a plain where('userId', '==', ...) query.
   const q = query(
     collection(db, POSTS_COL),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    orderBy('createdAt', 'desc'),
+    limit(400)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((p) => p.userId === userId);
 }
 
 export async function toggleLike(postId, userId) {

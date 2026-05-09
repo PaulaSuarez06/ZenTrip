@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X, Image, Wallet, Package, Shield, Users, AlertCircle, CheckCircle2, Link, Copy, Check, Folder, Ticket } from 'lucide-react';
-import { getGalleryPhotos, getGroupLuggage, getAllPersonalLuggage, getBookings } from '../../services/tripService';
+import { getGalleryPhotos, getGroupLuggage, getUserLuggage, getBookings } from '../../services/tripService';
 import { getPersonalBudgetsTotal, getExpenseAggregates } from '../../services/budgetService';
 import { publishTrip } from '../../services/communityService';
 
@@ -133,7 +133,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
     Promise.all([
       getGalleryPhotos(trip.id).catch(() => []),
       getGroupLuggage(trip.id).catch(() => []),
-      getAllPersonalLuggage(trip.id).catch(() => []),
+      getUserLuggage(trip.id, user.uid).catch(() => []),
       getPersonalBudgetsTotal(trip.id).catch(() => 0),
       getExpenseAggregates(trip.id).catch(() => null),
       getBookings(trip.id).catch(() => []),

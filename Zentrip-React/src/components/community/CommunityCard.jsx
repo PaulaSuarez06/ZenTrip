@@ -50,7 +50,7 @@ function formatDateRange(startDate, endDate) {
   return null;
 }
 
-export default function CommunityCard({ post, onCommentClick, onDelete, followingIds = [], onFollowChange }) {
+export default function CommunityCard({ post, onCommentClick, onDelete, followingIds = [], onFollowChange, onPostUpdate }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { copied, copy } = useCopyLink(post.id);
@@ -77,14 +77,20 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
     e.stopPropagation();
     if (!user || likeLoading) return;
     setLikeLoading(true);
+    const prevLikedBy = likedBy;
+    const prevLikes = likes;
     const nowLiked = !isLiked;
-    setLikedBy((prev) => nowLiked ? [...prev, user.uid] : prev.filter((id) => id !== user.uid));
-    setLikes((prev) => prev + (nowLiked ? 1 : -1));
+    const newLikedBy = nowLiked ? [...prevLikedBy, user.uid] : prevLikedBy.filter((id) => id !== user.uid);
+    const newLikes = prevLikes + (nowLiked ? 1 : -1);
+    setLikedBy(newLikedBy);
+    setLikes(newLikes);
+    onPostUpdate?.(post.id, { likedBy: newLikedBy, likes: newLikes });
     try {
       await toggleLike(post.id, user.uid);
     } catch {
-      setLikedBy((prev) => nowLiked ? prev.filter((id) => id !== user.uid) : [...prev, user.uid]);
-      setLikes((prev) => prev + (nowLiked ? -1 : 1));
+      setLikedBy(prevLikedBy);
+      setLikes(prevLikes);
+      onPostUpdate?.(post.id, { likedBy: prevLikedBy, likes: prevLikes });
     } finally {
       setLikeLoading(false);
     }
@@ -94,12 +100,16 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
     e.stopPropagation();
     if (!user || saveLoading) return;
     setSaveLoading(true);
+    const prevSavedBy = savedBy;
     const nowSaved = !isSaved;
-    setSavedBy((prev) => nowSaved ? [...prev, user.uid] : prev.filter((id) => id !== user.uid));
+    const newSavedBy = nowSaved ? [...prevSavedBy, user.uid] : prevSavedBy.filter((id) => id !== user.uid);
+    setSavedBy(newSavedBy);
+    onPostUpdate?.(post.id, { savedBy: newSavedBy });
     try {
       await toggleSave(post.id, user.uid);
     } catch {
-      setSavedBy((prev) => nowSaved ? prev.filter((id) => id !== user.uid) : [...prev, user.uid]);
+      setSavedBy(prevSavedBy);
+      onPostUpdate?.(post.id, { savedBy: prevSavedBy });
     } finally {
       setSaveLoading(false);
     }
