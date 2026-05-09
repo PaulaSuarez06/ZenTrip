@@ -5,12 +5,18 @@ import { useProfileAvatar } from "../../../../hooks/useProfileAvatar";
 import { useAuth } from "../../../../context/AuthContext";
 import { useNotifications } from "../../../../context/NotificationContext";
 
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+  .split(',')
+  .map((e) => e.trim())
+  .filter(Boolean);
+
 export function useNavbarController() {
   const navigate = useNavigate();
   const { avatarSrc, initials } = useProfileAvatar();
-  const { profile, logout } = useAuth();
+  const { profile, user, logout } = useAuth();
   const { unseenCount: notificationCount } = useNotifications();
   const avatarColor = profile?.avatarColor || "";
+  const isAdmin = !!user && ADMIN_EMAILS.includes(user.email);
 
   const messageCount = 0;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,6 +69,11 @@ export function useNavbarController() {
     navigate(ROUTES.PROFILE.EDIT);
   };
 
+  const handleGoToAdmin = () => {
+    setProfileMenuOpen(false);
+    navigate(ROUTES.ADMIN.DASHBOARD);
+  };
+
   const handleGoHome = () => {
     setProfileMenuOpen(false);
     navigate(ROUTES.HOME);
@@ -86,6 +97,7 @@ export function useNavbarController() {
     avatarSrc,
     initials,
     avatarColor,
+    isAdmin,
     notificationCount,
     messageCount,
     menuOpen,
@@ -98,6 +110,7 @@ export function useNavbarController() {
     toggleNotificationPanel,
     closeNotificationPanel,
     handleGoToEditProfile,
+    handleGoToAdmin,
     handleGoHome,
     handleGoToMyTrips,
     handleLogout,

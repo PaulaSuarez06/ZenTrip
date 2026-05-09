@@ -223,18 +223,19 @@ function DayNameHeader() {
   );
 }
 
-export default function DayCalendar({ tripDays, selectedDay, onSelectDay, activitiesByDate = {}, weatherByDate = {} }) {
+export default function DayCalendar({ tripDays, selectedDay, onSelectDay, activitiesByDate = {}, weatherByDate = {}, disableAutoJump = false }) {
   const [view, setView] = React.useState('week1');
   const [offset, setOffset] = React.useState(0);
 
   React.useEffect(() => {
+    if (disableAutoJump) return;
     if (tripDays.length === 0) return;
     if (view !== 'week1' && view !== 'week2') return;
     const todayIso = toISO(new Date());
     if (!tripDays.includes(todayIso)) return;
     const pageIndex = getOngoingPageIndex(view, tripDays, todayIso);
     setOffset(pageIndex);
-  }, [tripDays, view]);
+  }, [tripDays, view, disableAutoJump]);
 
   const tripSet = new Set(tripDays);
   const totalPages = getTotalPages(view, tripDays);

@@ -25,4 +25,14 @@ export const ROUTES = {
     PRIVACY: '/legal/privacidad',
     TERMS: '/legal/terminos',
   },
+  INSPIRATION: {
+    READER: '/inspiracion/:id',
+  },
+  COMMUNITY: '/comunidad',
+  COMMUNITY_POST: '/comunidad/:postId',
+  PUBLIC_POST: '/p/:postId',
+  ADMIN: {
+    DASHBOARD: '/admin',
+    INSPIRATIONS: '/admin/inspiraciones',
+  },
 };

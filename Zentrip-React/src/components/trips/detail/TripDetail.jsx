@@ -403,7 +403,7 @@ export default function TripDetail() {
       </button>
 
       {/* Header del viaje */}
-      <TripDetailHeader trip={trip} members={members} currentWeather={currentWeather} />
+      <TripDetailHeader trip={trip} members={members} activities={activities} currentWeather={currentWeather} />
 
       {/* Pestañas */}
       <TripDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />

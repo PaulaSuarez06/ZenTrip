@@ -24,6 +24,12 @@ import PrivacyPolicy from './components/legal/PrivacyPolicy';
 import TermsOfUse from './components/legal/TermsOfUse';
 import ProtectedRoute from './components/auth/guards/ProtectedRoute';
 import GuestRoute from './components/auth/guards/GuestRoute';
+import AdminRoute from './components/auth/guards/AdminRoute';
+import InspirationReader from './components/inspiration/InspirationReader';
+import CommunityPage from './components/community/CommunityPage';
+import CommunityPostPublic from './components/community/CommunityPostPublic';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminInspirations from './components/admin/AdminInspirations';
 
 const router = createBrowserRouter([
   { path: '/', element: <Landing /> },
@@ -47,6 +53,21 @@ const router = createBrowserRouter([
           { path: ROUTES.PROFILE.SETUP, element: <EditProfile isOnboarding /> },
           { path: ROUTES.LEGAL.PRIVACY, element: <PrivacyPolicy /> },
           { path: ROUTES.LEGAL.TERMS, element: <TermsOfUse /> },
+          { path: ROUTES.INSPIRATION.READER, element: <InspirationReader /> },
+          { path: ROUTES.COMMUNITY, element: <CommunityPage /> },
+          { path: ROUTES.COMMUNITY_POST, element: <CommunityPage /> },
+        ],
+      },
+      {
+        element: <AdminRoute />,
+        children: [
+          {
+            element: <MainLayout />,
+            children: [
+              { path: ROUTES.ADMIN.DASHBOARD, element: <AdminDashboard /> },
+              { path: ROUTES.ADMIN.INSPIRATIONS, element: <AdminInspirations /> },
+            ],
+          },
         ],
       },
     ],
@@ -71,6 +92,12 @@ const router = createBrowserRouter([
   {
     path: ROUTES.AUTH.ACTION,
     element: <AuthActionHandler />,
+  },
+  {
+    element: <MainLayout />,
+    children: [
+      { path: ROUTES.PUBLIC_POST, element: <CommunityPostPublic /> },
+    ],
   },
 ]);
 

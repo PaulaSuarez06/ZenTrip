@@ -347,7 +347,7 @@ export default function AddExpenseModal({
           <div className={`grid gap-3 ${personalMode ? 'grid-cols-1' : 'grid-cols-2'}`}>
             <div>
               <label className="block body-2-semibold text-neutral-6 mb-1.5">Fecha</label>
-              <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)}
+              <input type="date" value={form.date} max={today} onChange={(e) => set('date', e.target.value)}
                 className={`${fi} ${ok}`} />
             </div>
             {!personalMode && (

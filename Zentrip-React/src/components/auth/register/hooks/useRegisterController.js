@@ -32,13 +32,15 @@ function decodeJwtPayload(token) {
 
 export function useRegisterController(navigate) {
   const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY?.trim() || '';
-  const { inviteToken, joinToken } = useMemo(() => {
+  const { inviteToken, joinToken, redirectTo } = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     const emailToken = params.get('inviteToken');
     const publicToken = params.get('join') || params.get('tripInviteToken');
+    const r = params.get('redirect')?.trim() || '';
     return {
       inviteToken: emailToken ? emailToken.trim() : '',
       joinToken: publicToken ? publicToken.trim() : '',
+      redirectTo: r.startsWith('/') ? r : '',
     };
   }, []);
 
@@ -249,7 +251,7 @@ export function useRegisterController(navigate) {
         }));
       }
 
-      navigate(await getPostLoginPath(user));
+      navigate(redirectTo || await getPostLoginPath(user));
     } catch (googleError) {
       const { message } = getFirebaseErrorByField(googleError);
       setGeneralError(message || registerFeedbackMessages.googleGenericError);

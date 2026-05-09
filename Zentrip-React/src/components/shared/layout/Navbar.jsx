@@ -24,9 +24,11 @@ const Header = () => {
         toggleNotificationPanel,
         closeNotificationPanel,
         handleGoToEditProfile,
+        handleGoToAdmin,
         handleGoHome,
         handleGoToMyTrips,
         handleLogout,
+        isAdmin,
     } = useNavbarController();
 
     const profileMenuRef = useRef(null);
@@ -188,6 +190,14 @@ const Header = () => {
                             >
                                 Editar perfil
                             </button>
+                            {isAdmin && (
+                                <button
+                                    className="w-full text-left px-4 py-2 body-2 text-secondary-5 hover:bg-secondary-1 transition-colors cursor-pointer"
+                                    onClick={handleGoToAdmin}
+                                >
+                                    Panel de administrador
+                                </button>
+                            )}
                             <button
                                 className="w-full text-left px-4 py-2 body-2 text-primary-3 hover:bg-secondary-1 transition-colors cursor-pointer"
                                 onClick={handleLogout}

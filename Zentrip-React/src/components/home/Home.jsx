@@ -12,6 +12,8 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { getUserProfile } from "../../services/profileService";
 import { getActiveDestinations } from "../../services/destinationsService";
+import InspirationSection from "./InspirationSection";
+import CommunitySection from "../community/CommunitySection";
 
 const DESTINATION_TIPS = {
   'Santorini, Grecia':       'Reserva el atardecer desde Oia, el más famoso del Mediterráneo',
@@ -310,6 +312,11 @@ export default function Home() {
         </div>
       </section>
     )}
+
+    {/* ── ¿Y SI...? Inspiración lecturas ── */}
+    <InspirationSection />
+    {/* ── Comunidad ── */}
+    <CommunitySection />
     </>}
     </>
   );

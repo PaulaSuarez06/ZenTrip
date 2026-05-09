@@ -783,6 +783,11 @@ export async function deleteGalleryPhoto(tripId, photoId, publicId) {
   }
 }
 
+export async function getAllPersonalLuggage(tripId) {
+  const snap = await getDocs(collection(db, 'trips', tripId, 'luggage'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 export async function getUserLuggage(tripId, uid) {
   const snap = await getDocs(
     query(collection(db, 'trips', tripId, 'luggage'), where('userId', '==', uid))
