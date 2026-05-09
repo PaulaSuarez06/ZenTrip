@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Bookmark, MapPin, Users, Calendar, Copy, Check, Trash2 } from 'lucide-react';
+import { getGradient } from '../../utils/gradients';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toggleLike, toggleSave } from '../../services/communityService';
@@ -72,6 +73,8 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
   useEffect(() => {
     setFollowing(followingIds.includes(post.userId));
   }, [followingIds, post.userId]);
+
+  const placeholderGradient = getGradient(post.destination || post.title);
 
   async function handleLike(e) {
     e.stopPropagation();
@@ -161,9 +164,7 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
-            ✈️
-          </div>
+          <div className={`w-full h-full bg-linear-to-br ${placeholderGradient}`} />
         )}
 
         {/* Time ago badge */}
