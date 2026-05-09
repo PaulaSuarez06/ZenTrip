@@ -271,6 +271,17 @@ export async function unpublishPost(postId) {
   await deleteDoc(doc(db, POSTS_COL, postId));
 }
 
+export async function incrementPostView(postId) {
+  const key = `zt_v_${postId}`;
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, '1');
+  try {
+    await updateDoc(doc(db, POSTS_COL, postId), { viewCount: increment(1) });
+  } catch {
+    // non-critical
+  }
+}
+
 export async function updatePostVisibility(postId, { shareGallery, galleryImages, shareBudget, totalBudget, budgetCurrency, shareLuggage, luggageScopeAll, luggageCategories, personalLuggageCategories }) {
   await updateDoc(doc(db, POSTS_COL, postId), {
     shareGallery,

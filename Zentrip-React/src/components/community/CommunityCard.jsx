@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Bookmark, MapPin, Users, Calendar, Copy, Check, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toggleLike, toggleSave } from '../../services/communityService';
+import { followUser, unfollowUser } from '../../services/followService';
 import UserAvatar from '../ui/UserAvatar';
-import { ROUTES } from '../../config/routes';
 
 function useCopyLink(postId) {
   const [copied, setCopied] = useState(false);
@@ -50,7 +50,7 @@ function formatDateRange(startDate, endDate) {
   return null;
 }
 
-export default function CommunityCard({ post, onCommentClick, onDelete }) {
+export default function CommunityCard({ post, onCommentClick, onDelete, followingIds = [], onFollowChange }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { copied, copy } = useCopyLink(post.id);
@@ -61,11 +61,17 @@ export default function CommunityCard({ post, onCommentClick, onDelete }) {
   const [saveLoading, setSaveLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
   const isOwner = user ? user.uid === post.userId : false;
   const dateLabel = formatDateRange(post.startDate, post.endDate);
+
+  useEffect(() => {
+    setFollowing(followingIds.includes(post.userId));
+  }, [followingIds, post.userId]);
 
   async function handleLike(e) {
     e.stopPropagation();
@@ -96,6 +102,27 @@ export default function CommunityCard({ post, onCommentClick, onDelete }) {
       setSavedBy((prev) => nowSaved ? prev.filter((id) => id !== user.uid) : [...prev, user.uid]);
     } finally {
       setSaveLoading(false);
+    }
+  }
+
+  async function handleFollow(e) {
+    e.stopPropagation();
+    if (!user || followLoading) return;
+    setFollowLoading(true);
+    const nowFollowing = !following;
+    setFollowing(nowFollowing);
+    try {
+      if (nowFollowing) {
+        await followUser(user.uid, post.userId);
+      } else {
+        await unfollowUser(user.uid, post.userId);
+      }
+      onFollowChange?.(post.userId, nowFollowing);
+    } catch (err) {
+      console.error('[follows] Error al seguir/dejar de seguir:', err);
+      setFollowing(!nowFollowing);
+    } finally {
+      setFollowLoading(false);
     }
   }
 
@@ -134,8 +161,8 @@ export default function CommunityCard({ post, onCommentClick, onDelete }) {
           {timeAgo(post.createdAt)}
         </span>
 
-        {/* User avatar + username */}
-        <div className="absolute bottom-2 left-2 flex items-center gap-2">
+        {/* User avatar + username + follow */}
+        <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5">
           <UserAvatar
             src={post.userAvatar}
             fullName={post.username}
@@ -144,7 +171,26 @@ export default function CommunityCard({ post, onCommentClick, onDelete }) {
             initialsClass="text-[10px] text-white font-bold"
             backgroundClass={post.userAvatarColor ? '' : 'bg-primary-3'}
           />
-          <span className="text-white text-xs font-semibold drop-shadow">@{post.username}</span>
+          <span className="text-white text-xs font-semibold drop-shadow truncate flex-1">@{post.username}</span>
+          {user && !isOwner && (
+            <button
+              type="button"
+              onClick={handleFollow}
+              disabled={followLoading}
+              className={`group shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm border transition-colors ${
+                following
+                  ? 'bg-white/30 hover:bg-red-500/60 border-white/50 hover:border-red-400 text-white'
+                  : 'bg-primary-3 border-transparent text-white'
+              }`}
+            >
+              {following ? (
+                <>
+                  <span className="group-hover:hidden">Siguiendo</span>
+                  <span className="hidden group-hover:inline">Dejar de seguir</span>
+                </>
+              ) : 'Seguir'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -200,16 +246,18 @@ export default function CommunityCard({ post, onCommentClick, onDelete }) {
             <span>{post.commentsCount ?? 0}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            className={`flex items-center gap-1.5 body-3 transition-colors ${
-              isSaved ? 'text-primary-3' : 'text-neutral-4 hover:text-primary-3'
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-primary-3' : ''}`} />
-            <span className="text-neutral-3">{savedBy.length > 0 ? savedBy.length : ''}</span>
-          </button>
+          {!isOwner && (
+            <button
+              type="button"
+              onClick={handleSave}
+              className={`flex items-center gap-1.5 body-3 transition-colors ${
+                isSaved ? 'text-primary-3' : 'text-neutral-4 hover:text-primary-3'
+              }`}
+            >
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-primary-3' : ''}`} />
+              <span className="text-neutral-3">{savedBy.length > 0 ? savedBy.length : ''}</span>
+            </button>
+          )}
 
           <button
             type="button"

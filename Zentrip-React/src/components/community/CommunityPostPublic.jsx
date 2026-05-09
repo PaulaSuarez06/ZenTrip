@@ -4,6 +4,7 @@ import {
   MapPin, Users, Calendar, Heart, MessageCircle, Bookmark,
   Copy, Check, Lock, Wallet, Package, Settings, UserCircle,
   Image as ImageIcon, CalendarDays, ChevronLeft, ChevronRight, X, Folder, Trash2, Ticket,
+  Plane, Hotel, Car, Compass, Utensils, Star,
 } from 'lucide-react';
 import { getCommunityPostById, toggleLike, toggleSave, unpublishPost } from '../../services/communityService';
 import CommentsModal from './CommentsModal';
@@ -13,7 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ROUTES } from '../../config/routes';
 import DayCalendar from '../trips/detail/components/itinerary/DayCalendar';
 
-// --- Helpers ---
+// --- Helpers ---a
 
 const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DAY_NAMES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -91,11 +92,11 @@ const TYPE_CONFIG = {
 };
 
 const BOOKING_TYPE_CONFIG = {
-  vuelo:       { label: 'Vuelo',       icon: '✈️', borderClass: 'border-blue-100' },
-  hotel:       { label: 'Hotel',       icon: '🏨', borderClass: 'border-teal-100' },
-  actividad:   { label: 'Actividad',   icon: '🎯', borderClass: 'border-violet-100' },
-  restaurante: { label: 'Restaurante', icon: '🍽️', borderClass: 'border-orange-100' },
-  coche:       { label: 'Coche',       icon: '🚗', borderClass: 'border-amber-100' },
+  vuelo:       { label: 'Vuelo',       Icon: Plane,    borderClass: 'border-blue-100',   iconClass: 'text-blue-500' },
+  hotel:       { label: 'Hotel',       Icon: Hotel,    borderClass: 'border-teal-100',   iconClass: 'text-teal-500' },
+  actividad:   { label: 'Actividad',   Icon: Compass,  borderClass: 'border-violet-100', iconClass: 'text-violet-500' },
+  restaurante: { label: 'Restaurante', Icon: Utensils, borderClass: 'border-orange-100', iconClass: 'text-orange-500' },
+  coche:       { label: 'Coche',       Icon: Car,      borderClass: 'border-amber-100',  iconClass: 'text-amber-500' },
 };
 
 const EXPENSE_CATS = [
@@ -1238,16 +1239,18 @@ export default function CommunityPostPublic() {
                     <MessageCircle className="w-4 h-4" />
                     <span>{post.commentsCount ?? 0}</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className={`flex items-center gap-1.5 body-3 px-3 py-1.5 rounded-full border transition-colors ${
-                      isSaved ? 'bg-primary-1 border-primary-2 text-primary-3' : 'border-neutral-2 text-neutral-5 hover:bg-neutral-1'
-                    }`}
-                  >
-                    <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-primary-3' : ''}`} />
-                    {isSaved ? 'Guardado' : 'Guardar'}
-                  </button>
+                  {!isOwner && (
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      className={`flex items-center gap-1.5 body-3 px-3 py-1.5 rounded-full border transition-colors ${
+                        isSaved ? 'bg-primary-1 border-primary-2 text-primary-3' : 'border-neutral-2 text-neutral-5 hover:bg-neutral-1'
+                      }`}
+                    >
+                      <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-primary-3' : ''}`} />
+                      {isSaved ? 'Guardado' : 'Guardar'}
+                    </button>
+                  )}
                 </>
               )}
               {isOwner && (

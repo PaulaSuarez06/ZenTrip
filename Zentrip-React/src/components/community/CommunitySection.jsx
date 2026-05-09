@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCommunityPosts } from '../../services/communityService';
+import { getFollowingIds } from '../../services/followService';
+import { useAuth } from '../../context/AuthContext';
 import CommunityCard from './CommunityCard';
 import { ROUTES } from '../../config/routes';
 
@@ -11,14 +13,27 @@ function pickFour(posts) {
 
 export default function CommunitySection() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [followingIds, setFollowingIds] = useState([]);
 
   useEffect(() => {
     getCommunityPosts(30).then((posts) => {
       setCards(pickFour(posts));
       setLoading(false);
     }).catch((err) => { console.error('[CommunitySection]', err); setLoading(false); });
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    getFollowingIds(user.uid).then(setFollowingIds).catch((err) => console.error('[follows] Error cargando seguidos:', err));
+  }, [user]);
+
+  const handleFollowChange = useCallback((userId, isNowFollowing) => {
+    setFollowingIds((prev) =>
+      isNowFollowing ? [...prev, userId] : prev.filter((id) => id !== userId)
+    );
   }, []);
 
   if (!loading && cards.length === 0) return null;
@@ -49,7 +64,12 @@ export default function CommunitySection() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {cards.map((post) => (
-            <CommunityCard key={post.id} post={post} />
+            <CommunityCard
+              key={post.id}
+              post={post}
+              followingIds={followingIds}
+              onFollowChange={handleFollowChange}
+            />
           ))}
         </div>
       )}

@@ -1,13 +1,16 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Globe, User, Search, X } from 'lucide-react';
+import { Bookmark, Globe, User, Search, X, Users } from 'lucide-react';
 import { getCommunityPosts, getSavedPosts, getUserCommunityPosts, unpublishPost } from '../../services/communityService';
+import { getFollowingIds } from '../../services/followService';
 import { useAuth } from '../../context/AuthContext';
 import CommunityCard from './CommunityCard';
 import CommentsModal from './CommentsModal';
 import { ROUTES } from '../../config/routes';
 
-function PostGrid({ posts, loading, skeletonCount = 8, onCommentClick, onDelete, emptyNode }) {
+const RECENT_MS = 60 * 24 * 60 * 60 * 1000; // 60 días
+
+function PostGrid({ posts, loading, skeletonCount = 8, onCommentClick, onDelete, followingIds, onFollowChange, emptyNode }) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -21,7 +24,14 @@ function PostGrid({ posts, loading, skeletonCount = 8, onCommentClick, onDelete,
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {posts.map((post) => (
-        <CommunityCard key={post.id} post={post} onCommentClick={onCommentClick} onDelete={onDelete} />
+        <CommunityCard
+          key={post.id}
+          post={post}
+          onCommentClick={onCommentClick}
+          onDelete={onDelete}
+          followingIds={followingIds}
+          onFollowChange={onFollowChange}
+        />
       ))}
     </div>
   );
@@ -47,6 +57,7 @@ export default function CommunityPage() {
   const [mineLoaded, setMineLoaded] = useState(false);
   const [commentPost, setCommentPost] = useState(null);
   const [search, setSearch] = useState('');
+  const [followingIds, setFollowingIds] = useState([]);
 
   useEffect(() => {
     getCommunityPosts(40).then((data) => {
@@ -54,6 +65,11 @@ export default function CommunityPage() {
       setLoadingExplore(false);
     }).catch(() => setLoadingExplore(false));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    getFollowingIds(user.uid).then(setFollowingIds).catch((err) => console.error('[follows] Error cargando seguidos:', err));
+  }, [user]);
 
   useEffect(() => {
     if (activeTab !== 'saved' || savedLoaded || !user) return;
@@ -75,6 +91,12 @@ export default function CommunityPage() {
     }).catch(() => setLoadingMine(false));
   }, [activeTab, mineLoaded, user]);
 
+  const handleFollowChange = useCallback((userId, isNowFollowing) => {
+    setFollowingIds((prev) =>
+      isNowFollowing ? [...prev, userId] : prev.filter((id) => id !== userId)
+    );
+  }, []);
+
   async function handleDelete(postId) {
     try {
       await unpublishPost(postId);
@@ -95,7 +117,27 @@ export default function CommunityPage() {
     );
   }, [posts, search]);
 
+  // Posts recientes de seguidos (últimos 60 días, máx 8)
+  const followedRecentPosts = useMemo(() => {
+    if (!followingIds.length) return [];
+    const followingSet = new Set(followingIds);
+    const cutoff = Date.now() - RECENT_MS;
+    return filteredPosts
+      .filter((p) => {
+        if (!followingSet.has(p.userId)) return false;
+        const ts = p.createdAt?.seconds ? p.createdAt.seconds * 1000 : new Date(p.createdAt).getTime();
+        return ts > cutoff;
+      })
+      .slice(0, 8);
+  }, [filteredPosts, followingIds]);
+
   const visibleTabs = user ? TABS : TABS.filter((t) => t.key === 'explore');
+
+  const gridProps = {
+    followingIds,
+    onFollowChange: handleFollowChange,
+    onCommentClick: (p) => setCommentPost(p),
+  };
 
   return (
     <div className="px-6 sm:px-10 lg:px-16 pb-16">
@@ -146,6 +188,28 @@ export default function CommunityPage() {
             </button>
           </div>
 
+          {/* Bloque: De tus seguidos */}
+          {followedRecentPosts.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-4 h-4 text-primary-3" />
+                <p className="body-bold text-secondary-5">De tus seguidos</p>
+                <span className="body-3 text-neutral-3 bg-neutral-1 rounded-full px-2 py-0.5">{followedRecentPosts.length}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {followedRecentPosts.map((post) => (
+                  <CommunityCard
+                    key={post.id}
+                    post={post}
+                    followingIds={followingIds}
+                    onFollowChange={handleFollowChange}
+                    onCommentClick={(p) => setCommentPost(p)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Buscador */}
           <div className="mb-6 relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-3 pointer-events-none" />
@@ -163,10 +227,14 @@ export default function CommunityPage() {
             )}
           </div>
 
+          {followedRecentPosts.length > 0 && (
+            <p className="body-3 font-semibold text-neutral-4 mb-4">Todos los itinerarios</p>
+          )}
+
           <PostGrid
             posts={filteredPosts}
             loading={loadingExplore}
-            onCommentClick={(p) => setCommentPost(p)}
+            {...gridProps}
             emptyNode={
               search ? (
                 <div className="flex flex-col items-center gap-3 py-24 text-center">
@@ -199,7 +267,7 @@ export default function CommunityPage() {
           posts={savedPosts}
           loading={loadingSaved}
           skeletonCount={4}
-          onCommentClick={(p) => setCommentPost(p)}
+          {...gridProps}
           emptyNode={
             <div className="flex flex-col items-center gap-4 py-24 text-center">
               <Bookmark className="w-16 h-16 text-neutral-2" />
@@ -230,7 +298,7 @@ export default function CommunityPage() {
               posts={myPosts}
               loading={loadingMine}
               skeletonCount={4}
-              onCommentClick={(p) => setCommentPost(p)}
+              {...gridProps}
               onDelete={handleDelete}
               emptyNode={
                 <div className="flex flex-col items-center gap-4 py-24 text-center">
