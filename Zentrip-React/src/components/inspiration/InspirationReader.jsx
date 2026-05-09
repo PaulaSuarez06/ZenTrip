@@ -110,7 +110,8 @@ export default function InspirationReader() {
           </div>
 
           {/* Contenido */}
-          <div className="px-8 sm:px-12 py-8 max-w-4xl">
+          <div className="px-8 sm:px-12 py-8">
+            <div className="max-w-4xl ml-0 text-left">
             {/* Categoría + tiempo */}
             <div className="flex items-center gap-3 mb-4">
               <span className={`text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full ${colorClass}`}>
@@ -144,20 +145,25 @@ export default function InspirationReader() {
               ))}
             </div>
 
-            {/* CTA crear viaje */}
+            </div>
+            {/* CTA crear viaje — full width inside card padding; button aligned to right with small gap from edge */}
             {article.destination && (
-              <div className="mt-14 p-6 bg-primary-1 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                  <p className="body-bold text-secondary-5">¿Te ha inspirado?</p>
-                  <p className="body-3 text-neutral-4 mt-0.5">Planifica tu viaje a {article.destination}</p>
+              <div className="mt-14">
+                <div className="p-6 bg-primary-1 rounded-2xl flex flex-col sm:flex-row items-start gap-4">
+                  <div className="max-w-4xl w-full ml-0">
+                    <p className="body-bold text-secondary-5">¿Te ha inspirado?</p>
+                    <p className="body-3 text-neutral-4 mt-0.5">Planifica tu viaje a {article.destination}</p>
+                  </div>
+                  <div className="w-full sm:w-auto sm:ml-auto flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(article.destination)}`)}
+                      className="shrink-0 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-6 py-2.5 rounded-full transition-colors cursor-pointer sm:mr-2"
+                    >
+                      Crear viaje →
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(article.destination)}`)}
-                  className="shrink-0 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-6 py-2.5 rounded-full transition-colors cursor-pointer"
-                >
-                  Crear viaje →
-                </button>
               </div>
             )}
           </div>

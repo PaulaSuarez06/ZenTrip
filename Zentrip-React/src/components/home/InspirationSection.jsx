@@ -46,6 +46,9 @@ export default function InspirationSection() {
           <h2 className="title-h2-desktop text-secondary-5">Deja que el mundo te llame</h2>
           <p className="body-2 text-neutral-4 mt-1">Ideas, rutas y experiencias para que no pares de soñar</p>
         </div>
+        <div className="shrink-0 mt-1 bg-primary-1 text-primary-3 body-3 font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap cursor-default">
+          Ver más ideas →
+        </div>
       </div>
 
       {loading ? (

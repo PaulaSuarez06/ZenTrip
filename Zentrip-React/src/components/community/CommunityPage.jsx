@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Globe, User, Search, X, Users } from 'lucide-react';
+import { Bookmark, Globe, User, Search, X, Users, ChevronLeft } from 'lucide-react';
 import { getCommunityPosts, getSavedPosts, getUserCommunityPosts, unpublishPost } from '../../services/communityService';
 import { getFollowingIds } from '../../services/followService';
 import { useAuth } from '../../context/AuthContext';
@@ -176,6 +176,17 @@ export default function CommunityPage() {
 
   return (
     <div className="px-6 sm:px-10 lg:px-16 pb-16">
+      {/* Back button for Community page */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-secondary-5 transition-colors w-fit"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Volver
+        </button>
+      </div>
       {/* Header */}
       <div className="pt-10 pb-6">
         <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Comunidad</p>
