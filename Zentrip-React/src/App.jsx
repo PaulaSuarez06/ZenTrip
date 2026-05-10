@@ -65,7 +65,7 @@ const router = createBrowserRouter([
             element: <MainLayout />,
             children: [
               { path: ROUTES.ADMIN.DASHBOARD, element: <AdminDashboard /> },
-              { path: ROUTES.ADMIN.INSPIRATIONS, element: <AdminInspirations /> },
+              { path: ROUTES.ADMIN.READINGS, element: <AdminInspirations /> },
             ],
           },
         ],
