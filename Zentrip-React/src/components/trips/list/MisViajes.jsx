@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import { ROUTES } from '../../../config/routes';
 import { STORAGE_KEY } from '../create/hooks/useTripDraft';
 import { getTripById, getTripMembersFirestore } from '../../../services/tripService';
@@ -111,8 +112,18 @@ export default function MisViajes() {
   const hasAnything = hasDraft || hasTrips;
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
+    <div className="min-h-screen bg-slate-50 px-4 pb-8">
       <div className="max-w-7xl mx-auto">
+
+        {/* Back link */}
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.HOME)}
+          className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-neutral-6 w-fit transition-colors mb-6 -ml-1.5 cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Volver al inicio
+        </button>
 
         {/* Cabecera */}
         <div className="flex items-start justify-between mb-8">

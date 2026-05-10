@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Share2, Settings, Users } from 'lucide-react';
+import ShareTripModal from '../../../community/ShareTripModal';
+import { useAuth } from '../../../../context/AuthContext';
 import TripActionsMenu from './TripActionsMenu';
 
 const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -26,7 +28,9 @@ function countTripDays(startDate, endDate) {
   return Math.round((e - s) / 86400000) + 1;
 }
 
-export default function TripDetailHeader({ trip, members, currentWeather, isCreator, onEditTrip, onDeleteTrip, onLeaveTrip }) {
+export default function TripDetailHeader({ trip, members, activities, currentWeather, isCreator, onEditTrip, onDeleteTrip, onLeaveTrip }) {
+  const { user, profile } = useAuth();
+  const [showShare, setShowShare] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const acceptedMembers = members.filter((m) => m.invitationStatus === 'accepted');
   const memberCount = acceptedMembers.length;
@@ -34,6 +38,7 @@ export default function TripDetailHeader({ trip, members, currentWeather, isCrea
   const days = countTripDays(trip.startDate, trip.endDate);
 
   return (
+    <>
     <div className="bg-white rounded-2xl border border-neutral-1 px-4 sm:px-6 py-4 sm:py-5 flex items-start justify-between gap-3 flex-wrap">
       {/* Info del viaje */}
       <div className="flex flex-col gap-1 min-w-0 flex-1">
@@ -72,6 +77,7 @@ export default function TripDetailHeader({ trip, members, currentWeather, isCrea
 
         <button
           type="button"
+          onClick={() => setShowShare(true)}
           className="flex items-center gap-1.5 border border-neutral-2 rounded-full p-2 sm:px-4 sm:py-1.5 body-3 text-neutral-5 hover:bg-neutral-1 transition-colors"
           aria-label="Compartir"
         >
@@ -101,5 +107,17 @@ export default function TripDetailHeader({ trip, members, currentWeather, isCrea
         </div>
       </div>
     </div>
+
+    {showShare && (
+      <ShareTripModal
+        trip={trip}
+        members={members}
+        activities={activities}
+        user={user}
+        profile={profile}
+        onClose={() => setShowShare(false)}
+      />
+    )}
+    </>
   );
 }

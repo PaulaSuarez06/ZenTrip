@@ -67,11 +67,40 @@ export function subscribeToAllPersonalBudgets(tripId, onData, onErr) {
   );
 }
 
+export async function getPersonalBudgetsTotal(tripId) {
+  const snap = await getDocs(collection(db, 'trips', tripId, 'personalBudgets'));
+  return snap.docs.reduce((sum, d) => sum + (d.data().budget ?? 0), 0);
+}
+
 export async function setPersonalBudget(tripId, uid, budget) {
   await setDoc(doc(db, 'trips', tripId, 'personalBudgets', uid), {
     budget: Number(budget),
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function getExpenseAggregates(tripId) {
+  const snap = await getDocs(collection(db, 'trips', tripId, 'expenses'));
+  const expenses = snap.docs.map((d) => d.data());
+  const totalSpent = expenses.reduce((s, e) => s + (e.tripAmount ?? e.amount ?? 0), 0);
+  const categoryTotals = {};
+  const dailyTotals = {};
+  for (const e of expenses) {
+    const cat = e.category || 'otros';
+    const amt = e.tripAmount ?? e.amount ?? 0;
+    const date = e.date || '';
+    categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+    if (date) {
+      if (!dailyTotals[date]) dailyTotals[date] = { total: 0, categories: {} };
+      dailyTotals[date].total += amt;
+      dailyTotals[date].categories[cat] = (dailyTotals[date].categories[cat] || 0) + amt;
+    }
+  }
+  return {
+    totalSpent: Math.round(totalSpent * 100) / 100,
+    categoryTotals,
+    dailyTotals,
+  };
 }
 
 // ─── Pagos de liquidación ─────────────────────────────────────────────────────

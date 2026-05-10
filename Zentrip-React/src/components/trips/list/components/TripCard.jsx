@@ -1,16 +1,8 @@
 import { useState } from 'react';
+import { getGradient } from '../../../../utils/gradients';
 import CoverUploadModal from './CoverUploadModal';
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-const GRADIENTS = [
-  'from-sky-300 to-blue-500',
-  'from-orange-300 to-rose-500',
-  'from-teal-300 to-emerald-500',
-  'from-violet-400 to-indigo-600',
-  'from-amber-300 to-orange-500',
-  'from-cyan-300 to-teal-500',
-];
 
 const STATUS_CONFIG = {
   en_curso:  { label: 'En curso',      className: 'bg-primary-1 text-primary-3' },
@@ -19,10 +11,6 @@ const STATUS_CONFIG = {
   borrador:  { label: 'Borrador',      className: 'bg-neutral-1 text-neutral-4' },
 };
 
-function getGradient(str) {
-  const hash = [...(str || 'ZenTrip')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return GRADIENTS[hash % GRADIENTS.length];
-}
 
 function formatDate(dateStr) {
   if (!dateStr) return null;

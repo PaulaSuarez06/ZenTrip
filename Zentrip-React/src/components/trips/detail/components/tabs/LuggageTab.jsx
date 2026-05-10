@@ -418,6 +418,21 @@ export default function LuggageTab({ tripId, tripName }) {
   }
   const groupedGroupItems = Array.from(groupMap.values());
 
+  // Keys (lowercase) de items grupales donde el usuario tiene selección
+  const groupLinkedKeys = new Set(
+    groupedGroupItems
+      .filter((g) => g.selections?.some((s) => s.userId === user?.uid))
+      .map((g) => g.key)
+  );
+
+  // Items personales que NO están vinculados a un item grupal del usuario
+  const pureGroupedPersonalItems = groupedPersonalItems.filter(
+    (g) => !groupLinkedKeys.has(g.key)
+  );
+  const purePersonalItems = personalItems.filter(
+    (p) => !groupLinkedKeys.has(p.item?.trim().toLowerCase())
+  );
+
   const personalRecentItems = getRecentLabels(personalItems);
   const groupRecentSourceItems = groupItems.filter((item) => (item.selections || []).some((s) => s.userId === user?.uid) || item.createdBy === user?.uid);
   const groupRecentMap = new Map();
@@ -691,19 +706,19 @@ export default function LuggageTab({ tripId, tripName }) {
         <div>
           <h2 className="title-h3-desktop text-secondary-5 mb-4">Mi maleta personal</h2>
 
-          {personalItems.length > 0 && (
+          {purePersonalItems.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="body-4 font-semibold text-neutral-6">Items empaquetados</span>
                 <span className="body-4 font-semibold text-secondary-5">
-                  {Math.round((personalItems.filter(item => item.packed).length / personalItems.length) * 100)}%
+                  {Math.round((purePersonalItems.filter(item => item.packed).length / purePersonalItems.length) * 100)}%
                 </span>
               </div>
               <div className="w-full h-2 rounded-full bg-neutral-2 overflow-hidden">
                 <div
                   className="h-full bg-secondary-4 transition-all duration-300"
                   style={{
-                    width: `${personalItems.length > 0 ? (personalItems.filter(item => item.packed).length / personalItems.length) * 100 : 0}%`
+                    width: `${(purePersonalItems.filter(item => item.packed).length / purePersonalItems.length) * 100}%`
                   }}
                 />
               </div>
@@ -745,13 +760,13 @@ export default function LuggageTab({ tripId, tripName }) {
             </button>
           </div>
 
-          {groupedPersonalItems.length === 0 ? (
+          {pureGroupedPersonalItems.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-neutral-2 bg-neutral-1/40 py-8 text-center">
               <p className="body-3 text-neutral-4">Aún no has añadido items a tu maleta</p>
             </div>
           ) : (
-            <div className={`flex flex-col gap-2 ${groupedPersonalItems.length > 8 ? 'max-h-96 overflow-y-auto' : ''}`}>
-              {groupedPersonalItems.map((group) => {
+            <div className={`flex flex-col gap-2 ${pureGroupedPersonalItems.length > 8 ? 'max-h-96 overflow-y-auto' : ''}`}>
+              {pureGroupedPersonalItems.map((group) => {
                 const allPacked = group.items.every((it) => Boolean(it.packed));
                 const itemIds = group.items.map((it) => it.id);
                 const count = group.items.length;
@@ -923,6 +938,32 @@ export default function LuggageTab({ tripId, tripName }) {
                             </span>
                           </div>
                         )}
+                        {userSelected && (() => {
+                          const matchingPersonal = personalItems.filter(
+                            (p) => p.item?.trim().toLowerCase() === group.key
+                          );
+                          if (matchingPersonal.length === 0) return null;
+                          const allPacked = matchingPersonal.every((p) => p.packed);
+                          const ids = matchingPersonal.map((p) => p.id);
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTogglePersonalPackedGroup(ids, !allPacked);
+                              }}
+                              disabled={submitting}
+                              className={`mt-2 flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition disabled:opacity-50 ${
+                                allPacked
+                                  ? 'bg-secondary-1 border-secondary-3 text-secondary-5'
+                                  : 'border-neutral-2 text-neutral-4 hover:border-secondary-3 hover:text-secondary-5'
+                              }`}
+                            >
+                              <Check className="w-3 h-3 shrink-0" />
+                              {allPacked ? 'Empaquetado' : 'Marcar empaquetado'}
+                            </button>
+                          );
+                        })()}
                       </div>
                       <button
                         type="button"

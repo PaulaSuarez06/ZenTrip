@@ -38,6 +38,7 @@ function buildEqualAmounts(uids, total) {
 export default function AddExpenseModal({
   members = [],
   currentUser,
+  trip = null,
   tripCurrency = 'EUR',
   initialExpense = null,
   personalMode = false,
@@ -49,13 +50,35 @@ export default function AddExpenseModal({
   const selfUid = currentUser?.uid;
   const defSplit = personalMode ? (selfUid ? [selfUid] : []) : allUids;
 
+  const tripDays = (() => {
+    if (!trip?.startDate || !trip?.endDate) return [];
+    const days = [];
+    const start = new Date(trip.startDate + 'T00:00:00');
+    const end   = new Date(trip.endDate   + 'T00:00:00');
+    let current = new Date(start);
+    let dayNum  = 1;
+    while (current <= end) {
+      days.push({
+        value: current.toISOString().split('T')[0],
+        label: `Día ${dayNum} — ${current.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}`,
+      });
+      current.setDate(current.getDate() + 1);
+      dayNum++;
+    }
+    return days;
+  })();
+
+  const defaultDate = tripDays.length > 0
+    ? (tripDays.find((d) => d.value === today) ? today : tripDays[0].value)
+    : today;
+
   const [form, setForm] = useState(() => ({
     description:   '',
     amount:        '',
     currency:      tripCurrency,
     category:      'otros',
     categoryLabel: '',
-    date:          today,
+    date:          defaultDate,
     paidBy:        selfUid ?? '',
     splitAmong:    defSplit,
     splitType:     'equal',
@@ -122,6 +145,7 @@ export default function AddExpenseModal({
   const totalPct    = form.splitAmong.reduce((s, u) => s + (form.percentages[u]   ?? 0), 0);
   const totalCustom = form.splitAmong.reduce((s, u) => s + (form.customAmounts[u] ?? 0), 0);
   const currSymbol  = DIVISAS.find((d) => d.code === form.currency)?.symbol ?? form.currency;
+  const memberName  = (uid) => members.find((m) => m.uid === uid)?.name ?? uid;
 
   const validate = () => {
     const e = {};
@@ -346,8 +370,20 @@ export default function AddExpenseModal({
           <div className={`grid gap-3 ${personalMode ? 'grid-cols-1' : 'grid-cols-2'}`}>
             <div>
               <label className="block body-2-semibold text-neutral-6 mb-1.5">Fecha</label>
-              <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)}
-                className={`${fi} ${ok}`} />
+              {tripDays.length > 0 ? (
+                <select
+                  value={form.date}
+                  onChange={(e) => set('date', e.target.value)}
+                  className={`${fi} ${ok} max-w-full`}
+                >
+                  {tripDays.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              ) : (
+                <input type="date" value={form.date} max={today} onChange={(e) => set('date', e.target.value)}
+                  className={`${fi} ${ok}`} />
+              )}
             </div>
             {!personalMode && (
               <div>

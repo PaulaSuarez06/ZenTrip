@@ -88,6 +88,7 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
         <AddExpenseModal
           members={members}
           currentUser={currentUser}
+          trip={trip}
           tripCurrency={currency}
           initialExpense={expenseModal.mode === 'edit' ? expenseModal.expense : null}
           personalMode={expenseModal.personal === true}

@@ -447,6 +447,7 @@ export default function TripDetail() {
       <TripDetailHeader
         trip={trip}
         members={members}
+        activities={activities}
         currentWeather={currentWeather}
         isCreator={isCreator}
         onEditTrip={handleEditTrip}

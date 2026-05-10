@@ -39,6 +39,10 @@ export function useLoginController(navigate) {
   const urlParams = new URLSearchParams(window.location.search);
   const inviteToken = urlParams.get('inviteToken')?.trim() || '';
   const joinToken = urlParams.get('join')?.trim() || urlParams.get('tripInviteToken')?.trim() || '';
+  const redirectTo = (() => {
+    const r = urlParams.get('redirect')?.trim() || '';
+    return r.startsWith('/') ? r : '';
+  })();
 
   const [invitationInfo, setInvitationInfo] = useState(null);
   const [invitationError, setInvitationError] = useState('');
@@ -238,7 +242,7 @@ export function useLoginController(navigate) {
         }));
       }
       saveSessionExpiry();
-      const destination = emailMismatch ? ROUTES.HOME : await getPostLoginPath(refreshedUser);
+      const destination = emailMismatch ? ROUTES.HOME : (redirectTo || await getPostLoginPath(refreshedUser));
       navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : destination);
     } catch (loginError) {
       setCanResendVerification(false);
@@ -346,7 +350,7 @@ export function useLoginController(navigate) {
         window.dispatchEvent(new CustomEvent('zt-invitation-accepted-email', { detail: { tripName: invitationInfo.tripName } }));
       }
       saveSessionExpiry();
-      navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : await getPostLoginPath(user));
+      navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : (redirectTo || await getPostLoginPath(user)));
     } catch (googleError) {
       const { message } = getFirebaseErrorByField(googleError);
       setError(message || loginFeedbackMessages.invalidCredentials);

@@ -12,6 +12,31 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { getUserProfile } from "../../services/profileService";
 import { getActiveDestinations } from "../../services/destinationsService";
+import InspirationSection from "./InspirationSection";
+import CommunitySection from "../community/CommunitySection";
+
+const DESTINATION_TIPS = {
+  'Santorini, Grecia':       'Reserva el atardecer desde Oia, el más famoso del Mediterráneo',
+  'Tokio, Japón':            'El metro llega puntual al segundo, ¡literalmente!',
+  'Nueva York, EEUU':        'Sube al Top of the Rock al atardecer y ve el Empire State iluminarse',
+  'Bali, Indonesia':         'Visita el templo Tanah Lot justo cuando baja la marea',
+  'Lisboa, Portugal':        'El pastel de nata más auténtico está en la Confeitaria de Belém',
+  'Marrakech, Marruecos':    'Llega al zoco de noche, el ambiente es completamente distinto',
+  'Maldivas':                'El mejor snorkel está justo al salir de tu bungalow, sin excursiones',
+  'París, Francia':          'Sube hasta arriba del todo de la Torre Eiffel, no solo al segundo piso',
+  'Islandia':                'La aurora boreal se ve mejor lejos de Reikiavik, en septiembre o marzo',
+  'Roma, Italia':            'El Vaticano a las 8h: sin colas y con la luz perfecta',
+  'Bangkok, Tailandia':      'Los templos son gratis antes de las 9h y casi sin turistas',
+  'Dubái, EAU':             'El Gold Souk abre hasta medianoche y se puede regatear sin problema',
+  'Praga, Rep. Checa':       'Cruza el Puente de Carlos a las 6am para tenerlo para ti solo',
+  'Costa Rica':              'El volcán Arenal se ve mejor al amanecer, antes de que lleguen las nubes',
+  'Kioto, Japón':            'Los Fushimi Inari son más impresionantes si subes hasta la cima',
+  'Ámsterdam, Países Bajos': 'Alquila una bicicleta, es como se mueven los locales de verdad',
+  'Patagonia, Argentina':    'Torres del Paine exige reserva con meses de antelación, ¡no lo dejes!',
+  'Hawái, EEUU':            'El mejor surf para principiantes está en Waikiki con instructores locales',
+  'Barcelona, España':       'La Sagrada Família al atardecer desde el Park Güell vale cada minuto',
+  'Río de Janeiro, Brasil':  'El Pão de Açúcar al atardecer supera al Corcovado en vistas',
+};
 
 const heroImages = [
   '/img/background/home/hero/img_hero_1.jpg',
@@ -259,7 +284,9 @@ export default function Home() {
               <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-5">
                 <p className="text-white title-h3-desktop leading-tight">{destinations[0].name}</p>
-                <p className="text-white/80 body-3 mt-1">Desde {destinations[0].priceFrom}{destinations[0].currency} · {destinations[0].season}</p>
+                {DESTINATION_TIPS[destinations[0].name] && (
+                  <p className="text-white/80 body-3 mt-1">✦ {DESTINATION_TIPS[destinations[0].name]}</p>
+                )}
               </div>
             </div>
           )}
@@ -275,7 +302,9 @@ export default function Home() {
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white body-bold leading-tight">{dest.name}</p>
-                  <p className="text-white/80 text-[11px] mt-0.5">{dest.priceFrom}{dest.currency} · {dest.season}</p>
+                  {DESTINATION_TIPS[dest.name] && (
+                    <p className="text-white/80 text-[11px] mt-0.5">✦ {DESTINATION_TIPS[dest.name]}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -283,6 +312,11 @@ export default function Home() {
         </div>
       </section>
     )}
+
+    {/* ── ¿Y SI...? Inspiración lecturas ── */}
+    <InspirationSection />
+    {/* ── Comunidad ── */}
+    <CommunitySection />
     </>}
     </>
   );

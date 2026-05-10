@@ -24,9 +24,12 @@ const Header = () => {
         toggleNotificationPanel,
         closeNotificationPanel,
         handleGoToEditProfile,
+        handleGoToAdmin,
         handleGoHome,
         handleGoToMyTrips,
+        handleGoToCommunity,
         handleLogout,
+        isAdmin,
     } = useNavbarController();
 
     const profileMenuRef = useRef(null);
@@ -94,26 +97,22 @@ const Header = () => {
 
             {/* Nav desktop */}
             <nav className="hidden md:flex flex-1 items-center justify-center gap-8 px-4">
-                {NAV_ITEMS.map((item) => (
-                    item === 'Mis viajes' ? (
+                {NAV_ITEMS.map((item) => {
+                    const onClick =
+                        item === 'Mis viajes' ? handleGoToMyTrips :
+                        item === 'Comunidad' ? handleGoToCommunity :
+                        handleGoHome;
+                    return (
                         <button
                             key={item}
                             type="button"
-                            onClick={handleGoToMyTrips}
+                            onClick={onClick}
                             className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer"
                         >
                             {item}
                         </button>
-                    ) : (
-                        <button
-                            key={item}
-                            onClick={handleGoHome}
-                            className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer"
-                        >
-                            {item}
-                        </button>
-                    )
-                ))}
+                    );
+                })}
             </nav>
 
             {/* Iconos derecha */}
@@ -188,6 +187,14 @@ const Header = () => {
                             >
                                 Editar perfil
                             </button>
+                            {isAdmin && (
+                                <button
+                                    className="w-full text-left px-4 py-2 body-2 text-secondary-5 hover:bg-secondary-1 transition-colors cursor-pointer"
+                                    onClick={handleGoToAdmin}
+                                >
+                                    Panel de administrador
+                                </button>
+                            )}
                             <button
                                 className="w-full text-left px-4 py-2 body-2 text-primary-3 hover:bg-secondary-1 transition-colors cursor-pointer"
                                 onClick={handleLogout}
@@ -219,26 +226,22 @@ const Header = () => {
                     className="absolute top-full left-2 right-2 mt-2 rounded-2xl border border-secondary-1 px-6 py-4 flex flex-col gap-4 md:hidden z-50 backdrop-blur"
                     style={{ backgroundColor: "rgba(255, 255, 255, 0.92)" }}
                 >
-                    {NAV_ITEMS.map((item) => (
-                        item === 'Mis viajes' ? (
+                    {NAV_ITEMS.map((item) => {
+                        const onClick =
+                            item === 'Mis viajes' ? handleGoToMyTrips :
+                            item === 'Comunidad' ? handleGoToCommunity :
+                            handleGoHome;
+                        return (
                             <button
                                 key={item}
                                 type="button"
-                                onClick={handleGoToMyTrips}
+                                onClick={onClick}
                                 className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer text-left"
                             >
                                 {item}
                             </button>
-                        ) : (
-                            <button
-                                key={item}
-                                onClick={handleGoHome}
-                                className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer text-left"
-                            >
-                                {item}
-                            </button>
-                        )
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </header>
