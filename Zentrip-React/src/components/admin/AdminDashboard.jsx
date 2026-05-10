@@ -3,11 +3,11 @@ import { ROUTES } from '../../config/routes';
 
 const ADMIN_SECTIONS = [
   {
-    key: 'inspirations',
+    key: 'readings',
     emoji: '✍️',
-    title: 'Inspiraciones',
+    title: 'Lecturas',
     description: 'Crea, edita y gestiona los artículos que aparecen en el home',
-    route: ROUTES.ADMIN.INSPIRATIONS,
+    route: ROUTES.ADMIN.READINGS,
   },
 ];
 

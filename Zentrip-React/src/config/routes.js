@@ -33,6 +33,6 @@ export const ROUTES = {
   PUBLIC_POST: '/p/:postId',
   ADMIN: {
     DASHBOARD: '/admin',
-    INSPIRATIONS: '/admin/inspiraciones',
+    READINGS: '/admin/lecturas',
   },
 };
