@@ -1,4 +1,4 @@
-import { addDoc, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, limit, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
 import { apiClient } from './apiClient';
 import { deleteCloudinaryPhoto } from './cloudinaryService';
@@ -715,6 +715,44 @@ export async function sendRouteNotifications(tripId, { creatorUid, creatorName, 
   ));
 }
 
+export async function sendLuggageGroupItemAddedNotifications(tripId, { creatorUid, creatorName, itemName, tripName }) {
+  const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
+  const recipients = membersSnap.docs
+    .map((d) => d.data())
+    .filter((m) => m.uid && m.uid !== creatorUid && m.invitationStatus === 'accepted');
+  await Promise.all(recipients.map((m) =>
+    addDoc(collection(db, 'notifications'), {
+      recipientUid: m.uid,
+      type: 'luggage_group_added',
+      tripId,
+      tripName: tripName || '',
+      itemName,
+      creatorName: creatorName || 'Un miembro',
+      read: false,
+      createdAt: serverTimestamp(),
+    })
+  ));
+}
+
+export async function sendLuggageGroupItemPackedNotifications(tripId, { packerUid, packerName, itemName, tripName }) {
+  const membersSnap = await getDocs(collection(db, 'trips', tripId, 'members'));
+  const recipients = membersSnap.docs
+    .map((d) => d.data())
+    .filter((m) => m.uid && m.uid !== packerUid && m.invitationStatus === 'accepted');
+  await Promise.all(recipients.map((m) =>
+    addDoc(collection(db, 'notifications'), {
+      recipientUid: m.uid,
+      type: 'luggage_group_packed',
+      tripId,
+      tripName: tripName || '',
+      itemName,
+      packerName: packerName || 'Un miembro',
+      read: false,
+      createdAt: serverTimestamp(),
+    })
+  ));
+}
+
 // Trip gallery
 
 export async function getGalleryFolders(tripId) {
@@ -798,6 +836,51 @@ export async function getUserLuggage(tripId, uid) {
 export async function getGroupLuggage(tripId) {
   const snap = await getDocs(collection(db, 'trips', tripId, 'luggageGroup'));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function getLuggageProgressSummary(tripId, userId) {
+  const [personalSnap, allPersonalSnap, groupSnap] = await Promise.all([
+    getDocs(query(collection(db, 'trips', tripId, 'luggage'), where('userId', '==', userId))),
+    getDocs(collection(db, 'trips', tripId, 'luggage')),
+    getDocs(collection(db, 'trips', tripId, 'luggageGroup')),
+  ]);
+
+  const personal = personalSnap.docs.map((d) => d.data());
+  const personalPct = personal.length > 0
+    ? Math.round((personal.filter((i) => i.packed).length / personal.length) * 100)
+    : null;
+
+  // Build packed lookup: uid -> Set of lowercase item names they've packed
+  const packedByUser = new Map();
+  for (const d of allPersonalSnap.docs) {
+    const { userId: uid, item, packed } = d.data();
+    if (packed) {
+      if (!packedByUser.has(uid)) packedByUser.set(uid, new Set());
+      packedByUser.get(uid).add(item?.trim().toLowerCase());
+    }
+  }
+
+  const groupItems = groupSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const selectionSnaps = await Promise.all(
+    groupItems.map((gi) => getDocs(collection(db, 'trips', tripId, 'luggageGroup', gi.id, 'selections')))
+  );
+
+  let totalAssignments = 0;
+  let totalPacked = 0;
+  for (let i = 0; i < groupItems.length; i++) {
+    const itemName = groupItems[i].item?.trim().toLowerCase();
+    const uniqueUserIds = new Set(selectionSnaps[i].docs.map((d) => d.data().userId));
+    for (const uid of uniqueUserIds) {
+      totalAssignments++;
+      if (packedByUser.get(uid)?.has(itemName)) totalPacked++;
+    }
+  }
+
+  const groupPct = totalAssignments > 0
+    ? Math.round((totalPacked / totalAssignments) * 100)
+    : null;
+
+  return { personalPct, groupPct };
 }
 
 export async function addUserLuggageItem(tripId, uid, item) {
@@ -897,4 +980,23 @@ export async function updateGroupLuggageItemPacked(tripId, itemId, uid, packed) 
       packed: Boolean(packed),
     });
   }
+}
+
+export async function sendMessage(tripId, uid, displayName, text) {
+  await addDoc(collection(db, 'trips', tripId, 'messages'), {
+    uid,
+    displayName,
+    text,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export function subscribeToMessages(tripId, callback) {
+  const q = query(
+    collection(db, 'trips', tripId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
 }

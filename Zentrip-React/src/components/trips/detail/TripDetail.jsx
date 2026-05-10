@@ -4,7 +4,9 @@ import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useTripDetail } from './hooks/useTripDetail';
 import { useWeather } from './hooks/useWeather';
-import { addActivity, updateActivity, deleteActivity, removeMemberFromTrip, sendManualActivityNotifications } from '../../../services/tripService';
+import { addActivity, updateActivity, deleteActivity, removeMemberFromTrip, sendManualActivityNotifications, deleteTrip, getTripById, getTripMembersFirestore } from '../../../services/tripService';
+import { STORAGE_KEY } from '../create/hooks/useTripDraft';
+import { ROUTES } from '../../../config/routes';
 import { addExpense, updateExpense, getExpenseByLinkedActivity, deleteExpensesByLinkedActivity } from '../../../services/budgetService';
 import { fetchExchangeRate } from '../../../utils/exchangeRate';
 import ConfirmModal from '../../ui/ConfirmModal';
@@ -279,6 +281,45 @@ export default function TripDetail() {
     }
   };
 
+  const handleEditTrip = async () => {
+    try {
+      const [freshTrip, tripMembers] = await Promise.all([
+        getTripById(tripId),
+        getTripMembersFirestore(tripId),
+      ]);
+      const tripForm = {
+        name: freshTrip.name || '',
+        destination: freshTrip.destination || '',
+        origin: freshTrip.origin || '',
+        startDate: freshTrip.startDate || '',
+        endDate: freshTrip.endDate || '',
+        currency: freshTrip.currency || 'EUR',
+        hasPets: freshTrip.hasPets || false,
+        stops: freshTrip.stops || [],
+        coverImage: freshTrip.coverImage || null,
+        members: tripMembers.map((m) => ({
+          email: m.email || '',
+          uid: m.uid || '',
+          displayName: m.displayName || '',
+          invitationStatus: m.invitationStatus || 'pending',
+        })),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: 0, form: tripForm }));
+      navigate(ROUTES.TRIPS.CREATE, { state: { editTripId: tripId, prefill: tripForm } });
+    } catch (err) {
+      console.error('[TripDetail] Error al editar viaje:', err);
+    }
+  };
+
+  const handleDeleteTrip = async () => {
+    try {
+      await deleteTrip(tripId);
+      navigate(ROUTES.TRIPS.LIST);
+    } catch (err) {
+      console.error('[TripDetail] Error al eliminar viaje:', err);
+    }
+  };
+
   const renderTab = () => {
     if (activeTab === 'itinerario') {
       return (
@@ -350,7 +391,7 @@ export default function TripDetail() {
       return <GalleryTab tripId={tripId} />;
     }
     if (activeTab === 'equipaje') {
-      return <LuggageTab tripId={tripId} members={members} />;
+      return <LuggageTab tripId={tripId} members={members} tripName={trip?.name} />;
     }
     if (activeTab === 'presupuesto') {
       return (
@@ -403,7 +444,16 @@ export default function TripDetail() {
       </button>
 
       {/* Header del viaje */}
-      <TripDetailHeader trip={trip} members={members} activities={activities} currentWeather={currentWeather} />
+      <TripDetailHeader
+        trip={trip}
+        members={members}
+        activities={activities}
+        currentWeather={currentWeather}
+        isCreator={isCreator}
+        onEditTrip={handleEditTrip}
+        onDeleteTrip={handleDeleteTrip}
+        onLeaveTrip={() => setShowLeaveModal(true)}
+      />
 
       {/* Pestañas */}
       <TripDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />

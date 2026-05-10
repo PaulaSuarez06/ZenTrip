@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useBudget } from '../budget/useBudget';
+import { useAuth } from '../../../../../context/AuthContext';
+import { getLuggageProgressSummary } from '../../../../../services/tripService';
 import BookingBar from '../itinerary/BookingBar';
 import TripSummaryCard from '../itinerary/TripSummaryCard';
 import ParticipantsCard from '../itinerary/ParticipantsCard';
@@ -49,11 +51,18 @@ export default function ItinerarioTab({
   );
   const [activeBooking, setActiveBooking] = useState(initialActiveBooking);
 
+  const { user } = useAuth();
   const { allPersonalBudgets } = useBudget(tripId, null);
   const groupBudget = useMemo(
     () => allPersonalBudgets.reduce((s, b) => s + (b.budget ?? 0), 0),
     [allPersonalBudgets],
   );
+
+  const [luggagePct, setLuggagePct] = useState({ personalPct: null, groupPct: null });
+  useEffect(() => {
+    if (!tripId || !user?.uid) return;
+    getLuggageProgressSummary(tripId, user.uid).then(setLuggagePct).catch(() => {});
+  }, [tripId, user?.uid]);
 
   useEffect(() => {
     if (initialSelectedDay) setSelectedDay(initialSelectedDay);
@@ -143,6 +152,8 @@ export default function ItinerarioTab({
                 trip={trip}
                 activityCount={activities.length}
                 budget={groupBudget}
+                personalPackingPct={luggagePct.personalPct}
+                groupPackingPct={luggagePct.groupPct}
               />
               <ParticipantsCard members={members} onInvite={onInvite} />
             </div>
