@@ -300,7 +300,7 @@ export default function AdminInspirations() {
       {/* Cabecera */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="title-h2-desktop text-secondary-5">Inspiraciones</h1>
+          <h1 className="title-h2-desktop text-secondary-5">Lecturas</h1>
           <p className="body-3 text-neutral-4 mt-1">Gestiona los artículos que aparecen en el home</p>
         </div>
         <button
@@ -308,7 +308,7 @@ export default function AdminInspirations() {
           onClick={openCreate}
           className="bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold px-5 py-2 rounded-full transition-colors cursor-pointer"
         >
-          + Nueva inspiración
+          + Nueva lectura
         </button>
       </div>
 
