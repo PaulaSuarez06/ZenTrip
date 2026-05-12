@@ -384,9 +384,10 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                   </p>
                 )}
                 {reviewWord && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="body-2-semibold text-neutral-7">{reviewWord}</span>
                     {reviewCount > 0 && <span className="body-3 text-neutral-4">({reviewCount.toLocaleString()} valoraciones)</span>}
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded">Booking.com</span>
                   </div>
                 )}
               </div>
