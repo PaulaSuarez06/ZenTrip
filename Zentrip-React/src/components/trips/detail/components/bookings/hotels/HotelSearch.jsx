@@ -202,6 +202,7 @@ export default function HotelSearch({ trip, members = [], tripId }) {
             searchParams={{ checkIn, checkOut, adults, rooms, currency: trip?.currency || 'EUR' }}
             tripId={tripId}
             trip={trip}
+            members={members}
             userTrips={userTrips}
             loadingUserTrips={loadingUserTrips}
             onSaveToExistingTrip={handleSaveHotelToExistingTrip}
