@@ -337,7 +337,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                   {saveError && (
                     <p className="body-3 text-feedback-error-strong text-center py-1">{saveError}</p>
                   )}
-                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Crear un nuevo viaje</button>
+                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Planificar un nuevo viaje</button>
                 </div>
               )}
             </div>

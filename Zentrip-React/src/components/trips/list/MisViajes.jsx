@@ -63,7 +63,7 @@ function EmptyState({ onCreateClick }) {
       <p className="body text-neutral-4">Todavía no tienes viajes.</p>
       <p className="body-3 text-neutral-3">¡Empieza a planificar tu próxima aventura!</p>
       <Button variant="orange" onClick={onCreateClick} className="w-auto! px-8 mt-2">
-        Crear mi primer viaje
+        Planificar mi primer viaje
       </Button>
     </div>
   );
@@ -140,7 +140,7 @@ export default function MisViajes() {
             className="w-auto! px-6 shrink-0 mt-1"
             onClick={() => navigate(ROUTES.TRIPS.CREATE)}
           >
-            + Crear viaje
+            + Planificar viaje
           </Button>
         </div>
 

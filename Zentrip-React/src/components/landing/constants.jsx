@@ -10,7 +10,7 @@ export const FEATURES = [
 ];
 
 export const STEPS = [
-  { icon: Sparkles,    title: "Crea tu viaje",    desc: "Dale un nombre, define fechas, destino y presupuesto inicial en segundos." },
+  { icon: Sparkles,    title: "Planifica tu viaje",    desc: "Dale un nombre, define fechas, destino y presupuesto inicial en segundos." },
   { icon: Users,       title: "Invita a tu gente", desc: "Añade compañeros por email o enlace. Cada uno accede a su rol." },
   { icon: CheckSquare, title: "Decidid juntos",    desc: "Proponed destinos, alojamientos y actividades. Votad sin dramas." },
   { icon: Plane,       title: "¡A volar!",         desc: "Con el itinerario listo y el equipaje organizado, solo queda disfrutar." },
