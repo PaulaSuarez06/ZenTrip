@@ -71,9 +71,11 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
     );
   }
 
+  const [attempted, setAttempted] = useState(false);
   const canSearch = query.trim().length >= 2 && !!date;
 
   const handleSearch = async () => {
+    setAttempted(true);
     if (!canSearch) return;
     setLoading(true);
     setError(null);
@@ -135,6 +137,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
                     className="w-full h-12 pl-9 pr-3 border-2 border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-primary-3 focus:ring-2 focus:ring-primary-3/10 transition placeholder:text-neutral-3"
                   />
                 </div>
+                {attempted && query.trim().length < 2 && <p className="body-3 text-red-500 mt-1">Introduce al menos 2 caracteres</p>}
               </FormField>
             </div>
 
@@ -148,6 +151,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
                   onChange={(e) => { if (e.target.value <= maxDate) setDate(e.target.value); }}
                   className="w-full h-10 px-3 border border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-secondary-3 focus:ring-2 focus:ring-secondary-3/20 transition"
                 />
+                {attempted && !date && <p className="body-3 text-red-500 mt-1">Selecciona una fecha</p>}
               </FormField>
               <FormField label="Adultos" icon={Users}>
                 <input
