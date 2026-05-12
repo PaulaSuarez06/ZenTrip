@@ -52,7 +52,7 @@ export default function TripDetailTabs({ activeTab, onTabChange, badges = {} }) 
           type="button"
           onClick={() => onTabChange('chat')}
           className={`
-            flex items-center gap-1.5 px-3 py-2 rounded-full body-3 font-semibold transition-colors whitespace-nowrap
+            relative flex items-center gap-1.5 px-3 py-2 rounded-full body-3 font-semibold transition-colors whitespace-nowrap
             ${activeTab === 'chat'
               ? 'bg-secondary-5 text-white'
               : 'bg-secondary-1 text-secondary-5 hover:bg-secondary-2'}
@@ -60,6 +60,11 @@ export default function TripDetailTabs({ activeTab, onTabChange, badges = {} }) 
         >
           <MessageCircle className="w-4 h-4" />
           <span className="hidden sm:inline">Chat</span>
+          {badges.chat != null && badges.chat > 0 && (
+            <span className="absolute -top-1 -right-1 flex min-w-4.5 h-4.5 items-center justify-center rounded-full bg-primary-3 px-1 text-[10px] font-bold leading-none text-white">
+              {badges.chat > 99 ? '99+' : badges.chat}
+            </span>
+          )}
         </button>
       </div>
     </div>

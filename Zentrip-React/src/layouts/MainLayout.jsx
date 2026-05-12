@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "../components/shared/layout/Navbar";
 import Footer from "../components/shared/layout/Footer";
 import ScrollToTop from "../components/shared/ScrollToTop";
+import FloatingChatContainer from "../components/chat/FloatingChatContainer";
 
 export default function MainLayout() {
   return (
@@ -14,6 +15,7 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
+      <FloatingChatContainer />
     </div>
   );
 }

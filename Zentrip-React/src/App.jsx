@@ -2,6 +2,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ChatNotificationProvider } from './context/ChatNotificationContext';
+import { ChatUIProvider } from './context/ChatUIContext';
 import { ROUTES } from './config/routes';
 import Register from './components/auth/register/Register';
 import Login from './components/auth/login/Login';
@@ -105,7 +107,11 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <RouterProvider router={router} />
+        <ChatNotificationProvider>
+          <ChatUIProvider>
+            <RouterProvider router={router} />
+          </ChatUIProvider>
+        </ChatNotificationProvider>
       </NotificationProvider>
     </AuthProvider>
   );

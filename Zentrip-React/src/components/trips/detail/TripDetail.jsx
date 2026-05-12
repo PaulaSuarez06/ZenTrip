@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useTripDetail } from './hooks/useTripDetail';
 import { useWeather } from './hooks/useWeather';
-import { addActivity, updateActivity, deleteActivity, removeMemberFromTrip, sendManualActivityNotifications, deleteTrip, getTripById, getTripMembersFirestore } from '../../../services/tripService';
+import { addActivity, updateActivity, deleteActivity, removeMemberFromTrip, sendManualActivityNotifications, deleteTrip, getTripById, getTripMembersFirestore, subscribeToMessages } from '../../../services/tripService';
 import { STORAGE_KEY } from '../create/hooks/useTripDraft';
 import { ROUTES } from '../../../config/routes';
 import { addExpense, updateExpense, getExpenseByLinkedActivity, deleteExpensesByLinkedActivity } from '../../../services/budgetService';
@@ -21,6 +21,9 @@ import LuggageTab from './components/tabs/LuggageTab';
 import VotationsTab from './components/tabs/VotationsTab';
 import PlaceholderTab from './components/tabs/PlaceholderTab';
 import BudgetTab from './components/tabs/BudgetTab';
+import ChatTab from './components/tabs/ChatTab';
+import { useChatNotifications } from '../../../context/ChatNotificationContext';
+import { useChatUI } from '../../../context/ChatUIContext';
 
 
 function LoadingState() {
@@ -48,9 +51,7 @@ function ErrorState({ message, onBack }) {
   );
 }
 
-const TAB_PLACEHOLDERS = {
-  chat: <PlaceholderTab label="Chat" emoji="💬" />,
-};
+const TAB_PLACEHOLDERS = {};
 
 const ACTIVITY_EXPENSE_CATEGORY = {
   actividad:   'actividades',
@@ -74,6 +75,8 @@ export default function TripDetail() {
   const [highlightActivityId, setHighlightActivityId]     = useState(location.state?.highlightActivityId ?? null);
   const [highlightDate, setHighlightDate]                 = useState(location.state?.highlightDate ?? null);
   const [showLeaveModal, setShowLeaveModal]         = useState(false);
+  const [chatMessages, setChatMessages]             = useState([]);
+  const { markTripChatAsRead } = useChatNotifications();
 
   useEffect(() => {
     const s = location.state;
@@ -84,6 +87,23 @@ export default function TripDetail() {
     if (s.highlightBookingId !== undefined) setHighlightBookingId(s.highlightBookingId);
     if (s.subTab) setInitialBookingSubTab(s.subTab);
   }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const uid = user?.uid;
+    if (!uid) return;
+    const key = `zentrp_chat_${tripId}_${uid}`;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, Date.now().toString());
+    }
+    const unsub = subscribeToMessages(tripId, setChatMessages);
+    return unsub;
+  }, [tripId, user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      markTripChatAsRead(tripId);
+    }
+  }, [activeTab, tripId, markTripChatAsRead]);
 
   const handleGoBook = (bookingKey) => {
     setInitialBooking(bookingKey);
@@ -320,6 +340,15 @@ export default function TripDetail() {
     }
   };
 
+  const chatUnread = (() => {
+    if (activeTab === 'chat' || !user?.uid) return 0;
+    const key = `zentrp_chat_${tripId}_${user.uid}`;
+    const lastRead = parseInt(localStorage.getItem(key) || '0', 10);
+    return chatMessages.filter(
+      (m) => m.uid !== user.uid && (m.createdAt?.toMillis?.() ?? 0) > lastRead
+    ).length;
+  })();
+
   const renderTab = () => {
     if (activeTab === 'itinerario') {
       return (
@@ -403,6 +432,9 @@ export default function TripDetail() {
         />
       );
     }
+    if (activeTab === 'chat') {
+      return <ChatTab tripId={tripId} messages={chatMessages} />;
+    }
     return TAB_PLACEHOLDERS[activeTab] ?? null;
   };
 
@@ -456,7 +488,7 @@ export default function TripDetail() {
       />
 
       {/* Pestañas */}
-      <TripDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <TripDetailTabs activeTab={activeTab} onTabChange={setActiveTab} badges={{ chat: chatUnread }} />
 
       {/* Contenido de la pestaña activa */}
       {renderTab()}

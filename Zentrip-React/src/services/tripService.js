@@ -989,6 +989,9 @@ export async function sendMessage(tripId, uid, displayName, text) {
     text,
     createdAt: serverTimestamp(),
   });
+  updateDoc(doc(db, 'trips', tripId), {
+    lastMessage: { uid, displayName, text, createdAt: Date.now() },
+  }).catch(() => {});
 }
 
 export function subscribeToMessages(tripId, callback) {
