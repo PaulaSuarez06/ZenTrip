@@ -322,7 +322,10 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
                 {details?.reviews?.filter((r) => r.text).length > 0 && (
                   <div className="mb-5">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider">Reseñas</p>
+                      <div className="flex items-center gap-2">
+                        <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider">Reseñas</p>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded">Booking.com</span>
+                      </div>
                       <span className="text-[11px] text-neutral-3 italic">en el idioma original</span>
                     </div>
                     <div className="flex flex-col gap-3">

@@ -41,7 +41,7 @@ export default function ChatTab({ tripId }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-1 flex flex-col h-[600px]">
+    <div className="bg-white rounded-2xl border border-neutral-1 flex flex-col h-150">
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {messages.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center text-neutral-4 body-3">
@@ -63,7 +63,7 @@ export default function ChatTab({ tripId }) {
                 <span className="text-xs text-neutral-4 font-medium px-1">{msg.displayName}</span>
               )}
               <div
-                className={`px-4 py-2.5 rounded-2xl body-3 break-words ${
+                className={`px-4 py-2.5 rounded-2xl body-3 wrap-break-word ${
                   isOwn
                     ? 'bg-primary-3 text-white rounded-tr-sm'
                     : 'bg-neutral-1 text-neutral-7 rounded-tl-sm'

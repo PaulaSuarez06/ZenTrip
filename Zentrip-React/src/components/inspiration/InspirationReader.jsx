@@ -160,7 +160,7 @@ export default function InspirationReader() {
                       onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(article.destination)}`)}
                       className="shrink-0 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-6 py-2.5 rounded-full transition-colors cursor-pointer sm:mr-2"
                     >
-                      Crear viaje →
+                      Planificar viaje →
                     </button>
                   </div>
                 </div>

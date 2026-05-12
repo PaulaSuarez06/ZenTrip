@@ -195,7 +195,7 @@ export default function SummaryForm({
               ? (isEditing ? 'Guardando...' : 'Creando...')
               : tripCreationLocked
                 ? (isEditing ? 'Guardado' : 'Viaje creado')
-                : (isEditing ? 'Guardar cambios' : 'Crear viaje')}
+                : (isEditing ? 'Guardar cambios' : 'Planificar viaje')}
           </Button>
         </div>
       </div>

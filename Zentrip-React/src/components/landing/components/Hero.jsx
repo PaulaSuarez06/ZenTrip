@@ -1,3 +1,4 @@
+import { Vote, PiggyBank } from 'lucide-react';
 import useTypewriter from "../hooks/useTypewriter";
 
 const TYPEWRITER_TEXTS = [
@@ -28,11 +29,16 @@ export default function Hero({ onRegister }) {
           Nuevo · Gestión de equipaje colaborativo
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-secondary-5 leading-tight mb-6">
-          {blue1}
-          {orange && <><br /><span className="text-primary-3">{orange}</span></>}
-          {blue2}
-          {!done && <span className="animate-pulse text-primary-2">|</span>}
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-secondary-5 leading-tight mb-6 overflow-hidden min-h-22 sm:min-h-30 md:min-h-38">
+          <span className="block whitespace-nowrap">
+            {blue1}
+            {!done && !orange && <span className="animate-pulse text-primary-2">|</span>}
+          </span>
+          <span className="block whitespace-nowrap min-h-[1.25em]">
+            {orange && <span className="text-primary-3">{orange}</span>}
+            {blue2}
+            {!done && orange && <span className="animate-pulse text-primary-2">|</span>}
+          </span>
         </h1>
 
         <p className="text-base md:text-lg text-neutral-4 font-medium leading-relaxed mb-10 max-w-md mx-auto md:mx-0">
@@ -45,7 +51,9 @@ export default function Hero({ onRegister }) {
             className="w-full sm:w-auto px-8 py-4 rounded-2xl border-none text-base font-extrabold text-white cursor-pointer transition-all bg-primary-3 hover:bg-primary-4 shadow-md shadow-primary-1">
             Empieza gratis →
           </button>
-          <button className="w-full sm:w-auto px-8 py-4 rounded-2xl border-2 border-neutral-2 text-base font-bold text-secondary-5 bg-white hover:bg-neutral-1 cursor-pointer transition-colors">
+          <button
+            onClick={() => document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' })}
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl border-2 border-neutral-2 text-base font-bold text-secondary-5 bg-white hover:bg-neutral-1 cursor-pointer transition-colors">
             Ver cómo funciona
           </button>
         </div>
@@ -78,7 +86,9 @@ export default function Hero({ onRegister }) {
           {/* Float 1 */}
           <div className="absolute -top-5 -right-4 md:-right-8 bg-white rounded-2xl px-3 md:px-4 py-3 flex items-center gap-3"
             style={{ boxShadow: "0 8px 24px rgba(0,0,0,.1)", animation: "floatY 3s ease-in-out infinite" }}>
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg">🗳️</div>
+            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+                <Vote className="w-5 h-5 text-orange-500" />
+              </div>
             <div>
               <p className="text-xs text-slate-400 font-semibold m-0">Votación activa</p>
               <p className="text-sm font-bold text-blue-900 m-0">¿Roma o Lisboa? 🔥</p>
@@ -88,7 +98,9 @@ export default function Hero({ onRegister }) {
           {/* Float 2 */}
           <div className="absolute -bottom-4 -left-4 md:-left-8 bg-white rounded-2xl px-3 md:px-4 py-3 flex items-center gap-3"
             style={{ boxShadow: "0 8px 24px rgba(0,0,0,.1)", animation: "floatY 3.5s ease-in-out infinite reverse" }}>
-            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg">💰</div>
+            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+                <PiggyBank className="w-5 h-5 text-green-500" />
+              </div>
             <div>
               <p className="text-xs text-slate-400 font-semibold m-0">Presupuesto</p>
               <p className="text-sm font-bold text-blue-900 m-0">340€ / 1.200€</p>

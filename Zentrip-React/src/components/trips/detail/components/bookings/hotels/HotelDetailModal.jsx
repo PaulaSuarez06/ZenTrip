@@ -5,10 +5,11 @@ import { addActivity, addBooking, getBookings, sendBookingNotifications, updateB
 import { useAuth } from '../../../../../../context/AuthContext';
 import { ScoreBadge, StarRow } from './HotelAtoms';
 import BookingReceiptUpload from '../BookingReceiptUpload';
+import PassengerSelector from '../../../../shared/PassengerSelector';
 
 // ─── HotelDetailModal ─────────────────────────────────────────────────────────
 
-export default function HotelDetailModal({ hotel, searchParams, tripId, trip, onClose, userTrips = [], loadingUserTrips = false, onSaveToExistingTrip, onCreateNewTrip }) {
+export default function HotelDetailModal({ hotel, searchParams, tripId, trip, members = [], onClose, userTrips = [], loadingUserTrips = false, onSaveToExistingTrip, onCreateNewTrip }) {
   const { checkIn, checkOut, adults, rooms, currency } = searchParams;
   const { user, profile } = useAuth();
 
@@ -27,6 +28,9 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
   const [bookingId, setBookingId] = useState(null);
   const [duplicate, setDuplicate] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [selectedMembers, setSelectedMembers] = useState('all');
+
+  const acceptedMembers = members.filter((m) => m.invitationStatus === 'accepted');
 
   const POLICY_LABELS = {
     POLICY_CHILDREN: 'Niños',
@@ -169,6 +173,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
       status: 'reservado',
       bookingUrl,
       address, // <--- SIEMPRE GUARDAR DIRECCIÓN
+      members: selectedMembers,
       createdBy: {
         uid: user.uid,
         name: profile?.displayName || profile?.firstName || user.email,
@@ -337,7 +342,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                   {saveError && (
                     <p className="body-3 text-feedback-error-strong text-center py-1">{saveError}</p>
                   )}
-                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Crear un nuevo viaje</button>
+                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Planificar un nuevo viaje</button>
                 </div>
               )}
             </div>
@@ -384,9 +389,10 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                   </p>
                 )}
                 {reviewWord && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="body-2-semibold text-neutral-7">{reviewWord}</span>
                     {reviewCount > 0 && <span className="body-3 text-neutral-4">({reviewCount.toLocaleString()} valoraciones)</span>}
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded">Booking.com</span>
                   </div>
                 )}
               </div>
@@ -542,6 +548,15 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
               </button>
             </>
           ) : (
+            <>
+            {acceptedMembers.length > 0 && (
+              <PassengerSelector
+                members={acceptedMembers}
+                value={selectedMembers}
+                onChange={setSelectedMembers}
+                label="¿Para quién es el alojamiento?"
+              />
+            )}
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleBooked}
@@ -563,6 +578,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                 <ExternalLink className="w-4 h-4" /> Booking.com
               </a>
             </div>
+            </>
           )}
         </div>
 

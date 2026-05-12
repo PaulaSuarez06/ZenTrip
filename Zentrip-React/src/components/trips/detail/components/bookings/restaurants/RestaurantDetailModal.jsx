@@ -289,7 +289,10 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
                 {/* Reseñas */}
                 {details?.reviews?.length > 0 && (
                   <div className="mb-5">
-                    <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Reseñas</p>
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider">Reseñas</p>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-50 text-red-500 rounded">Google</span>
+                    </div>
                     <div className="flex flex-col gap-3">
                       {details.reviews.map((rev, i) => (
                         <div key={i} className="border border-neutral-1 rounded-xl p-3">

@@ -33,7 +33,7 @@ export default function CreateTrip() {
         <h1 className="title-h1-mobile md:title-h1-desktop text-secondary-5 mb-6">
           {isEditing
             ? <>Editar <span className="text-primary-3">viaje</span></>
-            : <>Crear <span className="text-primary-3">nuevo</span> viaje</>}
+            : <>Planificar <span className="text-primary-3">nuevo</span> viaje</>}
         </h1>
 
         <StepBar activeStep={step} onStepClick={handleGoToStep} />

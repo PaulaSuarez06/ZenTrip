@@ -181,7 +181,7 @@ export default function Home() {
           onClick={() => navigate(ROUTES.TRIPS.CREATE)}
           className="mt-5 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-5 py-2 rounded-full transition duration-200 shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer"
         >
-          Crear un nuevo viaje
+          Planificar un nuevo viaje
         </button>
 
         {/* Calendar below text — oculto solo cuando pantalla ancha Y corta */}
@@ -240,7 +240,7 @@ export default function Home() {
               onClick={() => navigate(ROUTES.TRIPS.CREATE)}
               className="px-5 py-2 rounded-full bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold transition-colors cursor-pointer"
             >
-              Crear un viaje
+              Planificar un viaje
             </button>
           </div>
         ) : (

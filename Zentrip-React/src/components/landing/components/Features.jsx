@@ -23,9 +23,9 @@ export default function Features() {
         {FEATURES.map((f, i) => (
           <div key={i}
             className="p-7 rounded-2xl border border-neutral-1 bg-neutral-1 transition-all duration-300 hover:-translate-y-1 hover:border-primary-2 hover:shadow-xl hover:shadow-neutral-2 cursor-default">
-            <div className={`w-13 h-13 rounded-2xl ${f.bg} flex items-center justify-center text-2xl mb-5`}
+            <div className={`w-13 h-13 rounded-2xl ${f.bg} flex items-center justify-center mb-5`}
               style={{ width: 52, height: 52 }}>
-              {f.icon}
+              <f.icon className={`w-6 h-6 ${f.color}`} />
             </div>
             <p className="text-base font-extrabold text-secondary-5 mb-2">{f.title}</p>
             <p className="text-sm text-neutral-4 font-medium leading-relaxed">{f.desc}</p>

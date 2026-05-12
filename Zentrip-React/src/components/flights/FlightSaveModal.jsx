@@ -451,7 +451,7 @@ export default function FlightSaveModal({ offer, user, tripContext, onClose }) {
                   onClick={() => { navigate('/trips/create'); onClose(); }}
                   className="px-6 py-3 bg-primary-3 text-white rounded-full body-semibold hover:bg-primary-4 transition"
                 >
-                  Crear viaje
+                  Planificar viaje
                 </button>
               </div>
             )}
@@ -468,7 +468,7 @@ export default function FlightSaveModal({ offer, user, tripContext, onClose }) {
               <div className="w-9 h-9 rounded-full bg-secondary-1 flex items-center justify-center shrink-0">
                 <span className="text-secondary-4 font-bold text-lg">+</span>
               </div>
-              <span className="body-semibold text-secondary-4">Crear nuevo viaje</span>
+              <span className="body-semibold text-secondary-4">Planificar nuevo viaje</span>
             </button>
 
             {trips?.map((trip) => (

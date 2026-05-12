@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Search, MapPin, Calendar, BedDouble, Users, Baby } from 'lucide-react';
 import { SectionLabel } from './HotelAtoms';
+
+function FieldError({ msg }) {
+  return <p className="body-3 text-red-500 mt-1">{msg}</p>;
+}
 
 function FormField({ label, icon: Icon, children }) {
   return (
@@ -94,6 +99,14 @@ export default function HotelSearchForm({
   loading, canSearch,
   onSearch,
 }) {
+  const [attempted, setAttempted] = useState(false);
+
+  const handleSearch = () => {
+    setAttempted(true);
+    if (!canSearch) return;
+    onSearch();
+  };
+
   return (
     <div className="bg-white border border-neutral-1 rounded-2xl p-4 sm:p-6 shadow-sm">
       <SectionLabel>Buscar alojamiento</SectionLabel>
@@ -107,11 +120,12 @@ export default function HotelSearchForm({
               type="text"
               value={dest}
               onChange={(e) => onDestChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Ciudad, hotel o zona…"
-              className="w-full h-12 pl-9 pr-3 border-2 border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-primary-3 focus:ring-2 focus:ring-primary-3/10 transition placeholder:text-neutral-3"
+              className={`w-full h-12 pl-9 pr-3 border-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-primary-3 focus:ring-2 focus:ring-primary-3/10 transition placeholder:text-neutral-3 ${attempted && !dest.trim() ? 'border-red-400' : 'border-neutral-2'}`}
             />
           </div>
+          {attempted && !dest.trim() && <FieldError msg="Introduce un destino" />}
         </FormField>
       </div>
 
@@ -119,9 +133,11 @@ export default function HotelSearchForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <FormField label="Entrada" icon={Calendar}>
           <DateInput value={checkIn} onChange={(e) => onCheckInChange(e.target.value)} />
+          {attempted && !checkIn && <FieldError msg="Selecciona la fecha de entrada" />}
         </FormField>
         <FormField label="Salida" icon={Calendar}>
           <DateInput value={checkOut} onChange={(e) => onCheckOutChange(e.target.value)} />
+          {attempted && !checkOut && <FieldError msg="Selecciona la fecha de salida" />}
         </FormField>
       </div>
 
@@ -141,8 +157,8 @@ export default function HotelSearchForm({
       <div className="border-t border-neutral-1 mb-6" />
 
       <button
-        onClick={onSearch}
-        disabled={!canSearch || loading}
+        onClick={handleSearch}
+        disabled={loading}
         className={`w-full h-12 rounded-lg font-titles font-bold text-white flex items-center justify-center gap-2 transition ${
           canSearch && !loading ? 'bg-primary-3 hover:bg-primary-4' : 'bg-neutral-2 cursor-not-allowed'
         }`}
