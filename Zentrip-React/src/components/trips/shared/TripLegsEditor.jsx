@@ -145,9 +145,9 @@ export default function TripLegsEditor({ stops = [], origin = '', onChange, onOr
   const handleRemove = (idx) => { if (list.length > 1) emit(list.filter((_, i) => i !== idx)); };
 
   const handleAdd = () => {
-    const dest = list[list.length - 1];
-    const intermediate = newStop(list.length);
-    emit([...list.slice(0, -1), intermediate, dest]);
+    const last = list[list.length - 1];
+    const next = { ...newStop(list.length + 1), startDate: last.endDate || '' };
+    emit([...list, next]);
   };
 
   return (
