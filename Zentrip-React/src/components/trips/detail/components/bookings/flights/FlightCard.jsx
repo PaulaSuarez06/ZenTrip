@@ -23,7 +23,7 @@ export default function FlightCard({ offer, isBest, onShowDetail, onPurchase }) 
   const stopDetailsReturn = getSegmentStopDetails(segR);
 
   return (
-    <div className={`bg-white rounded-2xl border transition-all ${isBest ? 'border-primary-3' : 'border-neutral-1 hover:border-secondary-2 hover:shadow-sm'}`}>
+    <div onClick={() => onShowDetail(offer)} className={`bg-white rounded-2xl border transition-all cursor-pointer ${isBest ? 'border-primary-3' : 'border-neutral-1 hover:border-secondary-2 hover:shadow-sm'}`}>
       {isBest && (
         <div className="flex items-center gap-2 px-5 py-2 bg-primary-1 rounded-t-2xl border-b border-primary-2">
           <IcPlaneFly size={12} color="#C35001" />
@@ -116,7 +116,7 @@ export default function FlightCard({ offer, isBest, onShowDetail, onPurchase }) 
               {seats && <p className="body-3 text-primary-3 font-semibold mt-1 hidden sm:block">¡Solo {seats} plazas!</p>}
             </div>
             <button
-              onClick={() => onPurchase(offer)}
+              onClick={(e) => { e.stopPropagation(); onPurchase(offer); }}
               className="cursor-pointer sm:mt-2.5 sm:w-full py-2 sm:py-2.5 px-4 sm:px-0 bg-primary-3 text-white rounded-full body-2-semibold hover:bg-primary-4 active:scale-95 transition-all whitespace-nowrap"
             >
               Ver y reservar
@@ -148,7 +148,7 @@ export default function FlightCard({ offer, isBest, onShowDetail, onPurchase }) 
           )}
           {/* Enlace para abrir el panel lateral de detalles */}
           <button
-            onClick={() => onShowDetail(offer)}
+            onClick={(e) => { e.stopPropagation(); onShowDetail(offer); }}
             className="cursor-pointer ml-auto body-3 text-secondary-4 font-semibold hover:text-secondary-3 transition-colors"
           >
             Ver detalles →

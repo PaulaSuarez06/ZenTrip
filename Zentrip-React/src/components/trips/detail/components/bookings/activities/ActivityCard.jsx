@@ -2,7 +2,7 @@ export default function ActivityCard({ activity, onView }) {
   const { name, photo, rating, reviewCount, price, currency, shortDescription, duration, freeCancellation } = activity;
 
   return (
-    <div className="flex flex-col sm:flex-row bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-sm transition-all">
+    <div onClick={() => onView(activity)} className="flex flex-col sm:flex-row bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-sm transition-all cursor-pointer">
       {/* Foto */}
       <div className="w-full h-36 sm:h-auto sm:w-36 sm:shrink-0 bg-primary-1 flex items-center justify-center overflow-hidden">
         {photo
@@ -46,7 +46,7 @@ export default function ActivityCard({ activity, onView }) {
           </p>
         )}
         <button
-          onClick={() => onView(activity)}
+          onClick={(e) => { e.stopPropagation(); onView(activity); }}
           className="body-3 font-semibold px-3 py-1.5 rounded-lg border border-primary-3 text-primary-3 bg-white hover:bg-primary-1 transition whitespace-nowrap"
         >
           Ver actividad →
