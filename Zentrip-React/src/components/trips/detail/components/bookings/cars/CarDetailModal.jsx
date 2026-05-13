@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, Maximize2 } from 'lucide-react';
+import ImageLightbox from '../ImageLightbox';
 import { getCarDetails } from '../../../../../../services/carService';
 import { addActivity, addBooking, getBookings } from '../../../../../../services/tripService';
 import { useAuth } from '../../../../../../context/AuthContext';
@@ -13,6 +14,7 @@ export default function CarDetailModal({ car, searchParams, tripId, onClose }) {
   const [duplicate, setDuplicate] = useState(false);
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     if (!car.id || !car.searchKey) { setLoading(false); return; }
@@ -152,9 +154,23 @@ export default function CarDetailModal({ car, searchParams, tripId, onClose }) {
         <div className="overflow-y-auto flex-1">
 
           {car.imageUrl && (
-            <div className="h-48 bg-neutral-1 flex items-center justify-center overflow-hidden">
+            <div className="relative h-48 bg-neutral-1 flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => setLightboxOpen(true)}>
               <img src={car.imageUrl} alt={car.name} className="h-full object-contain p-4" />
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+                className="absolute top-2 right-2 w-8 h-8 bg-neutral-7/60 text-white rounded-full flex items-center justify-center hover:bg-neutral-7 transition"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
             </div>
+          )}
+          {lightboxOpen && car.imageUrl && (
+            <ImageLightbox
+              photos={[car.imageUrl]}
+              index={0}
+              onChange={() => {}}
+              onClose={() => setLightboxOpen(false)}
+            />
           )}
 
           <div className="p-5">

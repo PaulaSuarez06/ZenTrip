@@ -33,7 +33,11 @@ function FormField({ label, icon: Icon, children }) {
 export default function RestaurantSearch({ trip, tripId, members = [] }) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
-  const [date, setDate] = useState(trip?.startDate || '');
+  const [date, setDate] = useState(() => {
+    const t = new Date().toISOString().split('T')[0];
+    const sd = trip?.startDate;
+    return sd && sd >= t ? sd : t;
+  });
   const [adults, setAdults] = useState(() => {
     const accepted = members.filter((m) => m.invitationStatus === 'accepted').length;
     return Math.max(1, accepted);
@@ -52,7 +56,7 @@ export default function RestaurantSearch({ trip, tripId, members = [] }) {
 
   useEffect(() => {
     if (trip?.destination) setQuery(trip.destination.split(',')[0].trim());
-    if (trip?.startDate) setDate(trip.startDate);
+    if (trip?.startDate) setDate(trip.startDate >= today ? trip.startDate : today);
   }, [trip?.destination, trip?.startDate]);
 
   if (!user) {
@@ -66,7 +70,7 @@ export default function RestaurantSearch({ trip, tripId, members = [] }) {
   }
 
   const [attempted, setAttempted] = useState(false);
-  const canSearch = query.trim().length >= 2 && !!date;
+  const canSearch = query.trim().length >= 2 && !!date && date >= today;
 
   const handleSearch = async () => {
     setAttempted(true);
@@ -182,6 +186,7 @@ export default function RestaurantSearch({ trip, tripId, members = [] }) {
                 className="w-full h-10 px-3 border border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-secondary-3 focus:ring-2 focus:ring-secondary-3/20 transition"
               />
               {attempted && !date && <p className="body-3 text-red-500 mt-1">Selecciona una fecha</p>}
+              {attempted && date && date < today && <p className="body-3 text-red-500 mt-1">La fecha no puede ser anterior a hoy</p>}
             </FormField>
             <FormField label="Adultos" icon={Users}>
               <input

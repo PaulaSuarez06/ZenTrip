@@ -101,6 +101,11 @@ export default function HotelSearchForm({
 }) {
   const [attempted, setAttempted] = useState(false);
 
+  const nights = checkIn && checkOut
+    ? Math.round((new Date(checkOut + 'T00:00:00') - new Date(checkIn + 'T00:00:00')) / 86400000)
+    : null;
+  const sameDayError = attempted && checkIn && checkOut && nights !== null && nights <= 0;
+
   const handleSearch = () => {
     setAttempted(true);
     if (!canSearch) return;
@@ -138,6 +143,7 @@ export default function HotelSearchForm({
         <FormField label="Salida" icon={Calendar}>
           <DateInput value={checkOut} onChange={(e) => onCheckOutChange(e.target.value)} />
           {attempted && !checkOut && <FieldError msg="Selecciona la fecha de salida" />}
+          {sameDayError && <FieldError msg="La salida debe ser al menos un día después de la entrada" />}
         </FormField>
       </div>
 

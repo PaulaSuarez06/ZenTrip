@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink } from 'lucide-react';
+import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink, Maximize2 } from 'lucide-react';
+import ImageLightbox from '../ImageLightbox';
 import { apiClient } from '../../../../../../services/apiClient';
 import { addActivity, addBooking, getBookings, sendBookingNotifications, updateBooking } from '../../../../../../services/tripService';
 import { useAuth } from '../../../../../../context/AuthContext';
@@ -28,6 +29,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, me
   const [bookingId, setBookingId] = useState(null);
   const [duplicate, setDuplicate] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState('all');
 
   const acceptedMembers = members.filter((m) => m.invitationStatus === 'accepted');
@@ -354,28 +356,42 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, me
 
           {/* Galería de fotos */}
           {photos.length > 0 && (
-            <div className="relative h-52 bg-neutral-1">
+            <div className="relative h-52 bg-neutral-1 cursor-pointer" onClick={() => setLightboxOpen(true)}>
               <img src={photos[photoIndex]} alt={hotel.name} className="w-full h-full object-cover" />
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+                className="absolute top-2 right-2 w-8 h-8 bg-neutral-7/60 text-white rounded-full flex items-center justify-center hover:bg-neutral-7 transition"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
               {photos.length > 1 && (
                 <>
                   <button
-                    onClick={() => setPhotoIndex((i) => (i - 1 + photos.length) % photos.length)}
+                    onClick={(e) => { e.stopPropagation(); setPhotoIndex((i) => (i - 1 + photos.length) % photos.length); }}
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition"
                   >
                     <ChevronLeft className="w-4 h-4 text-neutral-6" />
                   </button>
                   <button
-                    onClick={() => setPhotoIndex((i) => (i + 1) % photos.length)}
+                    onClick={(e) => { e.stopPropagation(); setPhotoIndex((i) => (i + 1) % photos.length); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition"
                   >
                     <ChevronRight className="w-4 h-4 text-neutral-6" />
                   </button>
-                  <span className="absolute bottom-2 right-3 text-[11px] bg-neutral-7/60 text-white px-2 py-0.5 rounded-full">
+                  <span className="absolute bottom-2 right-3 text-[11px] bg-neutral-7/60 text-white px-2 py-0.5 rounded-full pointer-events-none">
                     {photoIndex + 1} / {photos.length}
                   </span>
                 </>
               )}
             </div>
+          )}
+          {lightboxOpen && (
+            <ImageLightbox
+              photos={photos}
+              index={photoIndex}
+              onChange={setPhotoIndex}
+              onClose={() => setLightboxOpen(false)}
+            />
           )}
 
           <div className="p-5">
