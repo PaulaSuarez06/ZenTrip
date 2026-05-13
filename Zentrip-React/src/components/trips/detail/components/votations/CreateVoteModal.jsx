@@ -16,9 +16,10 @@ function generateId() {
 
 export default function CreateVoteModal({ tripId, editingVote = null, onClose, onCreated }) {
   const isEditing = !!editingVote;
+  const defaultCategory = editingVote?.category ?? 'otro';
 
   const [title, setTitle]       = useState(editingVote?.title ?? '');
-  const [category, setCategory] = useState(editingVote?.category ?? '');
+  const [category, setCategory] = useState(defaultCategory);
   const [type, setType]         = useState(editingVote?.type ?? 'single');
   const [options, setOptions]   = useState(
     editingVote?.options?.length
@@ -61,16 +62,17 @@ export default function CreateVoteModal({ tripId, editingVote = null, onClose, o
 
     setSaving(true);
     try {
+      const categoryToSave = category || 'otro';
       const cleanOptions = options
         .filter((o) => o.label.trim())
         .map((o) => ({ id: o.id, label: o.label.trim() }));
 
       if (isEditing) {
-        await updateVote(tripId, editingVote.id, { title: title.trim(), category, type, options: cleanOptions });
+        await updateVote(tripId, editingVote.id, { title: title.trim(), category: categoryToSave, type, options: cleanOptions });
       } else {
         const id = await createVote(
           tripId,
-          { title: title.trim(), category, type, options: cleanOptions },
+          { title: title.trim(), category: categoryToSave, type, options: cleanOptions },
           onCreated.user,
         );
         onCreated.onSuccess(id, title.trim());

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pencil, Trash2, CheckCircle2, Lock } from 'lucide-react';
-import { castVote, closeVote, deleteVote } from '../../../../../services/votesService';
+import { castVote, closeVote, deleteVote, dismissVoteItinerarySuggestion } from '../../../../../services/votesService';
 
 const CATEGORY_LABELS = {
   restaurante: { label: 'Restaurante', emoji: '🍽️' },
@@ -225,7 +225,7 @@ export default function VoteCard({
       )}
 
       {/* ── Añadir al itinerario (solo organizador del viaje) ── */}
-      {isClosed && !vote.addedToItinerary && isOrganizer && winners.length === 1 && (
+      {isClosed && !vote.addedToItinerary && !vote.itinerarySuggestionDismissed && isOrganizer && winners.length === 1 && (
         <div className="bg-primary-1 border border-primary-2 rounded-xl p-4 flex flex-col gap-3">
           <p className="body-3 font-semibold text-primary-4">
             🗓️ ¿Añadir "{winners[0].label}" al itinerario?
@@ -241,14 +241,28 @@ export default function VoteCard({
             <button
               type="button"
               onClick={async () => {
-                const { markVoteAddedToItinerary } = await import('../../../../../services/votesService');
-                markVoteAddedToItinerary(tripId, vote.id);
+                await dismissVoteItinerarySuggestion(tripId, vote.id);
               }}
               className="px-3 py-2 rounded-xl border border-neutral-2 text-neutral-4 body-3 font-semibold hover:border-neutral-4 transition-colors cursor-pointer"
             >
               Ignorar
             </button>
           </div>
+        </div>
+      )}
+
+      {isClosed && !vote.addedToItinerary && vote.itinerarySuggestionDismissed && isOrganizer && winners.length === 1 && (
+        <div className="flex items-center justify-between gap-3 bg-neutral-1/70 border border-neutral-2 rounded-xl px-4 py-3">
+          <p className="body-3 text-neutral-4">
+            Sugerencia oculta. Puedes añadir "{winners[0].label}" cuando quieras.
+          </p>
+          <button
+            type="button"
+            onClick={() => onAddToItinerary(vote, winners[0])}
+            className="shrink-0 px-3 py-2 rounded-xl bg-primary-3 hover:bg-primary-4 text-white body-3 font-semibold transition-colors cursor-pointer"
+          >
+            Añadir ahora
+          </button>
         </div>
       )}
 

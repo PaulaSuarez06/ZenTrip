@@ -255,21 +255,21 @@ export default function DetailsForm({
             )}
           </div>
           <div className="flex items-center gap-3 self-end pb-1.5">
-            <span className="body text-slate-600">¿Viajas con Mascota?</span>
+            <span className="body text-slate-600">¿Viajas solo?</span>
             <button
               type="button"
               role="switch"
-              aria-checked={form.hasPet}
+              aria-checked={form.soloTravel}
               onClick={() =>
-                onChange({ target: { name: 'hasPet', type: 'checkbox', checked: !form.hasPet } })
+                onChange({ target: { name: 'soloTravel', type: 'checkbox', checked: !form.soloTravel } })
               }
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-3 focus:ring-offset-1 ${
-                form.hasPet ? 'bg-secondary-3' : 'bg-slate-300'
+                form.soloTravel ? 'bg-secondary-3' : 'bg-slate-300'
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                  form.hasPet ? 'translate-x-6' : 'translate-x-1'
+                  form.soloTravel ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>

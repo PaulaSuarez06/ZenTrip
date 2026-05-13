@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Hotel, Plane, Car, Train, Compass, Map, Utensils } from 'lucide-react';
+import { Hotel, Plane, Car, Train, Compass, Map, Utensils, LayoutList } from 'lucide-react';
+import AllBookings from '../bookings/AllBookings';
 import HotelBookings from '../bookings/hotels/HotelBookings';
 import CarBookings from '../bookings/cars/CarBookings';
 import FlightSearch from '../bookings/flights/FlightSearch';
@@ -9,19 +10,23 @@ import RouteBookings from '../bookings/routes/RouteBookings';
 import PlaceholderTab from './PlaceholderTab';
 
 const SUBTABS = [
-  { key: 'hoteles',      label: 'Hoteles',       Icon: Hotel,   available: true  },
-  { key: 'vuelos',       label: 'Vuelos',        Icon: Plane,   available: true  },
-  { key: 'coches',       label: 'Coches',        Icon: Car,     available: true  },
-  { key: 'trenes',       label: 'Trenes',        Icon: Train,   available: false },
-  { key: 'actividades',  label: 'Actividades',   Icon: Compass, available: true  },
-  { key: 'rutas',        label: 'Rutas',         Icon: Map,     available: true  },
-  { key: 'restaurantes', label: 'Restaurantes',  Icon: Utensils,available: true  },
+  { key: 'todas',        label: 'Todas',         Icon: LayoutList, available: true  },
+  { key: 'hoteles',      label: 'Hoteles',        Icon: Hotel,      available: true  },
+  { key: 'vuelos',       label: 'Vuelos',         Icon: Plane,      available: true  },
+  { key: 'coches',       label: 'Coches',         Icon: Car,        available: true  },
+  { key: 'trenes',       label: 'Trenes',         Icon: Train,      available: false },
+  { key: 'actividades',  label: 'Actividades',    Icon: Compass,    available: true  },
+  { key: 'rutas',        label: 'Rutas',          Icon: Map,        available: true  },
+  { key: 'restaurantes', label: 'Restaurantes',   Icon: Utensils,   available: true  },
 ];
 
-export default function ReservasTab({ trip, members, tripId, initialSubTab = 'hoteles', highlightBookingId, onGoBook, onOpenRoute }) {
+export default function ReservasTab({ trip, members, tripId, initialSubTab = 'todas', highlightBookingId, onGoBook, onOpenRoute }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
 
   const renderContent = () => {
+    if (activeSubTab === 'todas') {
+      return <AllBookings tripId={tripId} members={members} highlightBookingId={highlightBookingId} onGoBook={(tab) => setActiveSubTab(tab)} />;
+    }
     if (activeSubTab === 'hoteles') {
       return <HotelBookings trip={trip} members={members} tripId={tripId} highlightBookingId={highlightBookingId} onGoBook={onGoBook} />;
     }

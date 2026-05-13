@@ -11,7 +11,7 @@ export default function RestaurantCard({ restaurant, onView }) {
   const cuisine = cuisineLabel(types);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:h-32 bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-md transition-all cursor-pointer">
+    <div onClick={() => onView(restaurant)} className="flex flex-col sm:flex-row sm:h-32 bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-md transition-all cursor-pointer">
 
       {/* Imagen */}
       <div className="w-full h-36 sm:h-full sm:w-36 sm:shrink-0 bg-primary-1 flex items-center justify-center overflow-hidden">

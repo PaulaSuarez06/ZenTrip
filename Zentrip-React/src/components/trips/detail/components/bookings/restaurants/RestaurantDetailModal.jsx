@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { X, ExternalLink, Phone, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ExternalLink, Phone, Globe, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import ImageLightbox from '../ImageLightbox';
 import { getRestaurantDetails } from '../../../../../../services/restaurantService';
 import { addActivity, addBooking, getBookings, updateBooking, sendRestaurantBookingNotifications } from '../../../../../../services/tripService';
 import { useAuth } from '../../../../../../context/AuthContext';
@@ -21,6 +22,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // 'detail' | 'confirm' | 'booked' | 'duplicate'
   const [step, setStep] = useState('detail');
@@ -207,20 +209,34 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
             <>
               {/* Galería */}
               {photos.length > 0 && (
-                <div className="relative h-52 bg-neutral-1">
+                <div className="relative h-52 bg-neutral-1 cursor-pointer" onClick={() => setLightboxOpen(true)}>
                   <img src={photos[photoIndex]} alt={info.name} className="w-full h-full object-cover" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+                    className="absolute top-2 right-2 w-8 h-8 bg-neutral-7/60 text-white rounded-full flex items-center justify-center hover:bg-neutral-7 transition"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                   {photos.length > 1 && (
                     <>
-                      <button onClick={() => setPhotoIndex((i) => (i - 1 + photos.length) % photos.length)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition">
+                      <button onClick={(e) => { e.stopPropagation(); setPhotoIndex((i) => (i - 1 + photos.length) % photos.length); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition">
                         <ChevronLeft className="w-4 h-4 text-neutral-6" />
                       </button>
-                      <button onClick={() => setPhotoIndex((i) => (i + 1) % photos.length)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition">
+                      <button onClick={(e) => { e.stopPropagation(); setPhotoIndex((i) => (i + 1) % photos.length); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition">
                         <ChevronRight className="w-4 h-4 text-neutral-6" />
                       </button>
-                      <span className="absolute bottom-2 right-3 text-[11px] bg-neutral-7/60 text-white px-2 py-0.5 rounded-full">{photoIndex + 1} / {photos.length}</span>
+                      <span className="absolute bottom-2 right-3 text-[11px] bg-neutral-7/60 text-white px-2 py-0.5 rounded-full pointer-events-none">{photoIndex + 1} / {photos.length}</span>
                     </>
                   )}
                 </div>
+              )}
+              {lightboxOpen && (
+                <ImageLightbox
+                  photos={photos}
+                  index={photoIndex}
+                  onChange={setPhotoIndex}
+                  onClose={() => setLightboxOpen(false)}
+                />
               )}
 
               <div className="p-5">
@@ -319,9 +335,14 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
               ⚠️ Ya tienes este restaurante anotado
             </div>
           ) : step === 'booked' ? (
-            <button type="button" onClick={onClose} className="h-11 rounded-lg bg-primary-3 text-white body-2-semibold hover:bg-primary-4 transition">
-              Listo
-            </button>
+            <>
+              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
+                ✓ Restaurante guardado en el viaje
+              </div>
+              <button type="button" onClick={onClose} className="h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition">
+                Cerrar
+              </button>
+            </>
           ) : step === 'confirm' ? (
             <button
               onClick={handleSave}

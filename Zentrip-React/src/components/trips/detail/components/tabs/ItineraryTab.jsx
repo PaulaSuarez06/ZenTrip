@@ -75,10 +75,10 @@ export default function ItinerarioTab({
   };
 
   const renderBookingContent = () => {
-    if (activeBooking === 'hoteles') return <HotelSearch trip={trip} members={members} tripId={tripId} />;
-    if (activeBooking === 'coches') return <CarSearch trip={trip} members={members} tripId={tripId} />;
-    if (activeBooking === 'restaurantes') return <RestaurantSearch trip={trip} tripId={tripId} members={members} />;
-    if (activeBooking === 'actividades') return <ActivitySearch trip={trip} tripId={tripId} members={members} />;
+    if (activeBooking === 'hoteles') return <HotelSearch key={members.length} trip={trip} members={members} tripId={tripId} />;
+    if (activeBooking === 'coches') return <CarSearch key={members.length} trip={trip} members={members} tripId={tripId} />;
+    if (activeBooking === 'restaurantes') return <RestaurantSearch key={members.length} trip={trip} tripId={tripId} members={members} />;
+    if (activeBooking === 'actividades') return <ActivitySearch key={members.length} trip={trip} tripId={tripId} members={members} />;
     if (activeBooking === 'rutas') {
       return (
         <RouteExplorer
