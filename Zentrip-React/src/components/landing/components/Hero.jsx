@@ -23,7 +23,7 @@ export default function Hero({ onRegister }) {
   return (
     <section className="min-h-screen bg-slate-50 flex flex-col md:flex-row items-center pt-24 md:pt-16 px-6 md:px-16 gap-10 md:gap-16 relative overflow-hidden">
       {/* Left */}
-      <div className="flex-1 relative z-10 max-w-xl w-full text-center md:text-left">
+      <div className="flex-3 relative z-10 max-w-2xl w-full text-center md:text-left">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-1 border border-primary-2 text-xs font-bold text-primary-3 mb-7">
           <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
           Nuevo · Gestión de equipaje colaborativo
