@@ -15,9 +15,6 @@ const Header = () => {
         avatarColor,
         notificationCount,
         messageCount,
-        unreadChats,
-        markTripChatAsRead,
-        markAllChatsAsRead,
         menuOpen,
         profileMenuOpen,
         notificationPanelOpen,
@@ -155,12 +152,7 @@ const Header = () => {
                         )}
                     </button>
                     {chatPanelOpen && (
-                        <ChatMessagePanel
-                            onClose={closeChatPanel}
-                            unreadChats={unreadChats}
-                            markTripChatAsRead={markTripChatAsRead}
-                            markAllChatsAsRead={markAllChatsAsRead}
-                        />
+                        <ChatMessagePanel onClose={closeChatPanel} />
                     )}
                 </div>
 

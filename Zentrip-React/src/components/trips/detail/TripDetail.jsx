@@ -77,6 +77,7 @@ export default function TripDetail() {
   const [showLeaveModal, setShowLeaveModal]         = useState(false);
   const [chatMessages, setChatMessages]             = useState([]);
   const { markTripChatAsRead } = useChatNotifications();
+  const { setActiveChatTrip } = useChatUI();
 
   useEffect(() => {
     const s = location.state;
@@ -102,8 +103,12 @@ export default function TripDetail() {
   useEffect(() => {
     if (activeTab === 'chat') {
       markTripChatAsRead(tripId);
+      setActiveChatTrip(tripId);
+    } else {
+      setActiveChatTrip(null);
     }
-  }, [activeTab, tripId, markTripChatAsRead]);
+    return () => setActiveChatTrip(null);
+  }, [activeTab, tripId, markTripChatAsRead, setActiveChatTrip]);
 
   const handleGoBook = (bookingKey) => {
     setInitialBooking(bookingKey);

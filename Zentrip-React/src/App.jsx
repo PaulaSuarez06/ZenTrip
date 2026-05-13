@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ChatNotificationProvider } from './context/ChatNotificationContext';
 import { ChatUIProvider } from './context/ChatUIContext';
+import { PrivateChatProvider } from './context/PrivateChatContext';
+import MessagesPage from './components/messages/MessagesPage';
 import { ROUTES } from './config/routes';
 import Register from './components/auth/register/Register';
 import Login from './components/auth/login/Login';
@@ -52,6 +54,7 @@ const router = createBrowserRouter([
           { path: ROUTES.TRIPS.CREATE, element: <CreateTrip /> },
           { path: ROUTES.TRIPS.LIST, element: <MisViajes /> },
           { path: ROUTES.TRIPS.DETAIL, element: <TripDetail /> },
+          { path: ROUTES.MESSAGES, element: <MessagesPage /> },
           { path: ROUTES.PROFILE.SETUP, element: <EditProfile isOnboarding /> },
           { path: ROUTES.LEGAL.PRIVACY, element: <PrivacyPolicy /> },
           { path: ROUTES.LEGAL.TERMS, element: <TermsOfUse /> },
@@ -109,7 +112,9 @@ function App() {
       <NotificationProvider>
         <ChatNotificationProvider>
           <ChatUIProvider>
-            <RouterProvider router={router} />
+            <PrivateChatProvider>
+              <RouterProvider router={router} />
+            </PrivateChatProvider>
           </ChatUIProvider>
         </ChatNotificationProvider>
       </NotificationProvider>

@@ -5,6 +5,7 @@ import { useProfileAvatar } from "../../../../hooks/useProfileAvatar";
 import { useAuth } from "../../../../context/AuthContext";
 import { useNotifications } from "../../../../context/NotificationContext";
 import { useChatNotifications } from "../../../../context/ChatNotificationContext";
+import { usePrivateChat } from "../../../../context/PrivateChatContext";
 
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
   .split(',')
@@ -16,7 +17,8 @@ export function useNavbarController() {
   const { avatarSrc, initials } = useProfileAvatar();
   const { profile, user, logout } = useAuth();
   const { unseenCount: notificationCount } = useNotifications();
-  const { chatUnreadCount, unreadChats, markTripChatAsRead, markAllChatsAsRead } = useChatNotifications();
+  const { chatUnreadCount } = useChatNotifications();
+  const { pendingCount, unreadPrivateCount } = usePrivateChat();
   const avatarColor = profile?.avatarColor || "";
   const isAdmin = !!user && ADMIN_EMAILS.includes(user.email);
 
@@ -121,10 +123,7 @@ export function useNavbarController() {
     avatarColor,
     isAdmin,
     notificationCount,
-    messageCount: chatUnreadCount,
-    unreadChats,
-    markTripChatAsRead,
-    markAllChatsAsRead,
+    messageCount: chatUnreadCount + pendingCount + unreadPrivateCount,
     menuOpen,
     profileMenuOpen,
     notificationPanelOpen,

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { collection, collectionGroup, doc, getDoc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { collection, collectionGroup, doc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { useAuth } from './AuthContext';
 
@@ -41,57 +41,66 @@ export function ChatNotificationProvider({ children }) {
       where('invitationStatus', '==', 'accepted'),
     );
 
-    const unsubMembers = onSnapshot(q, async (snapshot) => {
+    const unsubMembers = onSnapshot(q, (snapshot) => {
       const liveTripIds = new Set(snapshot.docs.map((d) => d.ref.parent.parent.id));
 
       // Remove subscriptions for trips no longer in the list
       Object.keys(tripUnsubsRef.current).forEach((tid) => {
         if (!liveTripIds.has(tid)) {
-          tripUnsubsRef.current[tid]();
+          const unsub = tripUnsubsRef.current[tid];
+          if (typeof unsub === 'function') unsub();
           delete tripUnsubsRef.current[tid];
           setTripSummaries((prev) => { const next = { ...prev }; delete next[tid]; return next; });
         }
       });
 
-      // Add subscriptions for new trips
+      // Add subscriptions for new trips — all in parallel (no serial await)
       for (const tripId of liveTripIds) {
-        if (tripUnsubsRef.current[tripId]) continue;
+        if (tripId in tripUnsubsRef.current) continue;
 
+        tripUnsubsRef.current[tripId] = true; // in-progress sentinel
         const key = lsKey(tripId, uid);
+        const meta = { name: tripId, coverImage: null };
+        let msgUnsub = null;
 
-        // Get trip name once (doesn't change often)
-        let tripName = tripId;
-        try {
-          const tripSnap = await getDoc(doc(db, 'trips', tripId));
-          if (tripSnap.exists()) tripName = tripSnap.data().name || tripId;
-        } catch { /* keep default */ }
+        const tripDocUnsub = onSnapshot(doc(db, 'trips', tripId), (tripSnap) => {
+          if (!(tripId in tripUnsubsRef.current)) { tripDocUnsub(); return; }
+          const d = tripSnap.exists() ? tripSnap.data() : {};
+          meta.name = d.name || tripId;
+          meta.coverImage = d.coverImage || null;
 
-        // Subscribe to last message in the messages subcollection
-        const msgQ = query(
-          collection(db, 'trips', tripId, 'messages'),
-          orderBy('createdAt', 'desc'),
-          limit(1),
-        );
-
-        const msgUnsub = onSnapshot(msgQ, (msgSnap) => {
-          const msgDoc = msgSnap.docs[0];
-          const lastMessage = msgDoc ? { id: msgDoc.id, ...msgDoc.data() } : null;
-
-          setTripSummaries((prev) => ({
-            ...prev,
-            [tripId]: { id: tripId, name: tripName, lastMessage },
-          }));
-
-          setReadTimestamps((prev) => {
-            if (prev[tripId] !== undefined) return prev;
-            const stored = parseInt(localStorage.getItem(key) || '0', 10);
-            return { ...prev, [tripId]: stored };
-          });
+          if (!msgUnsub) {
+            const msgQ = query(
+              collection(db, 'trips', tripId, 'messages'),
+              orderBy('createdAt', 'desc'),
+              limit(1),
+            );
+            msgUnsub = onSnapshot(msgQ, (msgSnap) => {
+              const msgDoc = msgSnap.docs[0];
+              const lastMessage = msgDoc ? { id: msgDoc.id, ...msgDoc.data() } : null;
+              setTripSummaries((prev) => ({
+                ...prev,
+                [tripId]: { id: tripId, name: meta.name, coverImage: meta.coverImage, lastMessage },
+              }));
+              setReadTimestamps((prev) => {
+                if (prev[tripId] !== undefined) return prev;
+                const stored = parseInt(localStorage.getItem(key) || '0', 10);
+                return { ...prev, [tripId]: stored };
+              });
+            }, (err) => {
+              console.warn(`[ChatNotif] messages listener error for trip ${tripId}:`, err);
+            });
+          } else {
+            setTripSummaries((prev) => prev[tripId]
+              ? { ...prev, [tripId]: { ...prev[tripId], name: meta.name, coverImage: meta.coverImage } }
+              : prev,
+            );
+          }
         }, (err) => {
-          console.warn(`[ChatNotif] messages listener error for trip ${tripId}:`, err);
+          console.warn(`[ChatNotif] trip doc listener error for trip ${tripId}:`, err);
         });
 
-        tripUnsubsRef.current[tripId] = msgUnsub;
+        tripUnsubsRef.current[tripId] = () => { tripDocUnsub(); if (msgUnsub) msgUnsub(); };
       }
     }, (err) => {
       console.warn('[ChatNotif] members listener error:', err);
@@ -99,7 +108,7 @@ export function ChatNotificationProvider({ children }) {
 
     return () => {
       unsubMembers();
-      Object.values(tripUnsubsRef.current).forEach((fn) => fn());
+      Object.values(tripUnsubsRef.current).forEach((fn) => { if (typeof fn === 'function') fn(); });
       tripUnsubsRef.current = {};
     };
   }, [uid]);
@@ -127,16 +136,16 @@ export function ChatNotificationProvider({ children }) {
     });
   }, []);
 
+  const isUnread = (trip) => {
+    const { lastMessage } = trip;
+    if (!lastMessage || lastMessage.uid === uid) return false;
+    const msgTs = toMs(lastMessage.createdAt);
+    if (msgTs === 0) return false;
+    return msgTs > (readTimestamps[trip.id] ?? 0);
+  };
+
   const unreadChats = Object.values(tripSummaries)
-    .filter((trip) => {
-      const { lastMessage } = trip;
-      if (!lastMessage) return false;
-      if (lastMessage.uid === uid) return false;
-      const msgTs = toMs(lastMessage.createdAt);
-      if (msgTs === 0) return false;
-      const lastRead = readTimestamps[trip.id] ?? 0;
-      return msgTs > lastRead;
-    })
+    .filter(isUnread)
     .map((trip) => ({
       tripId: trip.id,
       tripName: trip.name,
@@ -145,12 +154,17 @@ export function ChatNotificationProvider({ children }) {
       createdAt: trip.lastMessage.createdAt,
     }));
 
+  const allTripChats = Object.values(tripSummaries)
+    .map((trip) => ({ ...trip, isUnread: isUnread(trip) }))
+    .sort((a, b) => toMs(b.lastMessage?.createdAt) - toMs(a.lastMessage?.createdAt));
+
   const chatUnreadCount = unreadChats.length;
 
   return (
     <ChatNotificationContext.Provider value={{
       chatUnreadCount,
       unreadChats,
+      allTripChats,
       markTripChatAsRead,
       markAllChatsAsRead,
     }}>
