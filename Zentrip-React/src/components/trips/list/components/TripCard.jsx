@@ -96,6 +96,10 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
   const name        = trip.name        || 'Viaje sin nombre';
   const origin      = trip.origin      || '';
   const destination = trip.destination || '';
+  const hasStops    = (trip.stops || []).some((s) => s.name?.trim());
+  const routeLabel  = origin && destination
+    ? hasStops ? `${origin} → ··· → ${destination}` : `${origin} → ${destination}`
+    : origin || destination;
   const { startDate, endDate } = deriveDatesFromTrip(trip);
   const status      = isDraft ? 'borrador' : (trip.status || 'proximo');
 
@@ -157,10 +161,8 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
         <div className={`p-4 flex flex-col ${contentGap} flex-1`}>
           <h3 className="body-bold text-secondary-5 truncate">{name}</h3>
 
-          {(origin || destination) && (
-            <p className="body-3 text-neutral-3 truncate">
-              {origin && destination ? `${origin} → ${destination}` : origin || destination}
-            </p>
+          {routeLabel && (
+            <p className="body-3 text-neutral-3 truncate">{routeLabel}</p>
           )}
 
           <div className="flex items-center gap-4 body-3 text-neutral-4 flex-wrap">
