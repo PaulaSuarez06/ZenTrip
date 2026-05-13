@@ -22,7 +22,12 @@ export default function HotelSearch({ trip, members = [], tripId }) {
   const maxDateStr = maxDate.toISOString().split('T')[0];
 
   const defaultCheckIn  = trip?.startDate  && trip.startDate  >= today && trip.startDate  <= maxDateStr ? trip.startDate  : today;
-  const defaultCheckOut = trip?.endDate    && trip.endDate    > defaultCheckIn && trip.endDate <= maxDateStr ? trip.endDate : tomorrow;
+  const defaultCheckOut = (() => {
+    if (trip?.endDate && trip.endDate > defaultCheckIn && trip.endDate <= maxDateStr) return trip.endDate;
+    const d = new Date(defaultCheckIn + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  })();
 
   const [dest, setDest]         = useState(trip?.destination?.split(',')[0]?.trim() || '');
   const [checkIn, setCheckIn]   = useState(defaultCheckIn);

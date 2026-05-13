@@ -335,9 +335,14 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
               ⚠️ Ya tienes este restaurante anotado
             </div>
           ) : step === 'booked' ? (
-            <button type="button" onClick={onClose} className="h-11 rounded-lg bg-primary-3 text-white body-2-semibold hover:bg-primary-4 transition">
-              Listo
-            </button>
+            <>
+              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
+                ✓ Restaurante guardado en el viaje
+              </div>
+              <button type="button" onClick={onClose} className="h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition">
+                Cerrar
+              </button>
+            </>
           ) : step === 'confirm' ? (
             <button
               onClick={handleSave}

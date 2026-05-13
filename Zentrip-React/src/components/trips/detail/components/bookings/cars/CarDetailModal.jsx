@@ -299,15 +299,15 @@ export default function CarDetailModal({ car, searchParams, tripId, onClose }) {
             </div>
           ) : booked ? (
             <>
-              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold mb-3">
-                ✓ Reserva guardada
+              <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
+                ✓ Coche guardado en el viaje
               </div>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={onClose}
                 className="w-full h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition"
               >
-                Continuar
+                Cerrar
               </button>
             </>
           ) : (
