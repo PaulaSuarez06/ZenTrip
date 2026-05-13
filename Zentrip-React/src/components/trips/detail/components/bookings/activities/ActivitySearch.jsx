@@ -8,6 +8,7 @@ import ActivityCard from './ActivityCard';
 import ActivityDetailModal from './ActivityDetailModal';
 import Pagination from '../../../../../ui/Pagination';
 import { useAuth } from '../../../../../../context/AuthContext';
+import CityAutocomplete from '../../../../../ui/CityAutocomplete';
 
 const PER_PAGE = 5;
 
@@ -38,6 +39,7 @@ function FormField({ label, icon: Icon, children }) {
 export default function ActivitySearch({ trip, tripId, members = [] }) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
+  const [cityLocked, setCityLocked] = useState(!!trip?.destination);
   const [date, setDate] = useState(() => {
     const t = new Date().toISOString().split('T')[0];
     const sd = trip?.startDate;
@@ -61,7 +63,11 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
   const maxDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 2); return d.toISOString().split('T')[0]; })();
 
   useEffect(() => {
-    if (trip?.destination) setQuery(trip.destination.split(',')[0].trim());
+    if (trip?.destination) {
+      const city = trip.destination.split(',')[0].trim();
+      setQuery(city);
+      setCityLocked(true);
+    }
     if (trip?.startDate) setDate(trip.startDate >= today ? trip.startDate : today);
   }, [trip?.destination, trip?.startDate]);
 
@@ -76,7 +82,7 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
   }
 
   const [attempted, setAttempted] = useState(false);
-  const canSearch = query.trim().length >= 2 && !!date && date >= today;
+  const canSearch = cityLocked && query.trim().length >= 3 && !!date && date >= today;
 
   const handleSearch = async () => {
     setAttempted(true);
@@ -130,17 +136,15 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
 
             <div className="mb-4">
               <FormField label="Ciudad o destino" icon={MapPin}>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-3 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={query}
+                <CityAutocomplete
+                    name="activity-city"
+                  value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="Barcelona, Roma, París…"
-                    className="w-full h-12 pl-9 pr-3 border-2 border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-primary-3 focus:ring-2 focus:ring-primary-3/10 transition placeholder:text-neutral-3"
-                  />
-                </div>
+                    onLockChange={setCityLocked}
+                  onEnter={handleSearch}
+                  placeholder="Barcelona, Roma, París…"
+                />
+                  {attempted && !cityLocked && query.trim().length >= 2 && <p className="body-3 text-red-500 mt-1">Selecciona una ciudad de la lista</p>}
                 {attempted && query.trim().length < 2 && <p className="body-3 text-red-500 mt-1">Introduce al menos 2 caracteres</p>}
               </FormField>
             </div>
@@ -266,7 +270,11 @@ export default function ActivitySearch({ trip, tripId, members = [] }) {
             <div className="mb-6">
               <SectionLabel>Destino del viaje</SectionLabel>
               <button
-                onClick={() => setQuery(trip.destination.split(',')[0].trim())}
+                onClick={() => {
+                  const city = trip.destination.split(',')[0].trim();
+                  setQuery(city);
+                  setCityLocked(true);
+                }}
                 className="flex items-center gap-3 bg-white border border-neutral-1 rounded-xl px-4 py-3 hover:border-primary-2 hover:bg-primary-1 transition w-full text-left"
               >
                 <span className="text-2xl">🎯</span>

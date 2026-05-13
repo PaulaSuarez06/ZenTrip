@@ -25,7 +25,7 @@ function formatCity(item) {
   return city && country ? `${city}, ${country}` : item.display_name;
 }
 
-export default function CityAutocomplete({ name, value, onChange, label, error, placeholder }) {
+export default function CityAutocomplete({ name, value, onChange, label, error, placeholder, onLockChange, onEnter }) {
   const [inputValue, setInputValue] = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +37,7 @@ export default function CityAutocomplete({ name, value, onChange, label, error, 
   useEffect(() => {
     setInputValue(value || '');
     setLocked(!!value);
+    onLockChange?.(!!value);
   }, [value]);
 
   useEffect(() => {
@@ -76,6 +77,7 @@ export default function CityAutocomplete({ name, value, onChange, label, error, 
     const formatted = formatCity(item);
     setInputValue(formatted);
     setLocked(true);
+    onLockChange?.(true);
     setOpen(false);
     setSuggestions([]);
     onChange({ target: { name, value: formatted } });
@@ -84,6 +86,7 @@ export default function CityAutocomplete({ name, value, onChange, label, error, 
   const handleChange = (e) => {
     setInputValue(e.target.value);
     setLocked(false);
+    onLockChange?.(false);
     if (!e.target.value) onChange({ target: { name, value: '' } });
   };
 
@@ -99,6 +102,7 @@ export default function CityAutocomplete({ name, value, onChange, label, error, 
           type="text"
           value={inputValue}
           onChange={handleChange}
+          onKeyDown={(e) => { if (e.key === 'Enter') onEnter?.(); }}
           placeholder={placeholder}
           autoComplete="off"
           className={`w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition px-4 py-2 body-2 text-sm ${error ? 'border-red-400' : 'border-slate-300'}`}
