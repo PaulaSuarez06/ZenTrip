@@ -152,8 +152,8 @@ export default function SummaryForm({
           </SectionRow>
 
           <div className="mb-5">
-            <p className="body-3 text-neutral-3 mb-1">Viaje con mascotas</p>
-            <p className="body text-secondary-5">{form.hasPet ? 'Sí' : 'No'}</p>
+            <p className="body-3 text-neutral-3 mb-1">Viaje en solitario</p>
+            <p className="body text-secondary-5">{form.soloTravel ? 'Sí' : 'No'}</p>
           </div>
 
           <div className="bg-secondary-1 rounded-xl p-4">

@@ -4,7 +4,6 @@ import Hero from "./components/Hero";
 import LogosBar from "./components/LogosBar";
 import HowItWorks from "./components/HowItWorks";
 import Features from "./components/Features";
-import PetSection from "./components/PetSection";
 import Testimonials from "./components/Testimonials";
 import CTABanner from "./components/CTABanner";
 import Footer from "./components/Footer";
@@ -22,7 +21,6 @@ export default function Landing() {
       <LogosBar />
       <HowItWorks />
       <Features />
-      <PetSection />
       <Testimonials />
       <CTABanner onRegister={goRegister} onLogin={goLogin} />
       <Footer />
