@@ -8,12 +8,12 @@ export function ChatUIProvider({ children }) {
   const [openChats, setOpenChats] = useState([]);
   const [activeChatTripId, setActiveChatTripIdState] = useState(null);
 
-  const openChat = useCallback((id, name, type = 'group', otherUser = null) => {
+  const openChat = useCallback((id, name, type = 'group', otherUser = null, coverImage = null) => {
     setOpenChats((prev) => {
       const existing = prev.find((c) => c.id === id);
       if (existing) return prev.map((c) => c.id === id ? { ...c, minimized: false } : c);
       const trimmed = prev.length >= MAX_OPEN ? prev.slice(1) : prev;
-      return [...trimmed, { id, name, type, otherUser, minimized: false }];
+      return [...trimmed, { id, name, type, otherUser, coverImage, minimized: false }];
     });
   }, []);
 

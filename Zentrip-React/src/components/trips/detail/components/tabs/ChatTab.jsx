@@ -1,68 +1,108 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { useAuth } from '../../../../../context/AuthContext';
+import { useChatNotifications } from '../../../../../context/ChatNotificationContext';
 import { sendMessage } from '../../../../../services/tripService';
 import { useMemberProfiles } from '../../../../../hooks/useMemberProfiles';
+import { useChatScroll } from '../../../../../hooks/useChatScroll';
+import { useChatInput } from '../../../../../hooks/useChatInput';
 import ChatMessageList from '../../../../chat/ChatMessageList';
+import MentionPicker from '../../../../chat/MentionPicker';
 
-export default function ChatTab({ tripId, messages = [] }) {
+export default function ChatTab({ tripId, messages = [], members = [] }) {
   const { user, profile } = useAuth();
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
-  const bottomRef = useRef(null);
+  const { markTripChatAsRead } = useChatNotifications();
+  // -1 = timestamp aún no leído de localStorage (igual que ConversationView y FloatingChatWindow)
+  const [unreadSinceTs, setUnreadSinceTs] = useState(-1);
+  const containerRef = useRef(null);
 
+  // Lee el timestamp ANTES de marcar como leído; incluye user?.uid en deps
+  // para que se ejecute aunque el usuario cargue después del montaje
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+    if (!user?.uid) return;
+    setUnreadSinceTs(parseInt(localStorage.getItem(`zentrp_chat_${tripId}_${user.uid}`) || '0', 10));
+    markTripChatAsRead(tripId);
+  }, [tripId, user?.uid]);
+
+  useChatScroll({
+    chatId: tripId,
+    messages,
+    unreadSinceTs,
+    containerRef,
+    onAfterScroll: () => markTripChatAsRead(tripId),
+  });
 
   const displayName = profile?.displayName || profile?.firstName || user?.email || 'Usuario';
   const memberUids = useMemo(() => [...new Set(messages.map((m) => m.uid).filter(Boolean))], [messages]);
   const memberProfiles = useMemberProfiles(memberUids);
 
-  const handleSend = async () => {
-    const trimmed = text.trim();
-    if (!trimmed || sending) return;
-    setSending(true);
-    try {
-      await sendMessage(tripId, user.uid, displayName, trimmed);
-      setText('');
-    } finally {
-      setSending(false);
-    }
-  };
+  const chatMembers = useMemo(() =>
+    members
+      .filter((m) => m.uid && m.uid !== user?.uid)
+      .map((m) => ({ uid: m.uid, displayName: m.name || m.firstName || m.email || 'Usuario' })),
+    [members, user?.uid]
+  );
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  const { text, sending, replyTo, setReplyTo, mentionQuery, inputRef,
+    handleTextChange, handleMentionSelect, handleSend, handleKeyDown,
+  } = useChatInput({
+    isGroup: true,
+    onSend: async (trimmed, reply, chatMentions) => {
+      await sendMessage(tripId, user.uid, displayName, trimmed, reply, chatMentions);
+    },
+  });
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-1 flex flex-col h-[72vh] min-h-130">
+    <div className="bg-white rounded-2xl border border-neutral-1 flex flex-col flex-1 min-h-0 overflow-hidden">
       <ChatMessageList
         messages={messages}
         currentUserId={user?.uid}
         memberProfiles={memberProfiles}
-        bottomRef={bottomRef}
+        containerRef={containerRef}
+        onReply={setReplyTo}
+        unreadSinceTs={unreadSinceTs}
       />
-      <div className="border-t border-neutral-1 px-4 py-3 flex items-center gap-2 shrink-0">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Escribe un mensaje..."
-          className="flex-1 bg-neutral-1 rounded-full px-4 py-2.5 body-3 text-neutral-7 placeholder:text-neutral-3 outline-none focus:ring-2 focus:ring-primary-1"
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!text.trim() || sending}
-          className="w-10 h-10 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary-4 transition-colors"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+      <div className="relative shrink-0">
+        {mentionQuery !== null && chatMembers.length > 0 && (
+          <div className="absolute bottom-full left-0 right-0 z-10 mx-4 mb-1">
+            <MentionPicker
+              query={mentionQuery}
+              members={chatMembers}
+              onSelect={handleMentionSelect}
+            />
+          </div>
+        )}
+        {replyTo && (
+          <div className="px-4 py-2 border-t border-neutral-1 bg-white flex items-center gap-2">
+            <div className="w-0.5 self-stretch bg-primary-3 rounded-full shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-primary-3 truncate">{replyTo.displayName}</p>
+              <p className="text-[11px] text-neutral-4 truncate">{replyTo.text}</p>
+            </div>
+            <button type="button" onClick={() => setReplyTo(null)} className="text-neutral-3 hover:text-neutral-5 transition-colors shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        <div className="border-t border-neutral-1 px-4 py-3 flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={text}
+            onChange={handleTextChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Escribe un mensaje..."
+            className="flex-1 bg-neutral-1 rounded-full px-4 py-2.5 body-3 text-neutral-7 placeholder:text-neutral-3 outline-none focus:ring-2 focus:ring-primary-1"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            className="w-10 h-10 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary-4 transition-colors"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

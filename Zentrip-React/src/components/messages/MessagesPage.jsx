@@ -25,6 +25,21 @@ export default function MessagesPage() {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state?.selectChat?.id]);
 
+  // Auto-open a pending request preview
+  useEffect(() => {
+    const { selectRequest: req } = location.state || {};
+    if (!req) return;
+    handleSelect({
+      type: 'request',
+      id: req.id,
+      name: req.fromDisplayName,
+      fromUid: req.fromUid,
+      message: req.message,
+      otherUser: { displayName: req.fromDisplayName, profilePhoto: req.fromProfilePhoto || '', avatarColor: '' },
+    });
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state?.selectRequest?.id]);
+
   const handleChatReady = (chat) => {
     setSelectedChat(chat);
     setShowConversation(true);
@@ -57,7 +72,13 @@ export default function MessagesPage() {
             </button>
           </div>
         )}
-        <ConversationView chat={selectedChat} />
+        <ConversationView
+          chat={selectedChat}
+          onChatUpdate={(newChat) => {
+            setSelectedChat(newChat);
+            if (!newChat) setShowConversation(false);
+          }}
+        />
       </div>
 
       {showSearch && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MoreVertical, Send, Users } from 'lucide-react';
+import { MoreVertical, Send, Users, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useChatNotifications } from '../../context/ChatNotificationContext';
@@ -9,45 +9,50 @@ import { sendPrivateMessage, subscribeToPrivateMessages } from '../../services/p
 import { blockUser, subscribeToIsBlockedBy, subscribeToMyBlocks, unblockUser } from '../../services/blockService';
 import { usePrivateChat } from '../../context/PrivateChatContext';
 import { useMemberProfiles } from '../../hooks/useMemberProfiles';
+import { useChatScroll } from '../../hooks/useChatScroll';
+import { useChatInput } from '../../hooks/useChatInput';
 import { ROUTES } from '../../config/routes';
 import ChatMessageList from '../chat/ChatMessageList';
+import MentionPicker from '../chat/MentionPicker';
 import UserAvatar from '../ui/UserAvatar';
 
-export default function ConversationView({ chat }) {
+export default function ConversationView({ chat, onChatUpdate }) {
   const { user, profile } = useAuth();
   const { markTripChatAsRead, allTripChats } = useChatNotifications();
-  const { markPrivateChatAsRead } = usePrivateChat();
+  const { markPrivateChatAsRead, accept, reject } = usePrivateChat();
   const { setActiveChatTrip } = useChatUI();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
+  const [unreadSinceTs, setUnreadSinceTs] = useState(-1);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [blockedByMe, setBlockedByMe] = useState(new Set());
   const [blockedByThem, setBlockedByThem] = useState(false);
   const containerRef = useRef(null);
   const menuRef = useRef(null);
-  const isFirstLoad = useRef(true);
 
+  const isRequest = chat?.type === 'request';
   const isGroup = chat?.type === 'group';
-  const otherUid = !isGroup ? chat?.otherUid : null;
+  const otherUid = !isGroup && !isRequest ? chat?.otherUid : null;
   const isBlockedByMe = otherUid ? blockedByMe.has(otherUid) : false;
   const cannotMessage = isBlockedByMe || blockedByThem;
   const isRemovedFromTrip = isGroup && chat && !allTripChats.some((t) => t.id === chat.id);
 
   useEffect(() => {
-    if (!chat) return;
+    if (!chat || isRequest) return;
     setMessages([]);
-    isFirstLoad.current = true;
     const unsub = isGroup
       ? subscribeToMessages(chat.id, setMessages)
       : subscribeToPrivateMessages(chat.id, setMessages);
     return unsub;
-  }, [chat?.id, isGroup]);
+  }, [chat?.id, isGroup, isRequest]);
 
   useEffect(() => {
-    if (!chat) return;
+    if (!chat || isRequest) return;
+    const lsKey = isGroup
+      ? `zentrp_chat_${chat.id}_${user?.uid}`
+      : `zentrp_pchat_${chat.id}_${user?.uid}`;
+    setUnreadSinceTs(parseInt(localStorage.getItem(lsKey) || '0', 10));
     if (isGroup) {
       markTripChatAsRead(chat.id);
       setActiveChatTrip(chat.id);
@@ -55,7 +60,7 @@ export default function ConversationView({ chat }) {
       markPrivateChatAsRead(chat.id);
     }
     return () => { if (isGroup) setActiveChatTrip(null); };
-  }, [chat?.id, isGroup, markTripChatAsRead, markPrivateChatAsRead, setActiveChatTrip]);
+  }, [chat?.id, isGroup, isRequest, user?.uid, markTripChatAsRead, markPrivateChatAsRead, setActiveChatTrip]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -74,45 +79,45 @@ export default function ConversationView({ chat }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const el = containerRef.current;
-    if (!el) return;
-    if (isFirstLoad.current) {
-      el.scrollTop = el.scrollHeight;
-      isFirstLoad.current = false;
-    } else {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-    }
-    if (!isGroup && chat) markPrivateChatAsRead(chat.id);
-  }, [messages.length]);
+  useChatScroll({
+    chatId: chat?.id,
+    messages,
+    unreadSinceTs,
+    containerRef,
+    onAfterScroll: () => {
+      if (!chat) return;
+      if (isGroup) markTripChatAsRead(chat.id);
+      else markPrivateChatAsRead(chat.id);
+    },
+  });
 
   const displayName = profile?.displayName || profile?.firstName || user?.email || 'Usuario';
   const memberUids = useMemo(() => [...new Set(messages.map((m) => m.uid).filter(Boolean))], [messages]);
   const memberProfiles = useMemberProfiles(memberUids);
 
-  const handleSend = async () => {
-    const trimmed = text.trim();
-    if (!trimmed || sending || !chat) return;
-    setSending(true);
-    try {
-      if (isGroup) {
-        await sendMessage(chat.id, user.uid, displayName, trimmed);
-      } else {
-        await sendPrivateMessage(chat.id, user.uid, displayName, trimmed);
+  const mentionMembers = useMemo(() => {
+    if (!isGroup) return [];
+    const seen = new Set();
+    const list = [];
+    for (const m of messages) {
+      if (m.uid && m.displayName && m.uid !== user?.uid && !m.isIntro && !seen.has(m.uid)) {
+        seen.add(m.uid);
+        list.push({ uid: m.uid, displayName: m.displayName });
       }
-      setText('');
-    } finally {
-      setSending(false);
     }
-  };
+    return list;
+  }, [messages, user?.uid, isGroup]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  const { text, sending, replyTo, setReplyTo, mentionQuery, inputRef,
+    handleTextChange, handleMentionSelect, handleSend, handleKeyDown,
+  } = useChatInput({
+    isGroup,
+    onSend: async (trimmed, reply, chatMentions) => {
+      if (!chat) return;
+      if (isGroup) await sendMessage(chat.id, user.uid, displayName, trimmed, reply, chatMentions);
+      else await sendPrivateMessage(chat.id, user.uid, displayName, trimmed, reply);
+    },
+  });
 
   const handleNavigateToTrip = () => {
     navigate(ROUTES.TRIPS.DETAIL.replace(':tripId', chat.id));
@@ -133,11 +138,76 @@ export default function ConversationView({ chat }) {
     await blockUser(user.uid, otherUid);
   };
 
+  const handleAcceptRequest = async () => {
+    const chatId = await accept(chat.id, chat.fromUid, chat.name, chat.message);
+    if (chatId && onChatUpdate) {
+      onChatUpdate({ id: chatId, name: chat.name, type: 'private', otherUser: chat.otherUser });
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    await reject(chat.id);
+    if (onChatUpdate) onChatUpdate(null);
+  };
+
   if (!chat) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-neutral-3 gap-3">
         <span className="text-5xl">💬</span>
         <p className="body-2 text-neutral-4">Selecciona una conversación</p>
+      </div>
+    );
+  }
+
+  if (isRequest) {
+    return (
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-neutral-1 flex items-center gap-3 shrink-0 bg-white">
+          <UserAvatar
+            src={chat.otherUser?.profilePhoto}
+            backgroundColor={chat.otherUser?.avatarColor}
+            fullName={chat.name}
+            sizeClass="w-9 h-9"
+            initialsClass="text-xs text-white font-bold"
+            backgroundClass="bg-neutral-3"
+          />
+          <div className="min-w-0">
+            <p className="body-3 font-semibold text-secondary-5 truncate">{chat.name}</p>
+            <p className="text-[11px] text-neutral-3">Solicitud de chat</p>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50 flex flex-col items-start justify-end p-4 gap-2">
+          {chat.message ? (
+            <div className="max-w-[75%] bg-neutral-1 rounded-2xl rounded-tl-sm px-4 py-2.5">
+              <p className="body-3 text-neutral-7 wrap-break-word">{chat.message}</p>
+            </div>
+          ) : (
+            <div className="w-full flex items-center justify-center py-8">
+              <p className="body-3 text-neutral-4">Ha enviado una solicitud de chat</p>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-neutral-1 px-4 py-3 flex flex-col gap-2.5 shrink-0 bg-white">
+          <p className="text-center text-[11px] text-neutral-3">Acepta la solicitud para poder responder</p>
+          <div className="flex gap-2 justify-center">
+            <button
+              type="button"
+              onClick={handleRejectRequest}
+              className="px-8 py-2 rounded-full border border-neutral-2 body-3 font-semibold text-neutral-5 hover:bg-neutral-1 transition-colors"
+            >
+              Rechazar
+            </button>
+            <button
+              type="button"
+              onClick={handleAcceptRequest}
+              className="px-8 py-2 rounded-full bg-primary-3 text-white body-3 font-semibold hover:bg-primary-4 transition-colors"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -218,35 +288,61 @@ export default function ConversationView({ chat }) {
           currentUserId={user?.uid}
           memberProfiles={memberProfiles}
           containerRef={containerRef}
+          onReply={setReplyTo}
+          unreadSinceTs={unreadSinceTs}
         />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-neutral-1 px-4 py-3 flex items-center gap-2 shrink-0 bg-white">
-        {isRemovedFromTrip ? (
-          <p className="flex-1 text-center body-3 text-neutral-3 py-1">Ya no eres miembro de este viaje</p>
-        ) : cannotMessage ? (
-          <p className="flex-1 text-center body-3 text-neutral-3 py-1">No puedes enviar mensajes a este usuario</p>
-        ) : (
-          <>
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe un mensaje..."
-              className="flex-1 bg-neutral-1 rounded-full px-4 py-2.5 body-3 text-neutral-7 placeholder:text-neutral-3 outline-none focus:ring-2 focus:ring-primary-1"
+      {/* Reply + input wrapper (relative for MentionPicker absolute positioning) */}
+      <div className="relative shrink-0">
+        {isGroup && mentionQuery !== null && mentionMembers.length > 0 && (
+          <div className="absolute bottom-full left-0 right-0 z-10 mx-4 mb-1">
+            <MentionPicker
+              query={mentionQuery}
+              members={mentionMembers}
+              onSelect={handleMentionSelect}
             />
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!text.trim() || sending}
-              className="w-10 h-10 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary-4 transition-colors"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </>
+          </div>
         )}
+        {replyTo && (
+          <div className="px-4 py-2 border-t border-neutral-1 bg-white flex items-center gap-2">
+            <div className="w-0.5 self-stretch bg-primary-3 rounded-full shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-primary-3 truncate">{replyTo.displayName}</p>
+              <p className="text-[11px] text-neutral-4 truncate">{replyTo.text}</p>
+            </div>
+            <button type="button" onClick={() => setReplyTo(null)} className="text-neutral-3 hover:text-neutral-5 transition-colors shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        <div className="border-t border-neutral-1 px-4 py-3 flex items-center gap-2 bg-white">
+          {isRemovedFromTrip ? (
+            <p className="flex-1 text-center body-3 text-neutral-3 py-1">Ya no eres miembro de este viaje</p>
+          ) : cannotMessage ? (
+            <p className="flex-1 text-center body-3 text-neutral-3 py-1">No puedes enviar mensajes a este usuario</p>
+          ) : (
+            <>
+              <input
+                ref={inputRef}
+                type="text"
+                value={text}
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Escribe un mensaje..."
+                className="flex-1 bg-neutral-1 rounded-full px-4 py-2.5 body-3 text-neutral-7 placeholder:text-neutral-3 outline-none focus:ring-2 focus:ring-primary-1"
+              />
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!text.trim() || sending}
+                className="w-10 h-10 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary-4 transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Modal confirmación de bloqueo */}

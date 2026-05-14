@@ -104,10 +104,15 @@ export default function TripDetail() {
     if (activeTab === 'chat') {
       markTripChatAsRead(tripId);
       setActiveChatTrip(tripId);
+      document.body.style.overflow = 'hidden';
     } else {
       setActiveChatTrip(null);
+      document.body.style.overflow = '';
     }
-    return () => setActiveChatTrip(null);
+    return () => {
+      setActiveChatTrip(null);
+      document.body.style.overflow = '';
+    };
   }, [activeTab, tripId, markTripChatAsRead, setActiveChatTrip]);
 
   const handleGoBook = (bookingKey) => {
@@ -438,13 +443,13 @@ export default function TripDetail() {
       );
     }
     if (activeTab === 'chat') {
-      return <ChatTab tripId={tripId} messages={chatMessages} />;
+      return <ChatTab tripId={tripId} messages={chatMessages} members={members} />;
     }
     return TAB_PLACEHOLDERS[activeTab] ?? null;
   };
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-4">
+    <div className={`max-w-7xl mx-auto flex flex-col gap-4 ${activeTab === 'chat' ? 'h-[calc(100dvh-7.5rem)] overflow-hidden' : ''}`}>
       {addActivityModal.open && (
         <AddActivityModal
           date={addActivityModal.date}

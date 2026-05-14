@@ -3,7 +3,7 @@ import { db } from '../config/firebaseConfig';
 
 export const buildPrivateChatId = (uid1, uid2) => [uid1, uid2].sort().join('_');
 
-export async function sendChatRequest(fromUid, toUid, fromDisplayName, fromProfilePhoto = '') {
+export async function sendChatRequest(fromUid, toUid, fromDisplayName, fromProfilePhoto = '', message = '') {
   const chatId = buildPrivateChatId(fromUid, toUid);
 
   // Query by fromUid (provable by the security rule: fromUid == auth.uid), filter chatId client-side
@@ -18,6 +18,7 @@ export async function sendChatRequest(fromUid, toUid, fromDisplayName, fromProfi
   const docRef = await addDoc(collection(db, 'chatRequests'), {
     fromUid, toUid, fromDisplayName, fromProfilePhoto, chatId,
     status: 'pending',
+    ...(message ? { message } : {}),
     createdAt: serverTimestamp(),
   });
   return { status: 'requested', requestId: docRef.id };
@@ -27,12 +28,14 @@ export async function cancelChatRequest(requestId) {
   await deleteDoc(doc(db, 'chatRequests', requestId));
 }
 
-export async function acceptChatRequest(requestId, fromUid, toUid) {
+export async function acceptChatRequest(requestId, fromUid, toUid, fromDisplayName = '', message = '') {
   const chatId = buildPrivateChatId(fromUid, toUid);
+  const ts = Date.now();
   await setDoc(doc(db, 'privateChats', chatId), {
     participants: [fromUid, toUid],
     createdAt: serverTimestamp(),
-    lastMessage: null,
+    lastMessage: message ? { uid: fromUid, displayName: fromDisplayName, text: message, createdAt: ts } : null,
+    ...(message ? { introMessage: { uid: fromUid, displayName: fromDisplayName, text: message, createdAt: ts } } : {}),
   });
   await updateDoc(doc(db, 'chatRequests', requestId), { status: 'accepted' });
   return chatId;
@@ -42,18 +45,39 @@ export async function rejectChatRequest(requestId) {
   await updateDoc(doc(db, 'chatRequests', requestId), { status: 'rejected' });
 }
 
-export async function sendPrivateMessage(chatId, uid, displayName, text) {
+export async function sendPrivateMessage(chatId, uid, displayName, text, replyTo = null) {
   await addDoc(collection(db, 'privateChats', chatId, 'messages'), {
-    uid, displayName, text, createdAt: serverTimestamp(),
+    uid, displayName, text,
+    ...(replyTo ? { replyTo } : {}),
+    createdAt: serverTimestamp(),
   });
   updateDoc(doc(db, 'privateChats', chatId), {
-    lastMessage: { uid, displayName, text, createdAt: Date.now() },
+    lastMessage: {
+      uid, displayName, text, createdAt: Date.now(),
+      ...(replyTo ? { replyToUid: replyTo.uid } : {}),
+    },
   }).catch(() => {});
 }
 
 export function subscribeToPrivateMessages(chatId, callback) {
-  const q = query(collection(db, 'privateChats', chatId, 'messages'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+  let msgs = [];
+  let intro = null;
+
+  const emit = () => {
+    callback(intro ? [{ id: 'intro', ...intro, isIntro: true }, ...msgs] : msgs);
+  };
+
+  const unsubMsg = onSnapshot(
+    query(collection(db, 'privateChats', chatId, 'messages'), orderBy('createdAt', 'asc')),
+    (snap) => { msgs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); emit(); },
+  );
+
+  const unsubChat = onSnapshot(doc(db, 'privateChats', chatId), (snap) => {
+    intro = snap.exists() ? (snap.data().introMessage || null) : null;
+    emit();
+  });
+
+  return () => { unsubMsg(); unsubChat(); };
 }
 
 export function subscribeToUserPrivateChats(uid, callback) {

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useChatUI } from '../../../context/ChatUIContext';
 import { useChatNotifications } from '../../../context/ChatNotificationContext';
 import { usePrivateChat } from '../../../context/PrivateChatContext';
+import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../config/routes';
 import UserAvatar from '../../ui/UserAvatar';
 
@@ -22,6 +23,7 @@ function toMs(val) {
 }
 
 export default function ChatMessagePanel({ onClose }) {
+  const { user } = useAuth();
   const { openChat, openPrivateChat, activeChatTripId } = useChatUI();
   const { allTripChats, unreadChats, markTripChatAsRead, markAllChatsAsRead } = useChatNotifications();
   const {
@@ -52,12 +54,12 @@ export default function ChatMessagePanel({ onClose }) {
     onClose();
   };
 
-  const handleGoToChat = (tripId, tripName) => {
+  const handleGoToChat = (tripId, tripName, coverImage) => {
     markTripChatAsRead(tripId);
     if (isOnMessagesPage || isInTripChat) {
-      selectInMessagesPage({ id: tripId, name: tripName, type: 'group' });
+      selectInMessagesPage({ id: tripId, name: tripName, type: 'group', coverImage });
     } else {
-      openChat(tripId, tripName, 'group');
+      openChat(tripId, tripName, 'group', null, coverImage);
       onClose();
     }
   };
@@ -72,10 +74,24 @@ export default function ChatMessagePanel({ onClose }) {
     }
   };
 
+  const navigateToRequest = (req) => {
+    navigate(ROUTES.MESSAGES, { state: { selectRequest: req } });
+    onClose();
+  };
+
   const handleMarkAll = () => {
     markAllChatsAsRead();
     markAllPrivateChatsAsRead();
     onClose();
+  };
+
+  const isAtMentioned = (lastMessage) => {
+    if (!lastMessage || lastMessage.uid === user?.uid) return false;
+    return (
+      lastMessage.replyToUid === user?.uid ||
+      lastMessage.mentionUids?.includes(user?.uid) ||
+      lastMessage.mentionUids?.includes('todos')
+    );
   };
 
   const allChats = [
@@ -87,6 +103,7 @@ export default function ChatMessagePanel({ onClose }) {
         id: t.id,
         name: t.name,
         isUnread: t.isUnread,
+        atMe: isAtMentioned(t.lastMessage),
         lastMessage: t.lastMessage,
         coverImage: t.coverImage || null,
         otherUser: null,
@@ -100,6 +117,7 @@ export default function ChatMessagePanel({ onClose }) {
         id: c.id,
         name: c.otherUser?.displayName,
         isUnread: c.isUnread,
+        atMe: isAtMentioned(c.lastMessage),
         lastMessage: c.lastMessage,
         otherUser: c.otherUser,
         sortTs: toMs(c.lastMessage?.createdAt),
@@ -145,20 +163,27 @@ export default function ChatMessagePanel({ onClose }) {
             </p>
             {pendingRequests.map((req) => (
               <div key={req.id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-secondary-1 border border-secondary-2">
-                <UserAvatar
-                  src={req.fromProfilePhoto}
-                  fullName={req.fromDisplayName}
-                  sizeClass="w-8 h-8"
-                  initialsClass="text-[10px] text-white font-bold"
-                  backgroundClass="bg-neutral-3"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="body-3 font-semibold text-secondary-5 truncate">{req.fromDisplayName}</p>
-                  <p className="text-[11px] text-neutral-4">Quiere chatear contigo</p>
-                </div>
                 <button
                   type="button"
-                  onClick={() => accept(req.id, req.fromUid)}
+                  onClick={() => navigateToRequest(req)}
+                  className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
+                >
+                  <UserAvatar
+                    src={req.fromProfilePhoto}
+                    fullName={req.fromDisplayName}
+                    sizeClass="w-8 h-8"
+                    initialsClass="text-[10px] text-white font-bold"
+                    backgroundClass="bg-neutral-3"
+                    containerClass="shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="body-3 font-semibold text-secondary-5 truncate">{req.fromDisplayName}</p>
+                    <p className="text-[11px] text-neutral-4 truncate">{req.message || 'Quiere chatear contigo'}</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => accept(req.id, req.fromUid, req.fromDisplayName, req.message)}
                   className="px-2.5 py-1 rounded-full bg-primary-3 text-white text-[11px] font-semibold hover:bg-primary-4 transition-colors shrink-0"
                 >
                   Aceptar
@@ -182,7 +207,7 @@ export default function ChatMessagePanel({ onClose }) {
         {/* All chats — unread highlighted, read shown muted */}
         {allChats.map((chat) => {
           const handleClick = () => chat.type === 'group'
-            ? handleGoToChat(chat.id, chat.name)
+            ? handleGoToChat(chat.id, chat.name, chat.coverImage)
             : handleGoToPrivateChat(chat);
 
           return (
@@ -225,15 +250,27 @@ export default function ChatMessagePanel({ onClose }) {
                   }`}>
                     {chat.type === 'group' ? (
                       <>
-                        <span className="font-semibold text-neutral-7">{chat.lastMessage?.displayName}: </span>
+                        <span className="font-semibold text-neutral-7">
+                          {chat.lastMessage?.uid === user?.uid ? 'Tú' : chat.lastMessage?.displayName}:{' '}
+                        </span>
                         {chat.lastMessage?.text}
                       </>
-                    ) : chat.lastMessage?.text}
+                    ) : (
+                      <>
+                        {chat.lastMessage?.uid === user?.uid && (
+                          <span className="font-semibold text-neutral-7">Tú: </span>
+                        )}
+                        {chat.lastMessage?.text}
+                      </>
+                    )}
                   </p>
                 </div>
-                {chat.isUnread && (
-                  <span className="w-2 h-2 rounded-full bg-primary-3 shrink-0 mt-1.5" />
-                )}
+                <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
+                  {chat.isUnread && <span className="w-2 h-2 rounded-full bg-primary-3" />}
+                  {chat.atMe && (
+                    <span className="text-[10px] font-bold text-white bg-primary-3 rounded-full w-4 h-4 flex items-center justify-center leading-none">@</span>
+                  )}
+                </div>
               </div>
             </button>
           );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, Send, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePrivateChat } from '../../context/PrivateChatContext';
 import { buildPrivateChatId, cancelChatRequest, fetchOutgoingPendingRequests, searchUsers, sendChatRequest } from '../../services/privateChatService';
@@ -22,7 +22,24 @@ export default function UserSearchModal({ onClose, onChatReady }) {
   const [statuses, setStatuses] = useState({});
   const [blockedByMe, setBlockedByMe] = useState(new Set());
   const [blockedByThem, setBlockedByThem] = useState(new Set());
+  const [expandedUid, setExpandedUid] = useState(null);
+  const [draftMsg, setDraftMsg] = useState('');
   const inputRef = useRef(null);
+  const MSG_MAX = 200;
+  const LS_MSG_KEY = `zentrip_msg_used_${user.uid}`;
+  const [usedMessageUids, setUsedMessageUids] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(`zentrip_msg_used_${user.uid}`) || '[]')); }
+    catch { return new Set(); }
+  });
+
+  const markMessageUsed = (toUid) => {
+    setUsedMessageUids((prev) => {
+      const next = new Set(prev);
+      next.add(toUid);
+      localStorage.setItem(LS_MSG_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   // Map otherUid → chat for quick lookup
   const existingChatMap = useMemo(() => {
@@ -85,23 +102,43 @@ export default function UserSearchModal({ onClose, onChatReady }) {
 
     const s = statuses[target.uid];
 
-    // Cancel pending request
+    // Cancel pending request — also clears used-message flag so user can send a new message
     if ((s?.state === 'requested' || s?.state === 'pending') && s?.requestId) {
       setStatuses((p) => ({ ...p, [target.uid]: { ...s, state: 'cancelling' } }));
       try {
         await cancelChatRequest(s.requestId);
         setStatuses((p) => ({ ...p, [target.uid]: { state: 'idle' } }));
+        setUsedMessageUids((prev) => {
+          const next = new Set(prev);
+          next.delete(target.uid);
+          localStorage.setItem(LS_MSG_KEY, JSON.stringify([...next]));
+          return next;
+        });
       } catch {
         setStatuses((p) => ({ ...p, [target.uid]: s }));
       }
       return;
     }
 
+    // New request: expand message input (first time) or send directly (already used)
+    if (!usedMessageUids.has(target.uid)) {
+      setExpandedUid(target.uid);
+      setDraftMsg('');
+    } else {
+      handleSendRequest(target, '');
+    }
+  };
+
+  const handleSendRequest = async (target, message) => {
     const chatId = buildPrivateChatId(user.uid, target.uid);
+    setExpandedUid(null);
+    setDraftMsg('');
     setStatuses((p) => ({ ...p, [target.uid]: { state: 'sending' } }));
     try {
       const displayName = profile?.displayName || profile?.firstName || user.email || 'Usuario';
-      const result = await sendChatRequest(user.uid, target.uid, displayName, profile?.profilePhoto || '');
+      const trimmed = message.trim();
+      if (trimmed) markMessageUsed(target.uid);
+      const result = await sendChatRequest(user.uid, target.uid, displayName, profile?.profilePhoto || '', trimmed);
       if (result.status === 'exists') {
         const name = `${target.firstName || ''} ${target.lastName || ''}`.trim() || target.username;
         onChatReady({ type: 'private', id: chatId, name, otherUser: { displayName: name, profilePhoto: target.profilePhoto || '', avatarColor: target.avatarColor || '' } });
@@ -175,29 +212,76 @@ export default function UserSearchModal({ onClose, onChatReady }) {
           {results.map((u) => {
             const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || 'Usuario';
             const btn = getButton(u);
+            const isExpanded = expandedUid === u.uid;
             return (
-              <div key={u.uid} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-neutral-1 transition-colors">
-                <UserAvatar
-                  src={u.profilePhoto}
-                  backgroundColor={u.avatarColor}
-                  fullName={name}
-                  sizeClass="w-10 h-10"
-                  initialsClass="body-3 text-white font-bold"
-                  backgroundClass="bg-neutral-3"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="body-3 font-semibold text-neutral-7 truncate">{name}</p>
-                  {u.username && <p className="text-[11px] text-neutral-3">@{u.username}</p>}
+              <div key={u.uid} className="rounded-xl overflow-hidden">
+                <div className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${isExpanded ? 'bg-neutral-1' : 'hover:bg-neutral-1'}`}>
+                  <UserAvatar
+                    src={u.profilePhoto}
+                    backgroundColor={u.avatarColor}
+                    fullName={name}
+                    sizeClass="w-10 h-10"
+                    initialsClass="body-3 text-white font-bold"
+                    backgroundClass="bg-neutral-3"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="body-3 font-semibold text-neutral-7 truncate">{name}</p>
+                    {u.username && <p className="text-[11px] text-neutral-3">@{u.username}</p>}
+                  </div>
+                  {isExpanded ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedUid(null)}
+                      className="px-3 py-1.5 rounded-full body-3 font-medium bg-neutral-2 text-neutral-5 hover:bg-neutral-3 transition-colors shrink-0"
+                    >
+                      Cancelar
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAction(u)}
+                      disabled={btn.disabled}
+                      className={`px-3 py-1.5 rounded-full body-3 font-medium transition-colors shrink-0 text-center min-w-0 max-w-44 ${btn.cls}`}
+                      title={btn.sublabel}
+                    >
+                      <span className="block truncate">{btn.label}</span>
+                    </button>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleAction(u)}
-                  disabled={btn.disabled}
-                  className={`px-3 py-1.5 rounded-full body-3 font-medium transition-colors shrink-0 text-center min-w-0 max-w-44 ${btn.cls}`}
-                  title={btn.sublabel}
-                >
-                  <span className="block truncate">{btn.label}</span>
-                </button>
+                {isExpanded && (
+                  <div className="px-3 pb-3 bg-neutral-1">
+                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-neutral-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={draftMsg}
+                        onChange={(e) => setDraftMsg(e.target.value.slice(0, MSG_MAX))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSendRequest(u, draftMsg);
+                          if (e.key === 'Escape') setExpandedUid(null);
+                        }}
+                        placeholder="Mensaje opcional..."
+                        maxLength={MSG_MAX}
+                        className="flex-1 body-3 text-neutral-7 placeholder:text-neutral-3 outline-none text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSendRequest(u, draftMsg)}
+                        className="w-7 h-7 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 hover:bg-primary-4 transition-colors"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5 px-1">
+                      <p className="text-[10px] text-neutral-3">Puedes enviar sin escribir nada</p>
+                      {draftMsg.length > 0 && (
+                        <p className={`text-[10px] ${draftMsg.length >= MSG_MAX ? 'text-red-400' : 'text-neutral-3'}`}>
+                          {draftMsg.length}/{MSG_MAX}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

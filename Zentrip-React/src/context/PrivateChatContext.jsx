@@ -87,9 +87,9 @@ export function PrivateChatProvider({ children }) {
     setReadTimestamps((prev) => ({ ...prev, [chatId]: ts }));
   }, []);
 
-  const accept = useCallback(async (requestId, fromUid) => {
+  const accept = useCallback(async (requestId, fromUid, fromDisplayName, message) => {
     if (!uid) return;
-    return acceptChatRequest(requestId, fromUid, uid);
+    return acceptChatRequest(requestId, fromUid, uid, fromDisplayName, message);
   }, [uid]);
 
   const reject = useCallback(async (requestId) => rejectChatRequest(requestId), []);

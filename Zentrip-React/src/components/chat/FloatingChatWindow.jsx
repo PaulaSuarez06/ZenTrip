@@ -8,55 +8,83 @@ import { sendMessage, subscribeToMessages } from '../../services/tripService';
 import { sendPrivateMessage, subscribeToPrivateMessages } from '../../services/privateChatService';
 import { ROUTES } from '../../config/routes';
 import { useMemberProfiles } from '../../hooks/useMemberProfiles';
+import { useChatScroll } from '../../hooks/useChatScroll';
+import { useChatInput } from '../../hooks/useChatInput';
 import ChatMessageList from './ChatMessageList';
+import MentionPicker from './MentionPicker';
 import UserAvatar from '../ui/UserAvatar';
 
-export default function FloatingChatWindow({ chat, minimized, onClose, onToggleMinimize }) {
+export default function FloatingChatWindow({ chat, minimized, onClose, onToggleMinimize, mobile = false }) {
   const { user, profile } = useAuth();
   const { markTripChatAsRead } = useChatNotifications();
   const { markPrivateChatAsRead } = usePrivateChat();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
-  const bottomRef = useRef(null);
+  // -1 = timestamp aún no leído de localStorage (igual que ConversationView)
+  const [unreadSinceTs, setUnreadSinceTs] = useState(-1);
+  const containerRef = useRef(null);
 
   const isGroup = chat.type === 'group';
 
+  // Al cambiar de chat: reinicia mensajes
   useEffect(() => {
+    setMessages([]);
     const unsub = isGroup
       ? subscribeToMessages(chat.id, setMessages)
       : subscribeToPrivateMessages(chat.id, setMessages);
     return unsub;
   }, [chat.id, isGroup]);
 
+  // Lee el timestamp ANTES de marcar como leído; incluye user?.uid en deps
+  // para que se ejecute aunque el usuario cargue después del montaje
   useEffect(() => {
-    if (minimized) return;
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!user?.uid) return;
+    const key = isGroup
+      ? `zentrp_chat_${chat.id}_${user.uid}`
+      : `zentrp_pchat_${chat.id}_${user.uid}`;
+    setUnreadSinceTs(parseInt(localStorage.getItem(key) || '0', 10));
     if (isGroup) markTripChatAsRead(chat.id);
     else markPrivateChatAsRead(chat.id);
-  }, [messages.length, minimized, chat.id, isGroup, markTripChatAsRead, markPrivateChatAsRead]);
+  }, [chat.id, isGroup, user?.uid]);
+
+  useChatScroll({
+    chatId: chat.id,
+    messages,
+    unreadSinceTs,
+    containerRef,
+    minimized,
+    onAfterScroll: () => {
+      if (isGroup) markTripChatAsRead(chat.id);
+      else markPrivateChatAsRead(chat.id);
+    },
+  });
 
   const displayName = profile?.displayName || profile?.firstName || user?.email || 'Usuario';
   const memberUids = useMemo(() => [...new Set(messages.map((m) => m.uid).filter(Boolean))], [messages]);
   const memberProfiles = useMemberProfiles(memberUids);
 
-  const handleSend = async () => {
-    const trimmed = text.trim();
-    if (!trimmed || sending) return;
-    setSending(true);
-    try {
-      if (isGroup) await sendMessage(chat.id, user.uid, displayName, trimmed);
-      else await sendPrivateMessage(chat.id, user.uid, displayName, trimmed);
-      setText('');
-    } finally {
-      setSending(false);
+  const mentionMembers = useMemo(() => {
+    if (!isGroup) return [];
+    const seen = new Set();
+    const list = [];
+    for (const m of messages) {
+      if (m.uid && m.displayName && m.uid !== user?.uid && !m.isIntro && !seen.has(m.uid)) {
+        seen.add(m.uid);
+        list.push({ uid: m.uid, displayName: m.displayName });
+      }
     }
-  };
+    return list;
+  }, [messages, user?.uid, isGroup]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
+  const { text, sending, replyTo, setReplyTo, mentionQuery, inputRef,
+    handleTextChange, handleMentionSelect, handleSend, handleKeyDown,
+  } = useChatInput({
+    isGroup,
+    onSend: async (trimmed, reply, chatMentions) => {
+      if (isGroup) await sendMessage(chat.id, user.uid, displayName, trimmed, reply, chatMentions);
+      else await sendPrivateMessage(chat.id, user.uid, displayName, trimmed, reply);
+    },
+  });
 
   const handleExpand = () => {
     navigate(ROUTES.MESSAGES);
@@ -65,9 +93,9 @@ export default function FloatingChatWindow({ chat, minimized, onClose, onToggleM
 
   return (
     <div
-      className="w-80 rounded-t-2xl border border-neutral-2 shadow-2xl flex flex-col overflow-hidden transition-all"
+      className={`${mobile ? 'w-full' : 'w-80'} rounded-t-2xl border border-neutral-2 shadow-2xl flex flex-col overflow-hidden transition-all`}
       style={{
-        height: minimized ? 'auto' : '480px',
+        height: minimized ? 'auto' : mobile ? '70vh' : '480px',
         backgroundColor: 'rgba(255,255,255,0.97)',
         backdropFilter: 'blur(10px)',
       }}
@@ -111,25 +139,52 @@ export default function FloatingChatWindow({ chat, minimized, onClose, onToggleM
             currentUserId={user?.uid}
             memberProfiles={memberProfiles}
             compact
-            bottomRef={bottomRef}
+            containerRef={containerRef}
+            onReply={setReplyTo}
+            unreadSinceTs={unreadSinceTs}
           />
-          <div className="border-t border-neutral-1 px-3 py-2.5 flex items-center gap-2 shrink-0">
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe un mensaje..."
-              className="flex-1 bg-neutral-1 rounded-full px-3 py-2 text-sm text-neutral-7 placeholder:text-neutral-3 outline-none focus:ring-2 focus:ring-primary-1"
-            />
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!text.trim() || sending}
-              className="w-8 h-8 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary-4 transition-colors"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
+          <div className="relative shrink-0">
+            {isGroup && mentionQuery !== null && mentionMembers.length > 0 && (
+              <div className="absolute bottom-full left-0 right-0 z-10 mx-2 mb-1">
+                <MentionPicker
+                  query={mentionQuery}
+                  members={mentionMembers}
+                  onSelect={handleMentionSelect}
+                  compact
+                />
+              </div>
+            )}
+            {replyTo && (
+              <div className="px-3 py-1.5 border-t border-neutral-1 flex items-center gap-2">
+                <div className="w-0.5 self-stretch bg-primary-3 rounded-full shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-primary-3 truncate">{replyTo.displayName}</p>
+                  <p className="text-[10px] text-neutral-4 truncate">{replyTo.text}</p>
+                </div>
+                <button type="button" onClick={() => setReplyTo(null)} className="text-neutral-3 hover:text-neutral-5 shrink-0">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            <div className="border-t border-neutral-1 px-3 py-2.5 flex items-center gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={text}
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Escribe un mensaje..."
+                className="flex-1 bg-neutral-1 rounded-full px-3 py-2 text-sm text-neutral-7 placeholder:text-neutral-3 outline-none focus:ring-2 focus:ring-primary-1"
+              />
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!text.trim() || sending}
+                className="w-8 h-8 rounded-full bg-primary-3 text-white flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary-4 transition-colors"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </>
       )}

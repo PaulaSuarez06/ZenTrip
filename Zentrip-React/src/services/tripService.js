@@ -982,15 +982,22 @@ export async function updateGroupLuggageItemPacked(tripId, itemId, uid, packed) 
   }
 }
 
-export async function sendMessage(tripId, uid, displayName, text) {
+export async function sendMessage(tripId, uid, displayName, text, replyTo = null, mentions = []) {
   await addDoc(collection(db, 'trips', tripId, 'messages'), {
     uid,
     displayName,
     text,
+    ...(replyTo ? { replyTo } : {}),
+    ...(mentions.length ? { mentions } : {}),
     createdAt: serverTimestamp(),
   });
+  const mentionUids = mentions.map((m) => m.uid);
   updateDoc(doc(db, 'trips', tripId), {
-    lastMessage: { uid, displayName, text, createdAt: Date.now() },
+    lastMessage: {
+      uid, displayName, text, createdAt: Date.now(),
+      ...(replyTo ? { replyToUid: replyTo.uid } : {}),
+      ...(mentionUids.length ? { mentionUids } : {}),
+    },
   }).catch(() => {});
 }
 
