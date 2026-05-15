@@ -3,7 +3,7 @@ import { X, Image, Wallet, Package, Shield, Users, AlertCircle, CheckCircle2, Li
 import { getGalleryPhotos, getGroupLuggage, getUserLuggage, getBookings } from '../../services/tripService';
 import { getPersonalBudgetsTotal, getExpenseAggregates } from '../../services/budgetService';
 import { publishTrip } from '../../services/communityService';
-import { getOrCreateTripShare } from '../../services/tripShareService';
+import { getOrCreateTripShare, getSharePermissionStatus, requestSharePermission } from '../../services/tripShareService';
 
 const STEPS = ['titulo', 'opciones', 'confirmar'];
 
@@ -159,9 +159,40 @@ function CopyTripLinkPanel({ trip, activities, memberCount }) {
   );
 }
 
-export default function ShareTripModal({ trip, members, activities, user, profile, onClose }) {
+export default function ShareTripModal({ trip, members, activities, user, profile, isCreator, onClose }) {
   const [mode, setMode] = useState(null); // null | 'copy' | 'publish'
   const [step, setStep] = useState(0);
+  const [permStatus, setPermStatus] = useState(null); // null=loading | 'not_requested' | 'pending' | 'approved' | 'denied'
+  const [permLoading, setPermLoading] = useState(!isCreator);
+  const [requesting, setRequesting] = useState(false);
+
+  useEffect(() => {
+    if (isCreator) return;
+    getSharePermissionStatus(trip.id, user.uid)
+      .then(({ status }) => setPermStatus(status))
+      .catch(() => setPermStatus('not_requested'))
+      .finally(() => setPermLoading(false));
+  }, [isCreator, trip.id, user.uid]);
+
+  async function handleRequestPermission() {
+    setRequesting(true);
+    setPermStatus('pending');
+    try {
+      await requestSharePermission({
+        tripId: trip.id,
+        tripName: trip.name || 'Viaje',
+        creatorId: trip.uid,
+        requesterId: user.uid,
+        requesterName: profile?.username || profile?.displayName || user.email || 'Un participante',
+        requesterAvatar: profile?.avatarUrl || null,
+        requesterAvatarColor: profile?.avatarColor || null,
+      });
+    } catch {
+      setPermStatus('not_requested');
+    } finally {
+      setRequesting(false);
+    }
+  }
   const [title, setTitle] = useState('');
   const [coverImage, setCoverImage] = useState(trip.coverImage || null);
   const [showImagePicker, setShowImagePicker] = useState(false);
@@ -335,35 +366,97 @@ export default function ShareTripModal({ trip, members, activities, user, profil
 
           {/* ── MODE SELECTION ── */}
           {mode === null && (
-            <div className="flex flex-col gap-4 py-2">
-              <p className="body-3 text-neutral-4 text-center">¿Cómo quieres compartir este viaje?</p>
-              <button
-                type="button"
-                onClick={() => setMode('copy')}
-                className="flex items-center gap-4 border border-neutral-2 rounded-2xl px-5 py-4 hover:border-primary-3 hover:bg-primary-1/40 transition-colors text-left group"
-              >
-                <div className="w-11 h-11 bg-primary-1 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary-2 transition-colors">
-                  <Link className="w-5 h-5 text-primary-3" />
+            <>
+              {/* Creador o permiso aprobado: opciones normales */}
+              {(isCreator || permStatus === 'approved') && (
+                <div className="flex flex-col gap-4 py-2">
+                  <p className="body-3 text-neutral-4 text-center">¿Cómo quieres compartir este viaje?</p>
+                  <button
+                    type="button"
+                    onClick={() => setMode('copy')}
+                    className="flex items-center gap-4 border border-neutral-2 rounded-2xl px-5 py-4 hover:border-primary-3 hover:bg-primary-1/40 transition-colors text-left group"
+                  >
+                    <div className="w-11 h-11 bg-primary-1 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary-2 transition-colors">
+                      <Link className="w-5 h-5 text-primary-3" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="body-2 font-semibold text-secondary-5">Copiar enlace</p>
+                      <p className="body-3 text-neutral-4 mt-0.5">Comparte el enlace directo con quien quieras, sin publicarlo.</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('publish')}
+                    className="flex items-center gap-4 border border-neutral-2 rounded-2xl px-5 py-4 hover:border-primary-3 hover:bg-primary-1/40 transition-colors text-left group"
+                  >
+                    <div className="w-11 h-11 bg-primary-1 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary-2 transition-colors">
+                      <Globe className="w-5 h-5 text-primary-3" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="body-2 font-semibold text-secondary-5">Publicar en comunidad</p>
+                      <p className="body-3 text-neutral-4 mt-0.5">Comparte tu aventura con todos los viajeros de ZenTrip.</p>
+                    </div>
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="body-2 font-semibold text-secondary-5">Copiar enlace</p>
-                  <p className="body-3 text-neutral-4 mt-0.5">Comparte el enlace directo con quien quieras, sin publicarlo.</p>
+              )}
+
+              {/* Cargando estado de permisos */}
+              {!isCreator && permLoading && (
+                <div className="flex items-center justify-center py-12 gap-3 text-neutral-4 body-3">
+                  <span className="w-5 h-5 border-2 border-neutral-2 border-t-primary-3 rounded-full animate-spin" />
+                  Comprobando permisos…
                 </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('publish')}
-                className="flex items-center gap-4 border border-neutral-2 rounded-2xl px-5 py-4 hover:border-primary-3 hover:bg-primary-1/40 transition-colors text-left group"
-              >
-                <div className="w-11 h-11 bg-primary-1 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary-2 transition-colors">
-                  <Globe className="w-5 h-5 text-primary-3" />
+              )}
+
+              {/* Sin solicitud enviada */}
+              {!isCreator && !permLoading && permStatus === 'not_requested' && (
+                <div className="flex flex-col items-center gap-5 py-4 text-center">
+                  <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center">
+                    <Shield className="w-7 h-7 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="title-h3-desktop text-secondary-5 mb-1">Permiso necesario</p>
+                    <p className="body-3 text-neutral-4">Solo el creador del viaje puede compartirlo. Puedes solicitar permiso y recibirás una notificación cuando te lo aprueben.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRequestPermission}
+                    disabled={requesting}
+                    className="w-full bg-primary-3 hover:bg-orange-400 disabled:opacity-60 text-white body-2-semibold py-2.5 rounded-full transition-colors flex items-center justify-center gap-2"
+                  >
+                    {requesting
+                      ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Enviando solicitud…</>
+                      : 'Solicitar permiso para compartir'}
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="body-2 font-semibold text-secondary-5">Publicar en comunidad</p>
-                  <p className="body-3 text-neutral-4 mt-0.5">Comparte tu aventura con todos los viajeros de ZenTrip.</p>
+              )}
+
+              {/* Solicitud pendiente */}
+              {!isCreator && !permLoading && permStatus === 'pending' && (
+                <div className="flex flex-col items-center gap-4 py-6 text-center">
+                  <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center">
+                    <Users className="w-7 h-7 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="title-h3-desktop text-secondary-5 mb-1">Solicitud enviada</p>
+                    <p className="body-3 text-neutral-4">El creador del viaje recibirá una notificación. Te avisaremos en cuanto tome una decisión.</p>
+                  </div>
                 </div>
-              </button>
-            </div>
+              )}
+
+              {/* Solicitud denegada */}
+              {!isCreator && !permLoading && permStatus === 'denied' && (
+                <div className="flex flex-col items-center gap-4 py-6 text-center">
+                  <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
+                    <AlertCircle className="w-7 h-7 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="title-h3-desktop text-secondary-5 mb-1">Permiso denegado</p>
+                    <p className="body-3 text-neutral-4">El creador del viaje no ha autorizado compartir este viaje.</p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* ── COPY LINK ── */}

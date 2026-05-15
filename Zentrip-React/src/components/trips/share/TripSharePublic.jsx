@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Users, Calendar, Lock, CalendarDays, ChevronLeft, ChevronRight, X, Copy, Check } from 'lucide-react';
+import { MapPin, Users, Calendar, Lock, CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getTripShare } from '../../../services/tripShareService';
 import DayCalendar from '../detail/components/itinerary/DayCalendar';
 import { ROUTES } from '../../../config/routes';
@@ -57,36 +57,6 @@ function formatDayHeader(dateStr) {
   return `${DAY_NAMES[date.getDay()]}, ${+d} ${MONTHS_SHORT[+m - 1]} ${y}`;
 }
 
-function CopyLinkButton() {
-  const [copied, setCopied] = useState(false);
-  const url = window.location.href;
-
-  async function handleCopy() {
-    try { await navigator.clipboard.writeText(url); }
-    catch {
-      const el = document.createElement('textarea');
-      el.value = url;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className={`flex items-center gap-1.5 body-3 font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-        copied ? 'bg-green-50 border-green-300 text-green-700' : 'border-neutral-2 text-neutral-5 hover:bg-neutral-1'
-      }`}
-    >
-      {copied ? <><Check className="w-3.5 h-3.5" />Copiado</> : <><Copy className="w-3.5 h-3.5" />Copiar enlace</>}
-    </button>
-  );
-}
 
 function ItinerarioTab({ tripDays, activitiesByDate }) {
   const [selectedDay, setSelectedDay] = useState(tripDays[0] ?? null);
@@ -168,11 +138,18 @@ function ItinerarioTab({ tripDays, activitiesByDate }) {
 
 function MinimalHeader() {
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-neutral-1">
-      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2.5 shrink-0">
-          <img src="/img/logo/logo-sin-texto-png.png" alt="ZenTrip" className="h-9 w-auto" />
-          <span className="title-h3-desktop whitespace-nowrap mt-0.5 hidden sm:inline">
+    <div className="sticky top-0 z-40 px-4 pt-4">
+      <header
+        className="w-full rounded-[9999px] h-16 flex items-center justify-between pl-3 pr-3 md:pl-5 md:pr-4 lg:pl-6 lg:pr-4"
+        style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.30)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      >
+        <Link to="/" className="flex items-center gap-3 shrink-0">
+          <img src="/img/logo/logo-sin-texto-png.png" alt="ZenTrip" className="h-10 w-auto" />
+          <span className="title-h3-desktop whitespace-nowrap mt-1">
             <span className="text-secondary-5">Zen</span>
             <span className="text-primary-3">Trip</span>
           </span>
@@ -180,19 +157,19 @@ function MinimalHeader() {
         <div className="flex items-center gap-2">
           <Link
             to={ROUTES.AUTH.LOGIN}
-            className="body-3 font-semibold text-neutral-5 px-4 py-1.5 rounded-full border border-neutral-2 hover:bg-neutral-1 transition-colors"
+            className="body-3 font-semibold text-neutral-5 px-4 py-2 rounded-full border border-neutral-2 bg-white/60 hover:bg-white/90 transition-colors"
           >
             Iniciar sesión
           </Link>
           <Link
             to={ROUTES.AUTH.REGISTER}
-            className="body-3 font-semibold text-white bg-primary-3 hover:bg-orange-400 px-4 py-1.5 rounded-full transition-colors"
+            className="body-3 font-semibold text-white bg-primary-3 hover:bg-orange-400 px-4 py-2 rounded-full transition-colors"
           >
             Registrarte
           </Link>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 }
 
@@ -256,36 +233,40 @@ export default function TripSharePublic() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <MinimalHeader />
-        <div className="max-w-4xl mx-auto flex flex-col gap-4 animate-pulse px-4 py-6">
-          <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
-            <div className="w-full h-64 bg-neutral-1" />
-            <div className="p-6 flex flex-col gap-4">
-              <div className="h-8 w-2/3 bg-neutral-1 rounded" />
-              <div className="h-4 w-1/2 bg-neutral-1 rounded" />
+        <main className="flex-1 px-4 py-6">
+          <div className="max-w-7xl mx-auto flex flex-col gap-4 animate-pulse">
+            <div className="bg-white rounded-2xl border border-neutral-1 overflow-hidden">
+              <div className="w-full h-64 bg-neutral-1" />
+              <div className="p-6 flex flex-col gap-4">
+                <div className="h-8 w-2/3 bg-neutral-1 rounded" />
+                <div className="h-4 w-1/2 bg-neutral-1 rounded" />
+              </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <MinimalHeader />
-        <div className="max-w-4xl mx-auto flex flex-col items-center justify-center py-32 gap-4 text-center px-4">
-          <MapPin className="w-16 h-16 text-neutral-2" />
-          <p className="title-h3-desktop text-neutral-5">Enlace no encontrado</p>
-          <p className="body-2 text-neutral-4">Este viaje ya no está disponible o el enlace es incorrecto.</p>
-          <Link
-            to={ROUTES.AUTH.LOGIN}
-            className="mt-2 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-6 py-2.5 rounded-full transition-colors"
-          >
-            Ir a ZenTrip
-          </Link>
-        </div>
+        <main className="flex-1 px-4 py-6 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <MapPin className="w-16 h-16 text-neutral-2" />
+            <p className="title-h3-desktop text-neutral-5">Enlace no encontrado</p>
+            <p className="body-2 text-neutral-4">Este viaje ya no está disponible o el enlace es incorrecto.</p>
+            <Link
+              to={ROUTES.AUTH.LOGIN}
+              className="mt-2 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-6 py-2.5 rounded-full transition-colors"
+            >
+              Ir a ZenTrip
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
@@ -294,9 +275,10 @@ export default function TripSharePublic() {
   const days = countDays(share.startDate, share.endDate);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <MinimalHeader />
-    <div className="max-w-4xl mx-auto flex flex-col gap-4 px-4 py-6">
+      <main className="flex-1 px-4 py-6">
+      <div className="max-w-7xl mx-auto flex flex-col gap-4">
       {/* Header card */}
       <div className="bg-white rounded-2xl overflow-hidden border border-neutral-1 shadow-sm">
         {share.coverImage && (
@@ -332,12 +314,9 @@ export default function TripSharePublic() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-neutral-1">
-            <div className="flex items-center gap-1.5 body-3 text-neutral-3">
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span>Vista privada · Solo lectura</span>
-            </div>
-            <CopyLinkButton />
+          <div className="flex items-center gap-1.5 pt-3 border-t border-neutral-1 body-3 text-neutral-3">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <span>Vista privada · Solo lectura</span>
           </div>
         </div>
       </div>
@@ -360,6 +339,7 @@ export default function TripSharePublic() {
         <span>Notas personales, presupuesto, reservas y datos privados no se incluyen en esta vista.</span>
       </div>
     </div>
+      </main>
     </div>
   );
 }

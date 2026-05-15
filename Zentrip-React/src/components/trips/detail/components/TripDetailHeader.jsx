@@ -115,6 +115,7 @@ export default function TripDetailHeader({ trip, members, activities, currentWea
         activities={activities}
         user={user}
         profile={profile}
+        isCreator={isCreator}
         onClose={() => setShowShare(false)}
       />
     )}
