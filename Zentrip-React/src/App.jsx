@@ -30,6 +30,7 @@ import CommunityPage from './components/community/CommunityPage';
 import CommunityPostPublic from './components/community/CommunityPostPublic';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminInspirations from './components/admin/AdminInspirations';
+import ExplorePage from './components/explore/ExplorePage';
 
 const router = createBrowserRouter([
   { path: '/', element: <Landing /> },
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
           { path: ROUTES.LEGAL.PRIVACY, element: <PrivacyPolicy /> },
           { path: ROUTES.LEGAL.TERMS, element: <TermsOfUse /> },
           { path: ROUTES.INSPIRATION.READER, element: <InspirationReader /> },
+          { path: ROUTES.EXPLORE, element: <ExplorePage /> },
           { path: ROUTES.COMMUNITY, element: <CommunityPage /> },
           { path: ROUTES.COMMUNITY_POST, element: <CommunityPage /> },
         ],
