@@ -69,7 +69,7 @@ export default function TripDetail() {
   const [activeTab, setActiveTab] = useState(location.state?.activeTab ?? 'itinerario');
   const [initialBooking, setInitialBooking]         = useState(null);
   const [initialRouteData, setInitialRouteData]     = useState(null);
-  const [initialBookingSubTab, setInitialBookingSubTab]   = useState(location.state?.subTab ?? 'hoteles');
+  const [initialBookingSubTab, setInitialBookingSubTab]   = useState(location.state?.subTab ?? 'todas');
   const [highlightBookingId, setHighlightBookingId]       = useState(location.state?.highlightBookingId ?? null);
   const [highlightActivityId, setHighlightActivityId]     = useState(location.state?.highlightActivityId ?? null);
   const [highlightDate, setHighlightDate]                 = useState(location.state?.highlightDate ?? null);

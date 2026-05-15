@@ -48,6 +48,7 @@ export default function ExplorePage() {
   const [query, setQuery]               = useState('');
   const [filterOpen, setFilterOpen]     = useState(false);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [activeSubcategory, setActiveSubcategory] = useState(null);
   const [readingTime, setReadingTime]   = useState(null);
   const [sortOrder, setSortOrder]       = useState('default');
 
@@ -84,8 +85,17 @@ export default function ExplorePage() {
     return CATEGORY_CONFIG.filter(c => seen.has(c.key));
   }, [articles]);
 
+  const availableSubcategories = useMemo(() => {
+    if (!activeCategory) return [];
+    const subs = articles
+      .filter(a => a.category === activeCategory && a.subcategory?.trim())
+      .map(a => a.subcategory.trim());
+    return [...new Set(subs)].sort();
+  }, [articles, activeCategory]);
+
   const activeFilterCount =
     (activeCategory ? 1 : 0) +
+    (activeSubcategory ? 1 : 0) +
     (readingTime ? 1 : 0) +
     (sortOrder !== 'default' ? 1 : 0);
 
@@ -94,6 +104,9 @@ export default function ExplorePage() {
 
     if (activeCategory) {
       result = result.filter(a => a.category === activeCategory);
+    }
+    if (activeSubcategory) {
+      result = result.filter(a => a.subcategory === activeSubcategory);
     }
     if (readingTime) {
       result = result.filter(a => matchesReadingTime(a, readingTime));
@@ -119,6 +132,7 @@ export default function ExplorePage() {
   function clearAllFilters() {
     setQuery('');
     setActiveCategory(null);
+    setActiveSubcategory(null);
     setReadingTime(null);
     setSortOrder('default');
   }
@@ -199,7 +213,7 @@ export default function ExplorePage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setActiveCategory(null)}
+                onClick={() => { setActiveCategory(null); setActiveSubcategory(null); }}
                 className={`px-4 py-1.5 rounded-full body-3 font-semibold transition-all cursor-pointer border ${
                   !activeCategory
                     ? 'bg-primary-3 text-white border-primary-3'
@@ -212,7 +226,7 @@ export default function ExplorePage() {
                 <button
                   key={cat.key}
                   type="button"
-                  onClick={() => setActiveCategory(activeCategory === cat.key ? null : cat.key)}
+                  onClick={() => { setActiveCategory(activeCategory === cat.key ? null : cat.key); setActiveSubcategory(null); }}
                   className={`px-4 py-1.5 rounded-full body-3 font-semibold transition-all cursor-pointer border ${
                     activeCategory === cat.key
                       ? 'bg-primary-3 text-white border-primary-3'
@@ -224,6 +238,40 @@ export default function ExplorePage() {
               ))}
             </div>
           </div>
+
+          {/* Subcategoría — solo aparece cuando hay categoría seleccionada con subcategorías */}
+          {activeCategory && availableSubcategories.length > 0 && (
+            <div>
+              <p className="body-3 font-semibold text-neutral-5 uppercase tracking-wide mb-3">Subtipo</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubcategory(null)}
+                  className={`px-4 py-1.5 rounded-full body-3 font-semibold transition-all cursor-pointer border ${
+                    !activeSubcategory
+                      ? 'bg-primary-3 text-white border-primary-3'
+                      : 'bg-white border-neutral-2 text-neutral-5 hover:border-primary-3 hover:text-primary-3'
+                  }`}
+                >
+                  Todos
+                </button>
+                {availableSubcategories.map(sub => (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => setActiveSubcategory(activeSubcategory === sub ? null : sub)}
+                    className={`px-4 py-1.5 rounded-full body-3 font-semibold transition-all cursor-pointer border ${
+                      activeSubcategory === sub
+                        ? 'bg-primary-3 text-white border-primary-3'
+                        : 'bg-white border-neutral-2 text-neutral-5 hover:border-primary-3 hover:text-primary-3'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tiempo de lectura */}
           <div>
