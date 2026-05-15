@@ -4,9 +4,8 @@ import { MapPin, Users, Calendar, Lock, CalendarDays, ChevronLeft, ChevronRight,
 import { getTripShare } from '../../../services/tripShareService';
 import DayCalendar from '../detail/components/itinerary/DayCalendar';
 import { ROUTES } from '../../../config/routes';
-
-const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const DAY_NAMES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+import { useLanguage } from '../../../context/LanguageContext';
+import { buildDateHelpers } from '../../../utils/localeDate';
 
 const TYPE_CONFIG = {
   actividad:   { label: 'Actividad',   badgeClass: 'bg-violet-50 text-violet-600' },
@@ -18,18 +17,6 @@ const TYPE_CONFIG = {
   tren:        { label: 'Tren',        badgeClass: 'bg-indigo-50 text-indigo-600' },
   ruta:        { label: 'Ruta',        badgeClass: 'bg-emerald-50 text-emerald-600' },
 };
-
-function formatDateRange(startDate, endDate) {
-  if (!startDate && !endDate) return null;
-  const parse = (d) => { const [y, m, day] = d.split('-'); return { y: +y, m: +m - 1, d: +day }; };
-  if (startDate && endDate) {
-    const s = parse(startDate);
-    const e = parse(endDate);
-    if (s.y === e.y && s.m === e.m) return `${s.d} - ${e.d} ${MONTHS_SHORT[s.m]} ${s.y}`;
-    return `${s.d} ${MONTHS_SHORT[s.m]} - ${e.d} ${MONTHS_SHORT[e.m]} ${e.y}`;
-  }
-  return null;
-}
 
 function countDays(startDate, endDate) {
   if (!startDate || !endDate) return null;
@@ -50,12 +37,6 @@ function getTripDays(startDate, endDate) {
   return days;
 }
 
-function formatDayHeader(dateStr) {
-  if (!dateStr || dateStr === 'sin-fecha') return 'Sin fecha';
-  const [y, m, d] = dateStr.split('-');
-  const date = new Date(+y, +m - 1, +d);
-  return `${DAY_NAMES[date.getDay()]}, ${+d} ${MONTHS_SHORT[+m - 1]} ${y}`;
-}
 
 
 function ItinerarioTab({ tripDays, activitiesByDate }) {
@@ -316,6 +297,8 @@ function JoinBanner() {
 
 export default function TripSharePublic() {
   const { shareId } = useParams();
+  const { language } = useLanguage();
+  const { formatRange, formatDayHeader } = useMemo(() => buildDateHelpers(language), [language]);
   const [share, setShare] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -387,7 +370,7 @@ export default function TripSharePublic() {
     );
   }
 
-  const dateLabel = formatDateRange(share.startDate, share.endDate);
+  const dateLabel = formatRange(share.startDate, share.endDate);
   const days = countDays(share.startDate, share.endDate);
 
   return (

@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../../../../context/LanguageContext';
 
-const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const MONTHS_LONG = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function buildLocaleHelpers(locale) {
+  const shortMonthFmt = new Intl.DateTimeFormat(locale, { month: 'short' });
+  const longMonthFmt  = new Intl.DateTimeFormat(locale, { month: 'long' });
+  const shortDayFmt   = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+
+  const monthsShort = Array.from({ length: 12 }, (_, i) => shortMonthFmt.format(new Date(2024, i, 1)));
+  const monthsLong  = Array.from({ length: 12 }, (_, i) => {
+    const s = longMonthFmt.format(new Date(2024, i, 1));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  });
+  // Jan 1 2024 = Monday
+  const dayNames = Array.from({ length: 7 }, (_, i) => {
+    const s = shortDayFmt.format(new Date(2024, 0, 1 + i));
+    return s.charAt(0).toUpperCase() + s.slice(1, 3);
+  });
+
+  return { monthsShort, monthsLong, dayNames };
+}
 
 function parseDate(isoStr) {
   const [y, m, d] = isoStr.split('-').map(Number);
@@ -92,7 +108,7 @@ function generateMonthGrid(year, month) {
   return days;
 }
 
-function formatNavLabel(view, offset, tripDays) {
+function formatNavLabel(view, offset, tripDays, monthsShort, monthsLong) {
   if (tripDays.length === 0) return '';
 
   if (view === 'week1') {
@@ -102,8 +118,8 @@ function formatNavLabel(view, offset, tripDays) {
     const first = parseDate(slice[0].dateStr);
     const last = parseDate(slice[slice.length - 1].dateStr);
     if (first.getMonth() === last.getMonth())
-      return `${first.getDate()} - ${last.getDate()} ${MONTHS_SHORT[first.getMonth()]} ${first.getFullYear()}`;
-    return `${first.getDate()} ${MONTHS_SHORT[first.getMonth()]} – ${last.getDate()} ${MONTHS_SHORT[last.getMonth()]} ${last.getFullYear()}`;
+      return `${first.getDate()} - ${last.getDate()} ${monthsShort[first.getMonth()]} ${first.getFullYear()}`;
+    return `${first.getDate()} ${monthsShort[first.getMonth()]} – ${last.getDate()} ${monthsShort[last.getMonth()]} ${last.getFullYear()}`;
   }
 
   if (view === 'week2') {
@@ -113,13 +129,13 @@ function formatNavLabel(view, offset, tripDays) {
     const first = parseDate(slice[0].dateStr);
     const last = parseDate(slice[slice.length - 1].dateStr);
     if (first.getMonth() === last.getMonth())
-      return `${first.getDate()} - ${last.getDate()} ${MONTHS_SHORT[first.getMonth()]} ${first.getFullYear()}`;
-    return `${first.getDate()} ${MONTHS_SHORT[first.getMonth()]} – ${last.getDate()} ${MONTHS_SHORT[last.getMonth()]} ${last.getFullYear()}`;
+      return `${first.getDate()} - ${last.getDate()} ${monthsShort[first.getMonth()]} ${first.getFullYear()}`;
+    return `${first.getDate()} ${monthsShort[first.getMonth()]} – ${last.getDate()} ${monthsShort[last.getMonth()]} ${last.getFullYear()}`;
   }
 
   const start = parseDate(tripDays[0]);
   const d = new Date(start.getFullYear(), start.getMonth() + offset, 1);
-  return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+  return `${monthsLong[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function getTotalPages(view, tripDays) {
@@ -211,19 +227,9 @@ function DayTile({ dayInfo, isSelected, count, weather, onSelect, isMonthView = 
   );
 }
 
-function DayNameHeader() {
-  return (
-    <div className="grid grid-cols-7 gap-2 mb-1">
-      {DAY_NAMES.map((d) => (
-        <div key={d} className="text-center text-[11px] font-semibold text-neutral-4 py-1">
-          {d}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function DayCalendar({ tripDays, selectedDay, onSelectDay, activitiesByDate = {}, weatherByDate = {}, disableAutoJump = false }) {
+  const { language } = useLanguage();
+  const { monthsShort, monthsLong, dayNames } = useMemo(() => buildLocaleHelpers(language), [language]);
   const [view, setView] = React.useState('week1');
   const [offset, setOffset] = React.useState(0);
 
@@ -269,7 +275,7 @@ export default function DayCalendar({ tripDays, selectedDay, onSelectDay, activi
   const isMonthView = view === 'month';
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-1 p-3 sm:p-4">
+    <div className="bg-white rounded-2xl border border-neutral-1 p-3 sm:p-4" data-no-translate>
       {/* Navigation bar */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div className="flex items-center gap-1.5">
@@ -282,7 +288,7 @@ export default function DayCalendar({ tripDays, selectedDay, onSelectDay, activi
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="body-3 font-semibold text-secondary-5 whitespace-nowrap">
-            {formatNavLabel(view, offset, tripDays)}
+            {formatNavLabel(view, offset, tripDays, monthsShort, monthsLong)}
           </span>
           <button
             type="button"
@@ -309,7 +315,11 @@ export default function DayCalendar({ tripDays, selectedDay, onSelectDay, activi
       </div>
 
       {/* Header row: all views */}
-      <DayNameHeader />
+      <div className="grid grid-cols-7 gap-2 mb-1">
+        {dayNames.map((d) => (
+          <div key={d} className="text-center text-[11px] font-semibold text-neutral-4 py-1">{d}</div>
+        ))}
+      </div>
 
       {/* Day tiles */}
       <div className="flex flex-col gap-1">

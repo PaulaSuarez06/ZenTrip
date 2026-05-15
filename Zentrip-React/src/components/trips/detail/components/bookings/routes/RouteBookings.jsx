@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '../../../../../../context/LanguageContext';
 import { Car, Footprints, Bike, Bus, Route, Clock, Trash2, Pencil, Eye, Map, ExternalLink } from 'lucide-react';
 import { buildGoogleMapsUrl } from './routeUtils';
 import { getBookings, deleteBooking } from '../../../../../../services/tripService';
@@ -8,14 +9,10 @@ import ImageLoadGate from '../../../../../shared/ImageLoadGate';
 const MODE_ICON  = { DRIVING: Car, WALKING: Footprints, BICYCLING: Bike, TRANSIT: Bus };
 const MODE_LABEL = { DRIVING: 'Coche', WALKING: 'A pie', BICYCLING: 'Bicicleta', TRANSIT: 'Transporte público' };
 
-const DAY_NAMES_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-const MONTHS_LONG     = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-
-function formatDayLong(iso) {
+function formatDayLong(iso, locale = 'es') {
   if (!iso) return '';
   const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return `${DAY_NAMES_SHORT[date.getDay()]}, ${date.getDate()} de ${MONTHS_LONG[date.getMonth()]} ${date.getFullYear()}`;
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(y, m - 1, d));
 }
 
 function RouteCard({ booking, tripId, highlighted = false, onDeleted, onOpenRoute }) {
@@ -158,6 +155,7 @@ function CtaButton({ onGoBook }) {
 }
 
 export default function RouteBookings({ tripId, highlightBookingId, onOpenRoute, onGoBook }) {
+  const { language } = useLanguage();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading]   = useState(true);
 
@@ -212,7 +210,7 @@ export default function RouteBookings({ tripId, highlightBookingId, onOpenRoute,
           ).map(([date, items]) => (
             <div key={date}>
               <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">
-                {date === '__sin_fecha__' ? 'Sin fecha' : formatDayLong(date)}
+                {date === '__sin_fecha__' ? 'Sin fecha' : formatDayLong(date, language)}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {items.map((b) => (

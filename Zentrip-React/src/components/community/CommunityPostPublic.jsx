@@ -16,20 +16,8 @@ import DayCalendar from '../trips/detail/components/itinerary/DayCalendar';
 
 // --- Helpers ---a
 
-const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const DAY_NAMES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-
-function formatDateRange(startDate, endDate) {
-  if (!startDate && !endDate) return null;
-  const parse = (d) => { const [y, m, day] = d.split('-'); return { y: +y, m: +m - 1, d: +day }; };
-  if (startDate && endDate) {
-    const s = parse(startDate);
-    const e = parse(endDate);
-    if (s.y === e.y && s.m === e.m) return `${s.d} - ${e.d} ${MONTHS_SHORT[s.m]} ${s.y}`;
-    return `${s.d} ${MONTHS_SHORT[s.m]} - ${e.d} ${MONTHS_SHORT[e.m]} ${e.y}`;
-  }
-  return null;
-}
+import { useLanguage } from '../../context/LanguageContext';
+import { buildDateHelpers } from '../../utils/localeDate';
 
 function timeAgo(timestamp) {
   if (!timestamp) return '';
@@ -56,11 +44,10 @@ function getTripDays(startDate, endDate) {
   return days;
 }
 
-function formatDayHeader(dateStr) {
+function formatDayHeader(dateStr, locale = 'es') {
   if (!dateStr || dateStr === 'sin-fecha') return 'Sin fecha';
   const [y, m, d] = dateStr.split('-');
-  const date = new Date(+y, +m - 1, +d);
-  return `${DAY_NAMES[date.getDay()]}, ${+d} ${MONTHS_SHORT[+m - 1]} ${y}`;
+  return new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(+y, +m - 1, +d));
 }
 
 function getBookingDate(booking) {
@@ -184,6 +171,7 @@ function TabNav({ tabs, activeTab, onChange }) {
 // --- Tab: Itinerario ---
 
 function ItinerarioTab({ tripDays, activitiesByDate, bookings = [] }) {
+  const { language } = useLanguage();
   const [selectedDay, setSelectedDay] = useState(tripDays[0] ?? null);
 
   const bookingsByDate = useMemo(() => {
@@ -231,7 +219,7 @@ function ItinerarioTab({ tripDays, activitiesByDate, bookings = [] }) {
 
       <div className="bg-white rounded-2xl border border-neutral-1 p-4">
         <div className="mb-4">
-          <h3 className="title-h3-desktop text-secondary-5">{formatDayHeader(selectedDay)}</h3>
+          <h3 className="title-h3-desktop text-secondary-5">{formatDayHeader(selectedDay, language)}</h3>
         </div>
 
         {dayActivities.length === 0 && dayBookings.length === 0 ? (
@@ -323,8 +311,18 @@ function ItinerarioTab({ tripDays, activitiesByDate, bookings = [] }) {
 
 // --- Tab: Presupuesto ---
 
-const MONTHS_SHORT_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const DAY_NAMES_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function fmtDayShort(dateStr, locale = 'es') {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const day = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(dt);
+  return `${day.charAt(0).toUpperCase() + day.slice(1, 3)} ${d}`;
+}
+
+function fmtDayFull(dateStr, locale = 'es') {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(y, m - 1, d));
+}
 
 function CategoryBar({ cat, amount, total, currency }) {
   const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
@@ -344,6 +342,7 @@ function CategoryBar({ cat, amount, total, currency }) {
 }
 
 function PresupuestoTab({ post, perDay }) {
+  const { language } = useLanguage();
   const [view, setView] = useState('resumen');
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -381,19 +380,8 @@ function PresupuestoTab({ post, perDay }) {
       .sort((a, b) => b.amount - a.amount);
   }, [selectedDayData]);
 
-  function fmtDay(dateStr) {
-    if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    return `${DAY_NAMES_SHORT[dt.getDay()]} ${d}`;
-  }
-
-  function fmtDayFull(dateStr) {
-    if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    return `${DAY_NAMES_SHORT[dt.getDay()]}, ${d} ${MONTHS_SHORT_ES[m - 1]} ${y}`;
-  }
+  function fmtDay(dateStr) { return fmtDayShort(dateStr, language); }
+  function fmtDayFullLocal(dateStr) { return fmtDayFull(dateStr, language); }
 
   return (
     <div className="flex flex-col gap-4">
@@ -486,7 +474,7 @@ function PresupuestoTab({ post, perDay }) {
             {selectedDay && selectedDayData && (
               <div className="bg-neutral-1/50 rounded-xl p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <p className="body-3 font-semibold text-secondary-5">{fmtDayFull(selectedDay)}</p>
+                  <p className="body-3 font-semibold text-secondary-5">{fmtDayFullLocal(selectedDay)}</p>
                   <p className="body-bold text-primary-3">{Math.round(selectedDayData.total).toLocaleString('es-ES')} {currency}</p>
                 </div>
                 {participantCount > 1 && (
@@ -819,6 +807,7 @@ function CocheCard({ booking }) {
 }
 
 function ReservasTab({ bookings }) {
+  const { language } = useLanguage();
   const [typeFilter, setTypeFilter] = useState('todas');
   const [viewMode, setViewMode] = useState('tipo');
 
@@ -944,7 +933,7 @@ function ReservasTab({ bookings }) {
             <div key={dateKey} className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-neutral-4" />
-                <p className="body-bold text-secondary-5">{formatDayHeader(dateKey)}</p>
+                <p className="body-bold text-secondary-5">{formatDayHeader(dateKey, language)}</p>
                 <span className="body-3 text-neutral-3 bg-neutral-1 rounded-full px-2 py-0.5">{byDay[dateKey].length}</span>
               </div>
               {byDay[dateKey].map((b, i) => renderCard(b, i))}
@@ -1014,6 +1003,8 @@ export default function CommunityPostPublic() {
   const { postId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1152,7 +1143,7 @@ export default function CommunityPostPublic() {
     );
   }
 
-  const dateLabel = formatDateRange(post.startDate, post.endDate);
+  const dateLabel = formatRange(post.startDate, post.endDate);
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-4">

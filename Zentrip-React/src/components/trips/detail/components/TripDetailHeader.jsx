@@ -1,25 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Share2, Settings, Users } from 'lucide-react';
 import ShareTripModal from '../../../community/ShareTripModal';
 import { useAuth } from '../../../../context/AuthContext';
 import TripActionsMenu from './TripActionsMenu';
-
-const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-
-function formatHeaderDateRange(startDate, endDate) {
-  if (!startDate && !endDate) return 'Fechas sin definir';
-  const parse = (d) => { const [y, m, day] = d.split('-'); return { y: +y, m: +m, d: +day }; };
-  if (startDate && endDate) {
-    const s = parse(startDate);
-    const e = parse(endDate);
-    if (s.y === e.y && s.m === e.m)
-      return `${s.d}-${e.d} ${MONTHS_SHORT[s.m - 1]} ${s.y}`;
-    return `${s.d} ${MONTHS_SHORT[s.m - 1]} - ${e.d} ${MONTHS_SHORT[e.m - 1]} ${e.y}`;
-  }
-  const MONTHS_LONG = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  if (startDate) { const s = parse(startDate); return `${s.d} ${MONTHS_LONG[s.m - 1]} ${s.y}`; }
-  const e = parse(endDate); return `Hasta ${e.d} ${MONTHS_LONG[e.m - 1]} ${e.y}`;
-}
+import { useLanguage } from '../../../../context/LanguageContext';
+import { buildDateHelpers } from '../../../../utils/localeDate';
 
 function countTripDays(startDate, endDate) {
   if (!startDate || !endDate) return null;
@@ -30,11 +15,13 @@ function countTripDays(startDate, endDate) {
 
 export default function TripDetailHeader({ trip, members, activities, currentWeather, isCreator, onEditTrip, onDeleteTrip, onLeaveTrip }) {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
+  const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
   const [showShare, setShowShare] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const acceptedMembers = members.filter((m) => m.invitationStatus === 'accepted');
   const memberCount = acceptedMembers.length;
-  const dateLabel = formatHeaderDateRange(trip.startDate, trip.endDate);
+  const dateLabel = formatRange(trip.startDate, trip.endDate);
   const days = countTripDays(trip.startDate, trip.endDate);
 
   return (
