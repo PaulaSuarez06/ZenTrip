@@ -18,8 +18,9 @@ import {
   sendLuggageGroupItemPackedNotifications,
 } from '../../../../../services/tripService';
 
-export default function LuggageTab({ tripId, tripName }) {
+export default function LuggageTab({ tripId, tripName, members = [] }) {
   const { user, profile } = useAuth();
+  const isSinglePerson = members.length <= 1;
 
   const [personalItems, setPersonalItems] = useState([]);
   const [groupItems, setGroupItems] = useState([]);
@@ -841,8 +842,16 @@ export default function LuggageTab({ tripId, tripName }) {
         </div>
 
         {/* Maleta Grupal */}
+        {isSinglePerson ? (
+          <div className="rounded-2xl bg-linear-to-br from-primary-1 to-primary-2 border border-primary-2 py-8 px-6 text-center flex flex-col items-center gap-3">
+            
+            <div>
+              <p className="body-3 text-primary-4">La maleta grupal se activará cuando alguien más se una al viaje</p>
+            </div>
+          </div>
+        ) : (
         <div>
-          <h2 className="title-h3-desktop text-secondary-5 mb-4"> Maleta grupal</h2>
+          <h2 className="title-h3-desktop text-secondary-5 mb-4">Maleta grupal</h2>
 
           {groupedGroupItems.length > 0 && (
             <div className="mb-4">
@@ -1011,6 +1020,7 @@ export default function LuggageTab({ tripId, tripName }) {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {memberProgress.length > 0 && (
