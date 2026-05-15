@@ -3,7 +3,7 @@ import { Hotel, Plane, Car, Train, Compass, Map, Utensils } from 'lucide-react';
 const BOOKING_TYPES = [
   { key: 'hoteles',      label: 'Hoteles',      Icon: Hotel },
   { key: 'vuelos',       label: 'Vuelos',       Icon: Plane },
-  { key: 'coches',       label: 'Coches',       Icon: Car },
+  //{ key: 'coches',       label: 'Coches',       Icon: Car },
   { key: 'actividades',  label: 'Actividades',  Icon: Compass },
   { key: 'rutas',        label: 'Rutas',        Icon: Map },
   { key: 'restaurantes', label: 'Restaurantes', Icon: Utensils },

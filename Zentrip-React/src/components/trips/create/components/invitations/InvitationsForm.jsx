@@ -26,6 +26,7 @@ const TABS = [
 ];
 
 export default function InvitacionesForm({
+  soloTravel = false,
   recientes = [],
   invitados = [],
   enlaceInvitacion = '',
@@ -36,6 +37,36 @@ export default function InvitacionesForm({
   onEliminarInvitado,
 }) {
   const [activeTab, setActiveTab] = useState('members');
+
+  if (soloTravel) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-neutral-1 p-8 text-center mb-6">
+        <div className="max-w-md mx-auto">
+          
+          <h3 className="title-h3-desktop text-secondary-5 mb-2">Viaje solo</h3>
+          <p className="body-2 text-neutral-5 mb-6">
+            ¿Quieres compartir este viaje? Invita a quien desees acompañarte.
+          </p>
+        </div>
+        <div className="flex justify-between mt-8">
+          <button
+            type="button"
+            onClick={onAtras}
+            className="px-6 py-2.5 rounded-lg border border-neutral-2 body-3 font-bold text-neutral-5 hover:bg-neutral-1 transition cursor-pointer"
+          >
+            Atrás
+          </button>
+          <button
+            type="button"
+            onClick={onSiguiente}
+            className="px-6 py-2.5 rounded-lg bg-primary-3 text-white body-3 font-bold hover:bg-primary-4 transition cursor-pointer"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

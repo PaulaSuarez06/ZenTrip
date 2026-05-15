@@ -13,7 +13,7 @@ import BookingDetailModal from './hotels/BookingDetailModal';
 const SECTIONS = [
   { type: 'hotel',      label: 'Alojamiento',  emoji: '🏨', tab: 'hoteles'      },
   { type: 'vuelo',      label: 'Vuelos',        emoji: '✈️', tab: 'vuelos'       },
-  { type: 'car',        label: 'Coches',        emoji: '🚗', tab: 'coches'       },
+  //{ type: 'car',        label: 'Coches',        emoji: '🚗', tab: 'coches'       },
   { type: 'actividad',  label: 'Actividades',   emoji: '🎯', tab: 'actividades'  },
   { type: 'restaurant', label: 'Restaurantes',  emoji: '🍽️', tab: 'restaurantes' },
   { type: 'ruta',       label: 'Rutas',         emoji: '🗺️', tab: 'rutas'        },
