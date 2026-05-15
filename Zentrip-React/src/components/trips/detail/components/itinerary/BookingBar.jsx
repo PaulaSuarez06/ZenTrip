@@ -4,7 +4,6 @@ const BOOKING_TYPES = [
   { key: 'hoteles',      label: 'Hoteles',      Icon: Hotel },
   { key: 'vuelos',       label: 'Vuelos',       Icon: Plane },
   { key: 'coches',       label: 'Coches',       Icon: Car },
-  { key: 'trenes',       label: 'Trenes',       Icon: Train },
   { key: 'actividades',  label: 'Actividades',  Icon: Compass },
   { key: 'rutas',        label: 'Rutas',        Icon: Map },
   { key: 'restaurantes', label: 'Restaurantes', Icon: Utensils },
