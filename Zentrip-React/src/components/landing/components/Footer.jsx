@@ -40,15 +40,7 @@ export default function Footer() {
         <span className="text-sm font-medium text-secondary-3">
           © 2026 ZenTrip. Hecho con ❤️ para viajeros.
         </span>
-        <div className="flex gap-3">
-          {["🐦", "📸", "💼"].map((icon, i) => (
-            <button key={i} className="w-9 h-9 rounded-xl border-none cursor-pointer flex items-center justify-center text-base transition-colors"
-              style={{ background: "rgba(255,255,255,.08)" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.15)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,.08)"}
-            >{icon}</button>
-          ))}
-        </div>
+        
       </div>
     </footer>
   );

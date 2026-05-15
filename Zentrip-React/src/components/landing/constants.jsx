@@ -19,8 +19,7 @@ export const STEPS = [
 export const TESTIMONIALS = [
   { stars: "★★★★★", quote: "Antes organizábamos el viaje en 4 grupos de WhatsApp. Con ZenTrip lo tenemos todo en un solo lugar.", highlight: "Un antes y un después.", name: "Sara M.", role: "Viajera frecuente · Madrid", img: "https://i.pravatar.cc/80?img=47" },
   { stars: "★★★★★", quote: "La función de votaciones nos salvó de discusiones épicas.", highlight: "En 5 minutos decidimos el destino entre 8 personas.", name: "Carlos R.", role: "Trips en grupo · Barcelona", img: "https://i.pravatar.cc/80?img=11" },
-  { stars: "★★★★★", quote: "Viajamos con nuestro perro y los filtros pet-friendly son justo lo que necesitábamos.", highlight: "Nunca más sorpresas en el hotel.", name: "Lucía F.", role: "Viajera con mascota · Valencia", img: "https://i.pravatar.cc/80?img=9" },
-];
+{ stars: "★★★★★", quote: "La experiencia de búsqueda es tan intuitiva que encontré mi lugar ideal sin complicaciones.", highlight: "Viajes sin estrés.", name: "Lucía F.", role: "Viajera · Valencia", img: "https://i.pravatar.cc/80?img=9" },];
 
 export const PET_FEATURES = [
   "Hoteles pet-friendly con filtros por peso y especie",
