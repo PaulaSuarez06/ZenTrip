@@ -379,15 +379,6 @@ export default function EditProfileForm({
         {isOnboarding ? 'Cuéntanos un poco sobre ti para empezar' : 'Actualiza tu información personal y preferencias de viaje'}
       </p>
 
-      {isOnboarding && (
-        <div className="mb-4 rounded-lg border border-primary-2 bg-primary-1/30 px-4 py-3">
-          <p className="body-3 font-medium text-primary-3 mb-1">ℹ️ Para que otros te encuentren</p>
-          <p className="body-3 text-primary-2">
-            Completa tu perfil, especialmente tu nombre de usuario. Esto es necesario para que otros usuarios puedan encontrarte y enviarte invitaciones a viajes.
-          </p>
-        </div>
-      )}
-
       <form className="space-y-4" onSubmit={onSave}>
         {activeSection === 'personal' && (
           <PersonalSection form={form} fieldErrors={fieldErrors} onChange={onChange} setForm={setForm} />
