@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Image, Wallet, Package, Shield, Users, AlertCircle, CheckCircle2, Link, Copy, Check, Folder, Ticket } from 'lucide-react';
+import { X, Image, Wallet, Package, Shield, Users, AlertCircle, CheckCircle2, Link, Copy, Check, Folder, Ticket, Globe, ChevronLeft } from 'lucide-react';
 import { getGalleryPhotos, getGroupLuggage, getUserLuggage, getBookings } from '../../services/tripService';
 import { getPersonalBudgetsTotal, getExpenseAggregates } from '../../services/budgetService';
 import { publishTrip } from '../../services/communityService';
+import { getOrCreateTripShare } from '../../services/tripShareService';
 
 const STEPS = ['titulo', 'opciones', 'confirmar'];
 
@@ -81,7 +82,85 @@ function CopyLinkButton({ postId }) {
   );
 }
 
+function CopyTripLinkPanel({ trip, activities, memberCount }) {
+  const [shareId, setShareId] = useState(null);
+  const [generating, setGenerating] = useState(true);
+  const [genError, setGenError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    getOrCreateTripShare(trip, activities, memberCount)
+      .then(setShareId)
+      .catch(() => setGenError('No se pudo generar el enlace. Inténtalo de nuevo.'))
+      .finally(() => setGenerating(false));
+  }, []);
+
+  const url = shareId ? `${window.location.origin}/s/${shareId}` : '';
+
+  async function handleCopy() {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
+  return (
+    <div className="flex flex-col gap-5 py-2">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="w-14 h-14 bg-primary-1 rounded-2xl flex items-center justify-center">
+          <Link className="w-7 h-7 text-primary-3" />
+        </div>
+        <div>
+          <p className="title-h3-desktop text-secondary-5 mb-1">Enlace privado del viaje</p>
+          <p className="body-3 text-neutral-4">Cualquier persona con este enlace podrá ver el itinerario, aunque no tenga cuenta en ZenTrip.</p>
+        </div>
+      </div>
+
+      {generating ? (
+        <div className="flex items-center gap-2 bg-neutral-1/60 border border-neutral-2 rounded-xl px-3 py-3">
+          <span className="w-4 h-4 border-2 border-neutral-3 border-t-transparent rounded-full animate-spin shrink-0" />
+          <span className="body-3 text-neutral-4">Generando enlace…</span>
+        </div>
+      ) : genError ? (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 body-3 text-red-600">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {genError}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 bg-neutral-1/60 border border-neutral-2 rounded-xl px-3 py-2.5">
+          <Link className="w-4 h-4 text-neutral-4 shrink-0" />
+          <span className="body-3 text-neutral-5 flex-1 truncate">{url}</span>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className={`flex items-center gap-1.5 body-3 font-semibold px-3 py-1 rounded-full transition-colors shrink-0 ${
+              copied ? 'bg-green-100 text-green-700' : 'bg-primary-1 text-primary-3 hover:bg-primary-2'
+            }`}
+          >
+            {copied ? <><Check className="w-3.5 h-3.5" /> Copiado</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-blue-700 body-3">
+        <Shield className="w-4 h-4 shrink-0 mt-0.5" />
+        <span>Solo incluye el itinerario. Notas personales, presupuesto y datos privados nunca se comparten.</span>
+      </div>
+    </div>
+  );
+}
+
 export default function ShareTripModal({ trip, members, activities, user, profile, onClose }) {
+  const [mode, setMode] = useState(null); // null | 'copy' | 'publish'
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
   const [coverImage, setCoverImage] = useState(trip.coverImage || null);
@@ -204,9 +283,25 @@ export default function ShareTripModal({ trip, members, activities, user, profil
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-1 sticky top-0 bg-white rounded-t-2xl z-10">
-          <div>
-            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide">Comunidad</p>
-            <h2 className="title-h3-desktop text-secondary-5">Compartir viaje</h2>
+          <div className="flex items-center gap-2">
+            {mode !== null && (
+              <button
+                type="button"
+                onClick={() => { setMode(null); setStep(0); }}
+                className="p-1.5 rounded-full hover:bg-neutral-1 transition-colors -ml-1"
+                aria-label="Volver"
+              >
+                <ChevronLeft className="w-4 h-4 text-neutral-4" />
+              </button>
+            )}
+            <div>
+              {mode === 'publish'
+                ? <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide">Comunidad</p>
+                : null}
+              <h2 className="title-h3-desktop text-secondary-5">
+                {mode === 'copy' ? 'Copiar enlace' : 'Compartir viaje'}
+              </h2>
+            </div>
           </div>
           <button
             type="button"
@@ -218,7 +313,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
         </div>
 
         {/* Step indicator */}
-        {!publishedPostId && (
+        {mode === 'publish' && !publishedPostId && (
           <div className="flex items-center gap-2 px-6 pt-4">
             {STEPS.map((s, i) => (
               <div key={s} className="flex items-center gap-2 flex-1">
@@ -238,8 +333,46 @@ export default function ShareTripModal({ trip, members, activities, user, profil
 
         <div className="px-6 py-5 flex flex-col gap-5">
 
+          {/* ── MODE SELECTION ── */}
+          {mode === null && (
+            <div className="flex flex-col gap-4 py-2">
+              <p className="body-3 text-neutral-4 text-center">¿Cómo quieres compartir este viaje?</p>
+              <button
+                type="button"
+                onClick={() => setMode('copy')}
+                className="flex items-center gap-4 border border-neutral-2 rounded-2xl px-5 py-4 hover:border-primary-3 hover:bg-primary-1/40 transition-colors text-left group"
+              >
+                <div className="w-11 h-11 bg-primary-1 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary-2 transition-colors">
+                  <Link className="w-5 h-5 text-primary-3" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="body-2 font-semibold text-secondary-5">Copiar enlace</p>
+                  <p className="body-3 text-neutral-4 mt-0.5">Comparte el enlace directo con quien quieras, sin publicarlo.</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('publish')}
+                className="flex items-center gap-4 border border-neutral-2 rounded-2xl px-5 py-4 hover:border-primary-3 hover:bg-primary-1/40 transition-colors text-left group"
+              >
+                <div className="w-11 h-11 bg-primary-1 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary-2 transition-colors">
+                  <Globe className="w-5 h-5 text-primary-3" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="body-2 font-semibold text-secondary-5">Publicar en comunidad</p>
+                  <p className="body-3 text-neutral-4 mt-0.5">Comparte tu aventura con todos los viajeros de ZenTrip.</p>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* ── COPY LINK ── */}
+          {mode === 'copy' && (
+            <CopyTripLinkPanel trip={trip} activities={activities} memberCount={acceptedCount} />
+          )}
+
           {/* ── DONE ── */}
-          {publishedPostId && (
+          {mode === 'publish' && publishedPostId && (
             <div className="flex flex-col items-center gap-5 py-4 text-center">
               <CheckCircle2 className="w-14 h-14 text-green-500" />
               <div>
@@ -266,7 +399,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
 
           {/* ── STEP 0: Título ── */}
-          {!publishedPostId && step === 0 && (
+          {mode === 'publish' && !publishedPostId && step === 0 && (
             <>
               <div>
                 <p className="body-2 text-neutral-5 mb-1 font-semibold">Título público del viaje</p>
@@ -344,7 +477,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
 
           {/* ── STEP 1: Opciones de privacidad ── */}
-          {!publishedPostId && step === 1 && (
+          {mode === 'publish' && !publishedPostId && step === 1 && (
             <>
               <div>
                 <p className="body-2 font-semibold text-neutral-5 mb-1">¿Qué quieres compartir?</p>
@@ -493,7 +626,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
 
           {/* ── STEP 2: Confirmación ── */}
-          {!publishedPostId && step === 2 && (
+          {mode === 'publish' && !publishedPostId && step === 2 && (
             <>
               <div className="bg-neutral-1/60 rounded-xl p-4 flex flex-col gap-3">
                 <p className="body-2 font-semibold text-neutral-5">Tu publicación incluirá:</p>
@@ -545,7 +678,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
         </div>
 
         {/* Footer buttons */}
-        {!publishedPostId && (
+        {mode === 'publish' && !publishedPostId && (
           <div className="px-6 pb-5 flex gap-3 sticky bottom-0 bg-white pt-3 border-t border-neutral-1">
             {step > 0 && (
               <button

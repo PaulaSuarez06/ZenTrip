@@ -32,6 +32,7 @@ export const ROUTES = {
   COMMUNITY: '/comunidad',
   COMMUNITY_POST: '/comunidad/:postId',
   PUBLIC_POST: '/p/:postId',
+  TRIP_SHARE: '/s/:shareId',
   ADMIN: {
     DASHBOARD: '/admin',
     READINGS: '/admin/lecturas',

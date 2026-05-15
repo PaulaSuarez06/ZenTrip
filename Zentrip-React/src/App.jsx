@@ -28,6 +28,7 @@ import AdminRoute from './components/auth/guards/AdminRoute';
 import InspirationReader from './components/inspiration/InspirationReader';
 import CommunityPage from './components/community/CommunityPage';
 import CommunityPostPublic from './components/community/CommunityPostPublic';
+import TripSharePublic from './components/trips/share/TripSharePublic';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminInspirations from './components/admin/AdminInspirations';
 import AdminDestinations from './components/admin/AdminDestinations';
@@ -103,6 +104,7 @@ const router = createBrowserRouter([
       { path: ROUTES.PUBLIC_POST, element: <CommunityPostPublic /> },
     ],
   },
+  { path: ROUTES.TRIP_SHARE, element: <TripSharePublic /> },
 ]);
 
 function App() {
