@@ -3,7 +3,7 @@ import { X, Image, Wallet, Package, Shield, Users, AlertCircle, CheckCircle2, Li
 import { getGalleryPhotos, getGroupLuggage, getUserLuggage, getBookings } from '../../services/tripService';
 import { getPersonalBudgetsTotal, getExpenseAggregates } from '../../services/budgetService';
 import { publishTrip } from '../../services/communityService';
-import { getOrCreateTripShare, getSharePermissionStatus, requestSharePermission } from '../../services/tripShareService';
+import { upsertTripShare, revokeTripShare, getSharePermissionStatus, requestSharePermission } from '../../services/tripShareService';
 
 const STEPS = ['titulo', 'opciones', 'confirmar'];
 
@@ -82,18 +82,40 @@ function CopyLinkButton({ postId }) {
   );
 }
 
-function CopyTripLinkPanel({ trip, activities, memberCount }) {
+function CopyTripLinkPanel({ trip, activities, memberCount, options = {} }) {
   const [shareId, setShareId] = useState(null);
   const [generating, setGenerating] = useState(true);
   const [genError, setGenError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [revoked, setRevoked] = useState(false);
 
   useEffect(() => {
-    getOrCreateTripShare(trip, activities, memberCount)
+    upsertTripShare(trip, activities, memberCount, options)
       .then(setShareId)
       .catch(() => setGenError('No se pudo generar el enlace. Inténtalo de nuevo.'))
       .finally(() => setGenerating(false));
   }, []);
+
+  async function handleRevoke() {
+    setRevoking(true);
+    try {
+      await revokeTripShare(trip.id);
+      setShareId(null);
+      setRevoked(true);
+    } finally {
+      setRevoking(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    setRevoked(false);
+    setGenerating(true);
+    upsertTripShare(trip, activities, memberCount, options)
+      .then(setShareId)
+      .catch(() => setGenError('No se pudo generar el enlace. Inténtalo de nuevo.'))
+      .finally(() => setGenerating(false));
+  }
 
   const url = shareId ? `${window.location.origin}/s/${shareId}` : '';
 
@@ -135,20 +157,41 @@ function CopyTripLinkPanel({ trip, activities, memberCount }) {
           <AlertCircle className="w-4 h-4 shrink-0" />
           {genError}
         </div>
-      ) : (
-        <div className="flex items-center gap-2 bg-neutral-1/60 border border-neutral-2 rounded-xl px-3 py-2.5">
-          <Link className="w-4 h-4 text-neutral-4 shrink-0" />
-          <span className="body-3 text-neutral-5 flex-1 truncate">{url}</span>
+      ) : revoked ? (
+        <div className="flex flex-col items-center gap-3 py-2 text-center">
+          <p className="body-3 text-neutral-4">El enlace ha sido revocado. Nadie podrá acceder con el link anterior.</p>
           <button
             type="button"
-            onClick={handleCopy}
-            className={`flex items-center gap-1.5 body-3 font-semibold px-3 py-1 rounded-full transition-colors shrink-0 ${
-              copied ? 'bg-green-100 text-green-700' : 'bg-primary-1 text-primary-3 hover:bg-primary-2'
-            }`}
+            onClick={handleRegenerate}
+            className="body-3 font-semibold text-primary-3 hover:text-primary-4 transition-colors"
           >
-            {copied ? <><Check className="w-3.5 h-3.5" /> Copiado</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
+            Generar nuevo enlace
           </button>
         </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 bg-neutral-1/60 border border-neutral-2 rounded-xl px-3 py-2.5">
+            <Link className="w-4 h-4 text-neutral-4 shrink-0" />
+            <span className="body-3 text-neutral-5 flex-1 truncate">{url}</span>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className={`flex items-center gap-1.5 body-3 font-semibold px-3 py-1 rounded-full transition-colors shrink-0 ${
+                copied ? 'bg-green-100 text-green-700' : 'bg-primary-1 text-primary-3 hover:bg-primary-2'
+              }`}
+            >
+              {copied ? <><Check className="w-3.5 h-3.5" /> Copiado</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={handleRevoke}
+            disabled={revoking}
+            className="body-3 text-neutral-3 hover:text-red-500 transition-colors self-center disabled:opacity-50"
+          >
+            {revoking ? 'Revocando…' : 'Revocar enlace'}
+          </button>
+        </>
       )}
 
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-blue-700 body-3">
@@ -161,6 +204,7 @@ function CopyTripLinkPanel({ trip, activities, memberCount }) {
 
 export default function ShareTripModal({ trip, members, activities, user, profile, isCreator, onClose }) {
   const [mode, setMode] = useState(null); // null | 'copy' | 'publish'
+  const [copyStep, setCopyStep] = useState('titulo'); // 'titulo' | 'opciones' | 'confirmar' | 'enlace'
   const [step, setStep] = useState(0);
   const [permStatus, setPermStatus] = useState(null); // null=loading | 'not_requested' | 'pending' | 'approved' | 'denied'
   const [permLoading, setPermLoading] = useState(!isCreator);
@@ -318,7 +362,14 @@ export default function ShareTripModal({ trip, members, activities, user, profil
             {mode !== null && (
               <button
                 type="button"
-                onClick={() => { setMode(null); setStep(0); }}
+                onClick={() => {
+                  if (mode === 'copy') {
+                    if (copyStep === 'opciones')  setCopyStep('titulo');
+                    else if (copyStep === 'confirmar') setCopyStep('opciones');
+                    else if (copyStep === 'enlace')    setCopyStep('confirmar');
+                    else { setMode(null); setCopyStep('titulo'); }
+                  } else { setMode(null); setStep(0); }
+                }}
                 className="p-1.5 rounded-full hover:bg-neutral-1 transition-colors -ml-1"
                 aria-label="Volver"
               >
@@ -330,7 +381,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
                 ? <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide">Comunidad</p>
                 : null}
               <h2 className="title-h3-desktop text-secondary-5">
-                {mode === 'copy' ? 'Copiar enlace' : 'Compartir viaje'}
+                {mode === 'copy' ? 'Compartir enlace' : 'Compartir viaje'}
               </h2>
             </div>
           </div>
@@ -343,7 +394,24 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           </button>
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicator — copy */}
+        {mode === 'copy' && copyStep !== 'enlace' && (
+          <div className="flex items-center gap-2 px-6 pt-4">
+            {['titulo', 'opciones', 'confirmar'].map((s, i) => {
+              const idx = ['titulo','opciones','confirmar'].indexOf(copyStep);
+              return (
+                <div key={s} className="flex items-center gap-2 flex-1">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i <= idx ? 'bg-primary-3 text-white' : 'bg-neutral-1 text-neutral-3'}`}>
+                    {i < idx ? '✓' : i + 1}
+                  </div>
+                  {i < 2 && <div className={`h-0.5 flex-1 ${i < idx ? 'bg-primary-3' : 'bg-neutral-1'}`} />}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Step indicator — publish */}
         {mode === 'publish' && !publishedPostId && (
           <div className="flex items-center gap-2 px-6 pt-4">
             {STEPS.map((s, i) => (
@@ -459,9 +527,182 @@ export default function ShareTripModal({ trip, members, activities, user, profil
             </>
           )}
 
-          {/* ── COPY LINK ── */}
-          {mode === 'copy' && (
-            <CopyTripLinkPanel trip={trip} activities={activities} memberCount={acceptedCount} />
+          {/* ── COPY STEP 0: Título ── */}
+          {mode === 'copy' && copyStep === 'titulo' && (
+            <>
+              <div>
+                <p className="body-2 text-neutral-5 mb-1 font-semibold">Título del enlace compartido</p>
+                <p className="body-3 text-neutral-4 mb-3">Este título aparecerá en la vista que verán las personas con el enlace.</p>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Ej: Perú en 3 semanas: Machu Picchu, Cusco y la Amazonía"
+                  maxLength={100}
+                  className="w-full border border-neutral-2 rounded-xl px-4 py-3 body-2 text-secondary-5 placeholder:text-neutral-3 focus:outline-none focus:border-primary-3 transition-colors"
+                />
+                <p className="text-right body-3 text-neutral-3 mt-1">{title.length}/100</p>
+              </div>
+
+              <div className="bg-neutral-1/60 rounded-xl p-4 flex flex-col gap-3">
+                <p className="body-3 font-semibold text-neutral-5">Vista previa</p>
+                <div className="flex gap-3 items-start">
+                  <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-neutral-2 flex items-center justify-center text-3xl">
+                    {coverImage ? <img src={coverImage} alt="" className="w-full h-full object-cover" /> : '✈️'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="body-bold text-secondary-5 line-clamp-2 leading-tight">
+                      {title.trim() || <span className="text-neutral-3 italic">Tu título aparecerá aquí</span>}
+                    </p>
+                    <p className="body-3 text-neutral-4 mt-1">
+                      {trip.destination || '—'}
+                      {days() && ` · ${days()} días`}
+                      {acceptedCount > 0 && ` · ${acceptedCount} ${acceptedCount === 1 ? 'persona' : 'personas'}`}
+                    </p>
+                  </div>
+                </div>
+                {(allPhotos.length > 0 || trip.coverImage) && (
+                  <div>
+                    <button type="button" onClick={() => setShowImagePicker((v) => !v)} className="body-3 text-primary-3 font-semibold hover:underline">
+                      {showImagePicker ? 'Ocultar imágenes' : 'Cambiar imagen de portada'}
+                    </button>
+                    {showImagePicker && (
+                      <div className="mt-2 grid grid-cols-4 gap-2 max-h-44 overflow-y-auto">
+                        {[...(trip.coverImage ? [trip.coverImage] : []), ...allPhotos.map((p) => p.url).filter((url) => url !== trip.coverImage)].map((url, i) => (
+                          <button key={i} type="button" onClick={() => { setCoverImage(url); setShowImagePicker(false); }}
+                            className={`aspect-square rounded-xl overflow-hidden border-2 transition-colors ${coverImage === url ? 'border-primary-3' : 'border-transparent hover:border-neutral-3'}`}>
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <PrivacyNote>Solo se mostrará el número de participantes, nunca sus nombres ni datos personales.</PrivacyNote>
+            </>
+          )}
+
+          {/* ── COPY STEP 1: opciones ── */}
+          {mode === 'copy' && copyStep === 'opciones' && (
+            <>
+              <div>
+                <p className="body-3 text-neutral-4 mb-4">El itinerario de actividades siempre se comparte. Elige qué más incluir en el enlace.</p>
+                <div className="flex flex-col gap-3">
+                  {/* Galería */}
+                  <div className="border border-neutral-2 rounded-xl overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Image className="w-5 h-5 text-neutral-4 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="body-3 font-semibold text-neutral-5">Galería de fotos</p>
+                        <p className="body-3 text-neutral-3">
+                          {loading ? 'Cargando...' : allPhotos.length === 0 ? 'Sin fotos en la galería' : `${allPhotos.length} foto${allPhotos.length !== 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                      <Toggle checked={shareGallery} onChange={setShareGallery} disabled={loading || allPhotos.length === 0} loading={loading} />
+                    </div>
+                    {shareGallery && folderNames.length > 1 && (
+                      <div className="border-t border-neutral-1 px-4 py-3 bg-neutral-1/40 flex flex-col gap-2">
+                        <p className="body-3 font-semibold text-neutral-5">Carpetas a compartir:</p>
+                        {folderNames.map((folder) => {
+                          const count = allPhotos.filter((p) => (p.folderName || '') === folder).length;
+                          return (
+                            <label key={folder || '__none__'} className="flex items-center gap-2.5 cursor-pointer body-3 text-neutral-5">
+                              <input type="checkbox" checked={selectedFolders.includes(folder)} onChange={() => toggleFolder(folder)} className="w-4 h-4 rounded accent-primary-3" />
+                              <span className="flex-1">{folder || 'General'}</span>
+                              <span className="body-3 text-neutral-3">{count} foto{count !== 1 ? 's' : ''}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Presupuesto */}
+                  <div className="flex items-center gap-3 border border-neutral-2 rounded-xl px-4 py-3">
+                    <Wallet className="w-5 h-5 text-neutral-4 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="body-3 font-semibold text-neutral-5">Presupuesto total</p>
+                      <p className="body-3 text-neutral-3">
+                        {loading ? 'Cargando...' : hasBudget ? `${effectiveBudget?.toLocaleString('es-ES')} ${trip.currency || ''}` : 'Sin presupuesto definido'}
+                      </p>
+                    </div>
+                    <Toggle checked={shareBudget} onChange={setShareBudget} disabled={!hasBudget || loading} loading={loading} />
+                  </div>
+
+                  {/* Equipaje */}
+                  <div className="flex items-center gap-3 border border-neutral-2 rounded-xl px-4 py-3">
+                    <Package className="w-5 h-5 text-neutral-4 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="body-3 font-semibold text-neutral-5">Lista de equipaje</p>
+                      <p className="body-3 text-neutral-3">
+                        {loading ? 'Cargando...' : (luggageCategories.length === 0 && personalLuggageCategories.length === 0) ? 'Sin equipaje' : `${luggageCategories.length} artículos grupales`}
+                      </p>
+                    </div>
+                    <Toggle checked={shareLuggage} onChange={(v) => { setShareLuggage(v); if (!v) setLuggageScopeAll(false); }} disabled={loading || (luggageCategories.length === 0 && personalLuggageCategories.length === 0)} loading={loading} />
+                  </div>
+
+                  {/* Reservas */}
+                  <div className="flex items-center gap-3 border border-neutral-2 rounded-xl px-4 py-3">
+                    <Ticket className="w-5 h-5 text-neutral-4 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="body-3 font-semibold text-neutral-5">Reservas del viaje</p>
+                      <p className="body-3 text-neutral-3">
+                        {loading ? 'Cargando...' : rawBookings.length === 0 ? 'Sin reservas guardadas' : `${rawBookings.length} reserva${rawBookings.length !== 1 ? 's' : ''}`}
+                      </p>
+                    </div>
+                    <Toggle checked={shareBookings} onChange={setShareBookings} disabled={loading || rawBookings.length === 0} loading={loading} />
+                  </div>
+                </div>
+              </div>
+
+              <PrivacyNote>Notas personales, comprobantes de pago y datos privados de reservas nunca se incluyen.</PrivacyNote>
+            </>
+          )}
+
+          {/* ── COPY STEP 2: Confirmación ── */}
+          {mode === 'copy' && copyStep === 'confirmar' && (
+            <>
+              <div className="bg-neutral-1/60 rounded-xl p-4 flex flex-col gap-3">
+                <p className="body-2 font-semibold text-neutral-5">Tu enlace incluirá:</p>
+                <ul className="flex flex-col gap-2 body-3 text-neutral-5">
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Título: <span className="font-semibold line-clamp-1">{title}</span></li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Destino, duración y número de participantes</li>
+                  <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Itinerario de actividades (sin notas ni datos sensibles)</li>
+                  {shareGallery && galleryImages.length > 0 && <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Galería ({galleryImages.length} fotos)</li>}
+                  {shareBudget && hasBudget && <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Presupuesto total: {effectiveBudget?.toLocaleString('es-ES')} {trip.currency}</li>}
+                  {shareLuggage && (luggageCategories.length > 0 || personalLuggageCategories.length > 0) && <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Lista de equipaje</li>}
+                  {shareBookings && rawBookings.length > 0 && <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Reservas ({rawBookings.length})</li>}
+                </ul>
+                <div className="border-t border-neutral-2 pt-3 flex flex-col gap-1.5">
+                  <p className="body-3 font-semibold text-neutral-4">Nunca se compartirá:</p>
+                  <ul className="flex flex-col gap-1 body-3 text-neutral-3">
+                    <li className="flex items-center gap-2"><span>✗</span> Notas personales de actividades</li>
+                    <li className="flex items-center gap-2"><span>✗</span> Comprobantes de pago</li>
+                    <li className="flex items-center gap-2"><span>✗</span> Nombres ni datos de participantes</li>
+                    <li className="flex items-center gap-2"><span>✗</span> Detalles privados de reservas</li>
+                  </ul>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── COPY STEP 3: enlace ── */}
+          {mode === 'copy' && copyStep === 'enlace' && (
+            <CopyTripLinkPanel
+              trip={trip}
+              activities={activities}
+              memberCount={acceptedCount}
+              options={{
+                shareTitle: title.trim(),
+                coverImage,
+                shareGallery, galleryImages,
+                shareBudget, totalBudget: effectiveBudget, budgetCurrency: trip.currency || '', expenseSummary,
+                shareLuggage, luggageCategories, personalLuggageCategories, luggageScopeAll,
+                shareBookings, rawBookings,
+              }}
+            />
           )}
 
           {/* ── DONE ── */}
@@ -770,7 +1011,32 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
         </div>
 
-        {/* Footer buttons */}
+        {/* Footer buttons — copy */}
+        {mode === 'copy' && copyStep !== 'enlace' && (
+          <div className="px-6 pb-5 flex gap-3 sticky bottom-0 bg-white pt-3 border-t border-neutral-1">
+            {copyStep !== 'titulo' && (
+              <button type="button"
+                onClick={() => { if (copyStep === 'opciones') setCopyStep('titulo'); else if (copyStep === 'confirmar') setCopyStep('opciones'); }}
+                className="flex-1 border border-neutral-2 text-neutral-5 body-2-semibold py-2.5 rounded-full hover:bg-neutral-1 transition-colors"
+              >Atrás</button>
+            )}
+            {copyStep !== 'confirmar' && (
+              <button type="button"
+                onClick={() => { if (copyStep === 'titulo') setCopyStep('opciones'); else if (copyStep === 'opciones') setCopyStep('confirmar'); }}
+                disabled={copyStep === 'titulo' && !canNext0}
+                className="flex-1 bg-primary-3 hover:bg-orange-400 disabled:bg-neutral-2 disabled:text-neutral-3 text-white body-2-semibold py-2.5 rounded-full transition-colors"
+              >Siguiente</button>
+            )}
+            {copyStep === 'confirmar' && (
+              <button type="button"
+                onClick={() => setCopyStep('enlace')}
+                className="flex-1 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold py-2.5 rounded-full transition-colors"
+              >Generar enlace</button>
+            )}
+          </div>
+        )}
+
+        {/* Footer buttons — publish */}
         {mode === 'publish' && !publishedPostId && (
           <div className="px-6 pb-5 flex gap-3 sticky bottom-0 bg-white pt-3 border-t border-neutral-1">
             {step > 0 && (

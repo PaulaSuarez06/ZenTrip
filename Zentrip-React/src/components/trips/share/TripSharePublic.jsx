@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Users, Calendar, Lock, CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { MapPin, Users, Calendar, Lock, CalendarDays, ChevronLeft, ChevronRight, X, Wallet, Package, Image as ImageIcon, Ticket, Plane, Hotel, Car, Compass, Utensils, Folder } from 'lucide-react';
 import { getTripShare } from '../../../services/tripShareService';
 import DayCalendar from '../detail/components/itinerary/DayCalendar';
 import { ROUTES } from '../../../config/routes';
@@ -173,6 +173,122 @@ function MinimalHeader() {
   );
 }
 
+const BOOKING_ICONS = { vuelo: Plane, hotel: Hotel, coche: Car, actividad: Compass, restaurante: Utensils };
+const BOOKING_COLORS = { vuelo: 'border-blue-100', hotel: 'border-teal-100', coche: 'border-amber-100', actividad: 'border-violet-100', restaurante: 'border-orange-100' };
+
+function ShareContentTabs({ share, tripDays, activitiesByDate, hasItinerary }) {
+  const tabs = [
+    { key: 'itinerario', label: 'Itinerario', Icon: CalendarDays, show: true },
+    { key: 'galeria',    label: 'Galería',    Icon: ImageIcon,    show: share.shareGallery && share.galleryImages?.length > 0 },
+    { key: 'presupuesto',label: 'Presupuesto',Icon: Wallet,       show: share.shareBudget && share.totalBudget != null },
+    { key: 'equipaje',   label: 'Equipaje',   Icon: Package,      show: share.shareLuggage && (share.luggageCategories?.length > 0 || share.personalLuggageCategories?.length > 0) },
+    { key: 'reservas',   label: 'Reservas',   Icon: Ticket,       show: share.shareBookings && share.bookings?.length > 0 },
+  ].filter((t) => t.show);
+
+  const [active, setActive] = useState(tabs[0]?.key ?? 'itinerario');
+
+  if (tabs.length <= 1) {
+    return hasItinerary
+      ? <ItinerarioTab tripDays={tripDays} activitiesByDate={activitiesByDate} />
+      : <div className="bg-white rounded-2xl border border-neutral-1 p-10 text-center"><CalendarDays className="w-10 h-10 text-neutral-2 mx-auto mb-3" /><p className="body text-neutral-4">Este viaje no tiene actividades en el itinerario</p></div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Tab nav */}
+      <div className="bg-white rounded-2xl border border-neutral-1 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center px-2">
+          {tabs.map((tab) => (
+            <button key={tab.key} type="button" onClick={() => setActive(tab.key)}
+              className={`relative flex items-center gap-2 px-4 py-4 body-3 font-semibold whitespace-nowrap transition-colors shrink-0 ${
+                active === tab.key
+                  ? 'text-primary-3 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary-3 after:rounded-t-full'
+                  : 'text-neutral-4 hover:text-neutral-6'
+              }`}>
+              <tab.Icon className="w-4 h-4" />{tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab content */}
+      {active === 'itinerario' && (hasItinerary
+        ? <ItinerarioTab tripDays={tripDays} activitiesByDate={activitiesByDate} />
+        : <div className="bg-white rounded-2xl border border-neutral-1 p-10 text-center"><p className="body text-neutral-4">Sin actividades</p></div>
+      )}
+
+      {active === 'galeria' && (
+        <div className="bg-white rounded-2xl border border-neutral-1 p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-2"><ImageIcon className="w-5 h-5 text-neutral-4" /><p className="body-bold text-secondary-5">Galería del viaje</p><span className="body-3 text-neutral-3">({share.galleryImages.length} fotos)</span></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {share.galleryImages.map((photo, i) => (
+              <div key={i} className="aspect-square rounded-xl overflow-hidden"><img src={photo.url} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" /></div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {active === 'presupuesto' && (() => {
+        const total = share.totalBudget;
+        const days = share.endDate && share.startDate ? Math.round((new Date(share.endDate) - new Date(share.startDate)) / 86400000) + 1 : null;
+        const pax = share.participantCount || 1;
+        const cur = share.budgetCurrency || share.currency || '';
+        return (
+          <div className="bg-white rounded-2xl border border-neutral-1 p-5 flex flex-col gap-4">
+            <div className="flex items-center gap-2"><Wallet className="w-5 h-5 text-neutral-4" /><p className="body-bold text-secondary-5">Presupuesto del viaje</p></div>
+            <div className="flex gap-3 flex-wrap">
+              <div className="flex-1 min-w-28 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+                <p className="body-3 text-green-700 font-semibold mb-0.5">Total</p>
+                <p className="title-h2-desktop text-green-800 leading-tight">{Math.round(total).toLocaleString('es-ES')} <span className="body-2 font-normal">{cur}</span></p>
+              </div>
+              {days > 1 && <div className="flex-1 min-w-28 bg-primary-1 border border-primary-2 rounded-xl px-4 py-3"><p className="body-3 text-primary-4 font-semibold mb-0.5">Por día</p><p className="title-h2-desktop text-primary-5 leading-tight">{Math.round(total / days).toLocaleString('es-ES')} <span className="body-2 font-normal">{cur}</span></p></div>}
+              {pax > 1 && <div className="flex-1 min-w-28 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3"><p className="body-3 text-orange-700 font-semibold mb-0.5">Por persona</p><p className="title-h2-desktop text-orange-800 leading-tight">{Math.round(total / pax).toLocaleString('es-ES')} <span className="body-2 font-normal">{cur}</span></p></div>}
+            </div>
+          </div>
+        );
+      })()}
+
+      {active === 'equipaje' && (
+        <div className="bg-white rounded-2xl border border-neutral-1 p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-2"><Package className="w-5 h-5 text-neutral-4" /><p className="body-bold text-secondary-5">Equipaje compartido</p></div>
+          {share.luggageCategories?.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+              {share.luggageCategories.map((item, i) => <div key={i} className="flex items-center gap-2 body-3 text-neutral-5"><span className="w-4 h-4 rounded-full bg-primary-1 text-primary-4 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>{item}</div>)}
+            </div>
+          )}
+          {share.luggageScopeAll && share.personalLuggageCategories?.length > 0 && (
+            <div className="pt-3 border-t border-neutral-1 flex flex-col gap-2">
+              <p className="body-3 font-semibold text-blue-600">Equipaje personal (anónimo)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                {share.personalLuggageCategories.map((item, i) => <div key={i} className="flex items-center gap-2 body-3 text-neutral-5"><span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>{item}</div>)}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {active === 'reservas' && (
+        <div className="flex flex-col gap-3">
+          {share.bookings.map((b, i) => {
+            const Icon = BOOKING_ICONS[b.bookingType] || Ticket;
+            const color = BOOKING_COLORS[b.bookingType] || 'border-neutral-1';
+            const name = b.hotelName || b.activityName || b.restaurantName || b.carName
+              || (b.segments?.[0] ? `${b.segments[0].departureAirport?.code || ''} → ${b.segments[b.segments.length-1]?.arrivalAirport?.code || ''}` : 'Reserva');
+            const detail = b.bookingType === 'hotel' ? `${b.checkIn || ''} → ${b.checkOut || ''}` : b.bookingType === 'coche' ? `${b.pickUpDate || ''} → ${b.dropOffDate || ''}` : b.date || '';
+            return (
+              <div key={i} className={`bg-white rounded-xl border ${color} p-4 flex items-center gap-3`}>
+                <Icon className="w-5 h-5 text-neutral-4 shrink-0" />
+                <div className="flex-1 min-w-0"><p className="body-3 font-semibold text-secondary-5 truncate">{name}</p>{detail && <p className="body-3 text-neutral-4">{detail}</p>}</div>
+                {(b.totalPrice || b.price) && <span className="body-3 font-semibold text-neutral-5 shrink-0">{(b.totalPrice || b.price).toLocaleString('es-ES')} {b.currency || ''}</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function JoinBanner() {
   return (
     <div className="bg-secondary-5 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
@@ -289,7 +405,7 @@ export default function TripSharePublic() {
 
         <div className="px-5 sm:px-8 py-5 sm:py-6 flex flex-col gap-3">
           <div>
-            <h1 className="title-h2-desktop text-secondary-5 leading-tight">{share.tripName || 'Viaje sin nombre'}</h1>
+            <h1 className="title-h2-desktop text-secondary-5 leading-tight">{share.shareTitle || share.tripName || 'Viaje sin nombre'}</h1>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 body-3 text-neutral-4 mt-2">
               {share.destination && (
                 <span className="flex items-center gap-1.5">
@@ -324,19 +440,12 @@ export default function TripSharePublic() {
       {/* Join banner */}
       <JoinBanner />
 
-      {/* Itinerary */}
-      {hasItinerary ? (
-        <ItinerarioTab tripDays={tripDays} activitiesByDate={activitiesByDate} />
-      ) : (
-        <div className="bg-white rounded-2xl border border-neutral-1 p-10 text-center">
-          <CalendarDays className="w-10 h-10 text-neutral-2 mx-auto mb-3" />
-          <p className="body text-neutral-4">Este viaje no tiene actividades en el itinerario</p>
-        </div>
-      )}
+      {/* Tabs */}
+      <ShareContentTabs share={share} tripDays={tripDays} activitiesByDate={activitiesByDate} hasItinerary={hasItinerary} />
 
       <div className="flex items-start gap-2 body-3 text-neutral-3 pb-4">
         <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-        <span>Notas personales, presupuesto, reservas y datos privados no se incluyen en esta vista.</span>
+        <span>Notas personales y datos privados no se incluyen en esta vista.</span>
       </div>
     </div>
       </main>

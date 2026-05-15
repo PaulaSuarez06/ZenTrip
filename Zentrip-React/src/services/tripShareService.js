@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, serverTimestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
 const SHARES_COL = 'trip_shares';
@@ -79,10 +79,25 @@ export async function denyShareRequest({ shareRequestId, requesterId, tripId, tr
   });
 }
 
-export async function getOrCreateTripShare(trip, activities, memberCount) {
-  const q = query(collection(db, SHARES_COL), where('tripId', '==', trip.id));
-  const snap = await getDocs(q);
-  if (!snap.empty) return snap.docs[0].id;
+function sanitizeBookings(bookings = []) {
+  return bookings.map((b) => {
+    if (b.segments?.length > 0) return { bookingType: 'vuelo', isRoundTrip: b.isRoundTrip ?? false, segments: b.segments.map((s) => ({ departureAirport: s.departureAirport, arrivalAirport: s.arrivalAirport, departureTime: s.departureTime, arrivalTime: s.arrivalTime, date: s.date })), passengerCount: b.passengerCount ?? 0 };
+    if (b.hotelName) return { bookingType: 'hotel', hotelName: b.hotelName, checkIn: b.checkIn, checkOut: b.checkOut, nights: b.nights, totalPrice: b.totalPrice, currency: b.currency };
+    if (b.activityName) return { bookingType: 'actividad', activityName: b.activityName, date: b.date, persons: b.persons, price: b.price, currency: b.currency, duration: b.duration, rating: b.rating };
+    if (b.restaurantName) return { bookingType: 'restaurante', restaurantName: b.restaurantName, date: b.date, persons: b.persons, rating: b.rating, address: b.address };
+    if (b.carName) return { bookingType: 'coche', carName: b.carName, supplierName: b.supplierName, pickUpDate: b.pickUpDate, dropOffDate: b.dropOffDate, days: b.days, totalPrice: b.totalPrice, currency: b.currency };
+    return null;
+  }).filter(Boolean);
+}
+
+export async function upsertTripShare(trip, activities, memberCount, options = {}) {
+  const {
+    shareTitle = '', coverImage = null,
+    shareGallery = false, galleryImages = [],
+    shareBudget = false, totalBudget = null, budgetCurrency = '', expenseSummary = null,
+    shareLuggage = false, luggageCategories = [], personalLuggageCategories = [], luggageScopeAll = false,
+    shareBookings = false, rawBookings = [],
+  } = options;
 
   const sanitizedItinerary = (activities || []).map((a) => ({
     id: a.id || '',
@@ -94,21 +109,50 @@ export async function getOrCreateTripShare(trip, activities, memberCount) {
     city: a.city || null,
   }));
 
-  const docRef = await addDoc(collection(db, SHARES_COL), {
+  const data = {
     tripId: trip.id,
-    createdAt: serverTimestamp(),
     tripName: trip.name || '',
+    shareTitle: shareTitle || trip.name || '',
     destination: trip.destination || '',
     origin: trip.origin || '',
     startDate: trip.startDate || null,
     endDate: trip.endDate || null,
-    coverImage: trip.coverImage || null,
+    coverImage: coverImage || trip.coverImage || null,
     currency: trip.currency || '',
     participantCount: memberCount || 0,
     itinerary: sanitizedItinerary,
-  });
+    shareGallery,
+    galleryImages: shareGallery ? galleryImages : [],
+    shareBudget,
+    totalBudget: shareBudget ? totalBudget : null,
+    budgetCurrency: shareBudget ? budgetCurrency : '',
+    expenseSummary: shareBudget ? expenseSummary : null,
+    shareLuggage,
+    luggageCategories: shareLuggage ? luggageCategories : [],
+    personalLuggageCategories: shareLuggage && luggageScopeAll ? personalLuggageCategories : [],
+    luggageScopeAll: shareLuggage ? luggageScopeAll : false,
+    shareBookings,
+    bookings: shareBookings ? sanitizeBookings(rawBookings) : [],
+    updatedAt: serverTimestamp(),
+  };
 
+  const q = query(collection(db, SHARES_COL), where('tripId', '==', trip.id));
+  const snap = await getDocs(q);
+
+  if (!snap.empty) {
+    const existing = snap.docs[0];
+    await updateDoc(doc(db, SHARES_COL, existing.id), data);
+    return existing.id;
+  }
+
+  const docRef = await addDoc(collection(db, SHARES_COL), { ...data, createdAt: serverTimestamp() });
   return docRef.id;
+}
+
+export async function revokeTripShare(tripId) {
+  const q = query(collection(db, SHARES_COL), where('tripId', '==', tripId));
+  const snap = await getDocs(q);
+  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 }
 
 export async function getTripShare(shareId) {

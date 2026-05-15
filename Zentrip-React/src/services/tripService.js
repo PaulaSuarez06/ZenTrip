@@ -143,8 +143,20 @@ export async function updateTrip(tripId, form) {
   let finalOrigin = tripData.origin || '';
   let finalDestination = destination;
 
-  const bookingsSnap = await getDocs(collection(db, 'trips', tripId, 'bookings'));
+  const [bookingsSnap, activitiesSnap] = await Promise.all([
+    getDocs(collection(db, 'trips', tripId, 'bookings')),
+    getDocs(collection(db, 'trips', tripId, 'activities')),
+  ]);
   const allBookings = bookingsSnap.docs.map((d) => d.data());
+
+  // Expandir fechas desde actividades existentes
+  activitiesSnap.forEach((d) => {
+    const date = d.data().date;
+    if (date) {
+      if (!finalStart || date < finalStart) finalStart = date;
+      if (!finalEnd   || date > finalEnd)   finalEnd   = date;
+    }
+  });
 
   // Ordenar vuelos por fecha para coger el primero y el último
   const flightBookings = allBookings
@@ -285,22 +297,17 @@ export async function addActivity(tripId, activity) {
     createdAt: serverTimestamp(),
   });
 
-  // --- ACTUALIZAR FECHAS DEL VIAJE SI NO HAY PARADAS ---
-  const tripSnap = await getDoc(doc(db, 'trips', tripId));
-  const trip = tripSnap.exists() ? tripSnap.data() : null;
-  if (trip && (!trip.stops || trip.stops.length === 0)) {
-    // Obtener todas las actividades y bookings para calcular el rango
-    const acts = await getDocs(collection(db, 'trips', tripId, 'activities'));
-    const bookings = await getDocs(collection(db, 'trips', tripId, 'bookings'));
-    const fechas = [];
-    acts.forEach((d) => { if (d.data().date) fechas.push(d.data().date); });
-    bookings.forEach((d) => { if (d.data().date) fechas.push(d.data().date); });
-    if (activity.date) fechas.push(activity.date);
-    if (fechas.length > 0) {
-      const sorted = fechas.sort();
-      const startDate = sorted[0];
-      const endDate = sorted[sorted.length - 1];
-      await updateDoc(doc(db, 'trips', tripId), { startDate, endDate });
+  // --- EXPANDIR RANGO DE FECHAS DEL VIAJE SEGÚN LA ACTIVIDAD ---
+  if (activity.date) {
+    const tripSnap = await getDoc(doc(db, 'trips', tripId));
+    const trip = tripSnap.exists() ? tripSnap.data() : null;
+    if (trip) {
+      const updates = {};
+      if (!trip.startDate || activity.date < trip.startDate) updates.startDate = activity.date;
+      if (!trip.endDate   || activity.date > trip.endDate)   updates.endDate   = activity.date;
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(doc(db, 'trips', tripId), updates);
+      }
     }
   }
   return docRef.id;
@@ -464,11 +471,41 @@ export async function updateBooking(tripId, bookingId, data) {
   await updateDoc(doc(db, 'trips', tripId, 'bookings', bookingId), data);
 }
 
+async function recalculateTripDates(tripId) {
+  const [bookingsSnap, activitiesSnap] = await Promise.all([
+    getDocs(collection(db, 'trips', tripId, 'bookings')),
+    getDocs(collection(db, 'trips', tripId, 'activities')),
+  ]);
+  let start = null;
+  let end = null;
+  bookingsSnap.forEach((d) => {
+    const b = d.data();
+    const s = getBookingStartDate(b);
+    const e = getBookingEndDate(b);
+    if (s && (!start || s < start)) start = s;
+    if (e && (!end   || e > end))   end   = e;
+  });
+  activitiesSnap.forEach((d) => {
+    const date = d.data().date;
+    if (date) {
+      if (!start || date < start) start = date;
+      if (!end   || date > end)   end   = date;
+    }
+  });
+  if (start || end) {
+    const updates = {};
+    if (start) updates.startDate = start;
+    if (end)   updates.endDate   = end;
+    await updateDoc(doc(db, 'trips', tripId), updates);
+  }
+}
+
 export async function deleteBooking(tripId, bookingId) {
   await Promise.all([
     deleteDoc(doc(db, 'trips', tripId, 'bookings', bookingId)),
     deleteLinkedExpense(tripId, bookingId).catch(() => {}),
   ]);
+  await recalculateTripDates(tripId);
 }
 
 // Elimina una reserva de vuelo junto con su actividad y las paradas que creó.
@@ -538,6 +575,7 @@ export async function deleteFlightBooking(tripId, bookingId) {
       await updateDoc(doc(db, 'trips', tripId), { stops: [], destination: '', updatedAt: serverTimestamp() });
     }
   }
+  await recalculateTripDates(tripId);
 }
 
 export async function sendBookingNotifications(tripId, { bookerUid, bookerName, hotelName, tripName }) {

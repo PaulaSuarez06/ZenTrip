@@ -5,7 +5,7 @@ const CATEGORIES = [
   { key: "vuelos",      label: "Vuelos",           img: new URL("./img/image 34.png",    import.meta.url).href },
   { key: "hoteles",     label: "Hoteles",           img: new URL("./img/hoteles.png",     import.meta.url).href },
   { key: "trenes",      label: "Trenes",            img: new URL("./img/trenes.png",      import.meta.url).href, soon: true },
-  { key: "alquiler",    label: "Alquiler de coche", img: new URL("./img/coches.png",      import.meta.url).href },
+  { key: "alquiler",    label: "Alquiler de coche", img: new URL("./img/coches.png",      import.meta.url).href, soon: true },
   { key: "rutas",       label: "Rutas",             img: new URL("./img/rutas.png",       import.meta.url).href },
   { key: "actividades", label: "Actividades",       img: new URL("./img/actividades.png", import.meta.url).href },
   { key: "restaurante", label: "Restaurante",       img: new URL("./img/restaurante.png", import.meta.url).href },
