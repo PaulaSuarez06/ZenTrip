@@ -30,6 +30,7 @@ import CommunityPage from './components/community/CommunityPage';
 import CommunityPostPublic from './components/community/CommunityPostPublic';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminInspirations from './components/admin/AdminInspirations';
+import AdminDestinations from './components/admin/AdminDestinations';
 import ExplorePage from './components/explore/ExplorePage';
 
 const router = createBrowserRouter([
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
             children: [
               { path: ROUTES.ADMIN.DASHBOARD, element: <AdminDashboard /> },
               { path: ROUTES.ADMIN.READINGS, element: <AdminInspirations /> },
+              { path: ROUTES.ADMIN.DESTINATIONS, element: <AdminDestinations /> },
             ],
           },
         ],

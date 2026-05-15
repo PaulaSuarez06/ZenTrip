@@ -35,5 +35,6 @@ export const ROUTES = {
   ADMIN: {
     DASHBOARD: '/admin',
     READINGS: '/admin/lecturas',
+    DESTINATIONS: '/admin/inspiracion',
   },
 };

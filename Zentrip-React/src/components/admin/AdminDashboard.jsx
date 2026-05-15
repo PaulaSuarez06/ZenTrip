@@ -6,8 +6,15 @@ const ADMIN_SECTIONS = [
     key: 'readings',
     emoji: '✍️',
     title: 'Lecturas',
-    description: 'Crea, edita y gestiona los artículos que aparecen en el home',
+    description: 'Crea, edita y gestiona los artículos que aparecen en el home y en Explorar',
     route: ROUTES.ADMIN.READINGS,
+  },
+  {
+    key: 'destinations',
+    emoji: '🌍',
+    title: 'Inspiración',
+    description: 'Gestiona las tarjetas de destino que rotan en la sección Inspiración del home',
+    route: ROUTES.ADMIN.DESTINATIONS,
   },
 ];
 
