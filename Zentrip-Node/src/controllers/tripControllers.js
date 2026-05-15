@@ -218,4 +218,58 @@ const deleteCloudinaryImage = async (req, res, next) => {
   }
 };
 
-module.exports = { getTripMembers, getUserTrips, addHotelBookingToTrip, deleteCloudinaryImage };
+/**
+ * DELETE /api/trips/:tripId/members/:memberUid
+ * Permite que un usuario salga de un viaje (solo pueden salir ellos mismos).
+ */
+const removeMemberFromTrip = async (req, res, next) => {
+  const { tripId, memberUid } = req.params;
+  const requestingUid = req.user.uid;
+
+  if (!tripId || !memberUid) {
+    return next(new AppError('tripId y memberUid requeridos', 400, 'VALIDATION_ERROR'));
+  }
+
+  // Un usuario solo puede salir a sí mismo del viaje
+  if (requestingUid !== memberUid) {
+    return next(new AppError('No puedes remover a otros usuarios', 403, 'FORBIDDEN'));
+  }
+
+  try {
+    const db = admin.firestore();
+
+    // Verificar que el viaje existe
+    const tripSnap = await db.collection('trips').doc(tripId).get();
+    if (!tripSnap.exists) {
+      return next(new AppError('Viaje no encontrado', 404, 'NOT_FOUND'));
+    }
+
+    // Verificar que el usuario es miembro del viaje
+    const memberSnap = await db
+      .collection('trips').doc(tripId)
+      .collection('members').doc(memberUid)
+      .get();
+
+    if (!memberSnap.exists) {
+      return next(new AppError('No eres miembro de este viaje', 403, 'FORBIDDEN'));
+    }
+
+    // Verificar que no es el creador del viaje
+    const tripData = tripSnap.data();
+    if (tripData.uid === memberUid) {
+      return next(new AppError('El creador del viaje no puede salir', 400, 'VALIDATION_ERROR'));
+    }
+
+    // Eliminar al miembro del viaje
+    await db.collection('trips').doc(tripId)
+      .collection('members').doc(memberUid)
+      .delete();
+
+    res.json({ message: 'Has salido del viaje correctamente' });
+  } catch (error) {
+    console.error('[removeMemberFromTrip] Error:', error);
+    return next(error);
+  }
+};
+
+module.exports = { getTripMembers, getUserTrips, addHotelBookingToTrip, deleteCloudinaryImage, removeMemberFromTrip };

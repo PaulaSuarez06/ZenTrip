@@ -50,6 +50,7 @@ export default function CreateTrip() {
 
         {step === 1 && (
           <InvitationsForm
+            soloTravel={form.soloTravel}
             recientes={recientes}
             invitados={form.members}
             enlaceInvitacion={inviteLink}
