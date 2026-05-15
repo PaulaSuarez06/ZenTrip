@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { getGradient } from '../../../../utils/gradients';
 import CoverUploadModal from './CoverUploadModal';
-
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+import { useLanguage } from '../../../../context/LanguageContext';
+import { buildDateHelpers } from '../../../../utils/localeDate';
 
 const STATUS_CONFIG = {
   en_curso:  { label: 'En curso',      className: 'bg-primary-1 text-primary-3' },
@@ -88,6 +88,8 @@ function deriveDatesFromTrip(trip) {
 }
 
 export default function TripCard({ trip, isDraft, memberCount, creatorName, totalSpent, imageHeight = 'h-36', contentGap = 'gap-2', onClick, onDelete, onEdit, onImageUpload }) {
+  const { language } = useLanguage();
+  const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
   const [confirming, setConfirming] = useState(false);
   const [nameConfirm, setNameConfirm] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -106,7 +108,7 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
 
   const gradient  = getGradient(destination || name);
   const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.proximo;
-  const dateLabel = formatDateRange(startDate, endDate);
+  const dateLabel = formatRange(startDate, endDate);
 
   const blockClick = confirming || nameConfirm || coverModalOpen;
 

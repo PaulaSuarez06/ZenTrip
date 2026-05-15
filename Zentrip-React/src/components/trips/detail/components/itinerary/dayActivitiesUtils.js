@@ -1,14 +1,11 @@
-const MONTHS_LONG = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const DAY_NAMES_LONG = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-
 export function parseDate(isoStr) {
   const [y, m, d] = isoStr.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
-export function formatDayHeader(isoStr) {
+export function formatDayHeader(isoStr, locale = 'es') {
   const d = parseDate(isoStr);
-  return `${DAY_NAMES_LONG[d.getDay()]}, ${d.getDate()} de ${MONTHS_LONG[d.getMonth()]}`;
+  return new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(d);
 }
 
 export const TYPE_CONFIG = {

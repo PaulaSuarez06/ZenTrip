@@ -2,6 +2,7 @@ import { Plus, MapPin, CalendarDays } from 'lucide-react';
 import ActivityCard from './ActivityCard';
 import WeatherPanel from './WeatherPanel';
 import { formatDayHeader } from './dayActivitiesUtils';
+import { useLanguage } from '../../../../../context/LanguageContext';
 
 function EmptyDay() {
   return (
@@ -14,6 +15,7 @@ function EmptyDay() {
 }
 
 export default function DayActivities({ selectedDay, activitiesByDate, onAddActivity, onViewActivity, onEditActivity, onDeleteActivity, onGoToReservas, weatherData, location, members = [], highlightActivityId = null }) {
+  const { language } = useLanguage();
   const today = new Date().toISOString().split('T')[0];
   const isPast = selectedDay && selectedDay < today;
 
@@ -37,7 +39,7 @@ export default function DayActivities({ selectedDay, activitiesByDate, onAddActi
       {/* Cabecera del día */}
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div>
-          <h3 className="title-h3-desktop text-secondary-5">{formatDayHeader(selectedDay)}</h3>
+          <h3 className="title-h3-desktop text-secondary-5">{formatDayHeader(selectedDay, language)}</h3>
           <div className="flex items-center gap-1 body-3 text-neutral-3 mt-0.5">
             <MapPin className="w-3.5 h-3.5" />
             <span>{location || '—'}</span>
