@@ -218,9 +218,7 @@ export async function getTripMembersFirestore(tripId) {
 }
 
 export async function removeMemberFromTrip(tripId, memberUid) {
-  await updateDoc(doc(db, 'trips', tripId, 'members', memberUid), {
-    invitationStatus: 'removed',
-  });
+  return apiClient.delete(`/trips/${tripId}/members/${memberUid}`);
 }
 
 export async function addMemberToTrip(tripId, member) {
