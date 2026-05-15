@@ -84,6 +84,11 @@ export function useNavbarController() {
     navigate(ROUTES.TRIPS.LIST);
   };
 
+  const handleGoToExplore = () => {
+    setMenuOpen(false);
+    navigate(ROUTES.EXPLORE);
+  };
+
   const handleGoToCommunity = () => {
     setMenuOpen(false);
     navigate(ROUTES.COMMUNITY);
@@ -118,6 +123,7 @@ export function useNavbarController() {
     handleGoToAdmin,
     handleGoHome,
     handleGoToMyTrips,
+    handleGoToExplore,
     handleGoToCommunity,
     handleLogout,
   };

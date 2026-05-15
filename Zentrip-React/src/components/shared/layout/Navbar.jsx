@@ -27,6 +27,7 @@ const Header = () => {
         handleGoToAdmin,
         handleGoHome,
         handleGoToMyTrips,
+        handleGoToExplore,
         handleGoToCommunity,
         handleLogout,
         isAdmin,
@@ -101,6 +102,7 @@ const Header = () => {
                     const onClick =
                         item === 'Mis viajes' ? handleGoToMyTrips :
                         item === 'Comunidad' ? handleGoToCommunity :
+                        item === 'Explorar' ? handleGoToExplore :
                         handleGoHome;
                     return (
                         <button

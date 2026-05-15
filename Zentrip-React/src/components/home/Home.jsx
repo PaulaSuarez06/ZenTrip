@@ -284,8 +284,8 @@ export default function Home() {
               <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-5">
                 <p className="text-white title-h3-desktop leading-tight">{destinations[0].name}</p>
-                {DESTINATION_TIPS[destinations[0].name] && (
-                  <p className="text-white/80 body-3 mt-1">✦ {DESTINATION_TIPS[destinations[0].name]}</p>
+                {(destinations[0].tip || DESTINATION_TIPS[destinations[0].name]) && (
+                  <p className="text-white/80 body-3 mt-1">✦ {destinations[0].tip || DESTINATION_TIPS[destinations[0].name]}</p>
                 )}
               </div>
             </div>
@@ -302,8 +302,8 @@ export default function Home() {
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white body-bold leading-tight">{dest.name}</p>
-                  {DESTINATION_TIPS[dest.name] && (
-                    <p className="text-white/80 text-[11px] mt-0.5">✦ {DESTINATION_TIPS[dest.name]}</p>
+                  {(dest.tip || DESTINATION_TIPS[dest.name]) && (
+                    <p className="text-white/80 text-[11px] mt-0.5">✦ {dest.tip || DESTINATION_TIPS[dest.name]}</p>
                   )}
                 </div>
               </div>

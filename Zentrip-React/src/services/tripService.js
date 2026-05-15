@@ -137,13 +137,62 @@ export async function updateTrip(tripId, form) {
   }).map((s, i) => ({ ...s, order: i + 1 }));
   const destination = sorted.length > 0 ? sorted[sorted.length - 1].name : (tripData.destination || '');
   const { startDate, endDate } = deriveDatesFromStops(sorted, tripData.startDate, tripData.endDate);
+  // Expandir fechas y rellenar origen/destino desde reservas existentes
+  let finalStart = startDate;
+  let finalEnd = endDate;
+  let finalOrigin = tripData.origin || '';
+  let finalDestination = destination;
+
+  const [bookingsSnap, activitiesSnap] = await Promise.all([
+    getDocs(collection(db, 'trips', tripId, 'bookings')),
+    getDocs(collection(db, 'trips', tripId, 'activities')),
+  ]);
+  const allBookings = bookingsSnap.docs.map((d) => d.data());
+
+  // Expandir fechas desde actividades existentes
+  activitiesSnap.forEach((d) => {
+    const date = d.data().date;
+    if (date) {
+      if (!finalStart || date < finalStart) finalStart = date;
+      if (!finalEnd   || date > finalEnd)   finalEnd   = date;
+    }
+  });
+
+  // Ordenar vuelos por fecha para coger el primero y el último
+  const flightBookings = allBookings
+    .filter((b) => Array.isArray(b.segments) && b.segments.length > 0)
+    .sort((a, b) => {
+      const aDate = a.segments[0]?.departureTime || a.segments[0]?.date || '';
+      const bDate = b.segments[0]?.departureTime || b.segments[0]?.date || '';
+      return aDate.localeCompare(bDate);
+    });
+
+  if (flightBookings.length > 0) {
+    if (!finalOrigin) {
+      const firstSeg = flightBookings[0].segments[0];
+      finalOrigin = firstSeg?.departureAirport?.cityName || firstSeg?.departureAirport?.code || '';
+    }
+    if (!finalDestination) {
+      const lastFlight = flightBookings[flightBookings.length - 1];
+      const lastSeg = lastFlight.segments[lastFlight.segments.length - 1];
+      finalDestination = lastSeg?.arrivalAirport?.cityName || lastSeg?.arrivalAirport?.code || '';
+    }
+  }
+
+  allBookings.forEach((b) => {
+    const bStart = getBookingStartDate(b);
+    const bEnd   = getBookingEndDate(b);
+    if (bStart && (!finalStart || bStart < finalStart)) finalStart = bStart;
+    if (bEnd   && (!finalEnd   || bEnd   > finalEnd))   finalEnd   = bEnd;
+  });
+
   await updateDoc(doc(db, 'trips', tripId), {
     name: tripData.name || '',
-    origin: tripData.origin || '',
-    destination,
+    origin: finalOrigin,
+    destination: finalDestination,
     stops: sorted,
-    startDate,
-    endDate,
+    startDate: finalStart,
+    endDate: finalEnd,
     currency: tripData.currency || '',
     budget: tripData.budget || '',
     hasPet: Boolean(tripData.hasPet),
@@ -246,22 +295,17 @@ export async function addActivity(tripId, activity) {
     createdAt: serverTimestamp(),
   });
 
-  // --- ACTUALIZAR FECHAS DEL VIAJE SI NO HAY PARADAS ---
-  const tripSnap = await getDoc(doc(db, 'trips', tripId));
-  const trip = tripSnap.exists() ? tripSnap.data() : null;
-  if (trip && (!trip.stops || trip.stops.length === 0)) {
-    // Obtener todas las actividades y bookings para calcular el rango
-    const acts = await getDocs(collection(db, 'trips', tripId, 'activities'));
-    const bookings = await getDocs(collection(db, 'trips', tripId, 'bookings'));
-    const fechas = [];
-    acts.forEach((d) => { if (d.data().date) fechas.push(d.data().date); });
-    bookings.forEach((d) => { if (d.data().date) fechas.push(d.data().date); });
-    if (activity.date) fechas.push(activity.date);
-    if (fechas.length > 0) {
-      const sorted = fechas.sort();
-      const startDate = sorted[0];
-      const endDate = sorted[sorted.length - 1];
-      await updateDoc(doc(db, 'trips', tripId), { startDate, endDate });
+  // --- EXPANDIR RANGO DE FECHAS DEL VIAJE SEGÚN LA ACTIVIDAD ---
+  if (activity.date) {
+    const tripSnap = await getDoc(doc(db, 'trips', tripId));
+    const trip = tripSnap.exists() ? tripSnap.data() : null;
+    if (trip) {
+      const updates = {};
+      if (!trip.startDate || activity.date < trip.startDate) updates.startDate = activity.date;
+      if (!trip.endDate   || activity.date > trip.endDate)   updates.endDate   = activity.date;
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(doc(db, 'trips', tripId), updates);
+      }
     }
   }
   return docRef.id;
@@ -344,27 +388,67 @@ async function deleteLinkedExpense(tripId, bookingId) {
   await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 }
 
+function getBookingStartDate(booking) {
+  if (booking.checkIn) return booking.checkIn;
+  if (booking.pickUpDate) return booking.pickUpDate;
+  if (Array.isArray(booking.segments) && booking.segments.length > 0) {
+    const dates = booking.segments
+      .map((s) => (s.departureTime ? s.departureTime.split('T')[0] : s.date ?? null))
+      .filter(Boolean);
+    if (dates.length > 0) return [...dates].sort()[0];
+  }
+  if (booking.date) return booking.date;
+  return null;
+}
+
+function getBookingEndDate(booking) {
+  if (booking.checkOut) return booking.checkOut;
+  if (booking.dropOffDate) return booking.dropOffDate;
+  if (Array.isArray(booking.segments) && booking.segments.length > 0) {
+    const dates = booking.segments
+      .map((s) => (s.arrivalTime ? s.arrivalTime.split('T')[0] : s.date ?? null))
+      .filter(Boolean);
+    if (dates.length > 0) return [...dates].sort().reverse()[0];
+  }
+  if (booking.date) return booking.date;
+  if (booking.checkIn) return booking.checkIn;
+  if (booking.pickUpDate) return booking.pickUpDate;
+  return null;
+}
+
 export async function addBooking(tripId, booking) {
   const docRef = await addDoc(collection(db, 'trips', tripId, 'bookings'), {
     ...booking,
     createdAt: serverTimestamp(),
   });
 
-  // --- ACTUALIZAR FECHAS DEL VIAJE SI NO HAY PARADAS ---
+  // --- EXPANDIR FECHAS Y RELLENAR ORIGEN/DESTINO DESDE LA RESERVA ---
   const tripSnap = await getDoc(doc(db, 'trips', tripId));
   const trip = tripSnap.exists() ? tripSnap.data() : null;
-  if (trip && (!trip.stops || trip.stops.length === 0)) {
-    const acts = await getDocs(collection(db, 'trips', tripId, 'activities'));
-    const bookings = await getDocs(collection(db, 'trips', tripId, 'bookings'));
-    const fechas = [];
-    acts.forEach((d) => { if (d.data().date) fechas.push(d.data().date); });
-    bookings.forEach((d) => { if (d.data().date) fechas.push(d.data().date); });
-    if (booking.date) fechas.push(booking.date);
-    if (fechas.length > 0) {
-      const sorted = fechas.sort();
-      const startDate = sorted[0];
-      const endDate = sorted[sorted.length - 1];
-      await updateDoc(doc(db, 'trips', tripId), { startDate, endDate });
+  if (trip) {
+    const bookingStart = getBookingStartDate(booking);
+    const bookingEnd   = getBookingEndDate(booking);
+    const updates = {};
+
+    if (bookingStart && (!trip.startDate || bookingStart < trip.startDate)) updates.startDate = bookingStart;
+    if (bookingEnd   && (!trip.endDate   || bookingEnd   > trip.endDate))   updates.endDate   = bookingEnd;
+
+    // Si es un vuelo y el viaje no tiene origen/destino, extraerlos de los segmentos
+    if (Array.isArray(booking.segments) && booking.segments.length > 0) {
+      if (!trip.origin) {
+        const firstSeg = booking.segments[0];
+        const city = firstSeg?.departureAirport?.cityName || firstSeg?.departureAirport?.code || '';
+        if (city) updates.origin = city;
+      }
+      if (!trip.destination) {
+        const lastSeg = booking.segments[booking.segments.length - 1];
+        const city = lastSeg?.arrivalAirport?.cityName || lastSeg?.arrivalAirport?.code || '';
+        if (city) updates.destination = city;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(doc(db, 'trips', tripId), updates);
     }
   }
 
@@ -385,11 +469,41 @@ export async function updateBooking(tripId, bookingId, data) {
   await updateDoc(doc(db, 'trips', tripId, 'bookings', bookingId), data);
 }
 
+async function recalculateTripDates(tripId) {
+  const [bookingsSnap, activitiesSnap] = await Promise.all([
+    getDocs(collection(db, 'trips', tripId, 'bookings')),
+    getDocs(collection(db, 'trips', tripId, 'activities')),
+  ]);
+  let start = null;
+  let end = null;
+  bookingsSnap.forEach((d) => {
+    const b = d.data();
+    const s = getBookingStartDate(b);
+    const e = getBookingEndDate(b);
+    if (s && (!start || s < start)) start = s;
+    if (e && (!end   || e > end))   end   = e;
+  });
+  activitiesSnap.forEach((d) => {
+    const date = d.data().date;
+    if (date) {
+      if (!start || date < start) start = date;
+      if (!end   || date > end)   end   = date;
+    }
+  });
+  if (start || end) {
+    const updates = {};
+    if (start) updates.startDate = start;
+    if (end)   updates.endDate   = end;
+    await updateDoc(doc(db, 'trips', tripId), updates);
+  }
+}
+
 export async function deleteBooking(tripId, bookingId) {
   await Promise.all([
     deleteDoc(doc(db, 'trips', tripId, 'bookings', bookingId)),
     deleteLinkedExpense(tripId, bookingId).catch(() => {}),
   ]);
+  await recalculateTripDates(tripId);
 }
 
 // Elimina una reserva de vuelo junto con su actividad y las paradas que creó.
@@ -459,6 +573,7 @@ export async function deleteFlightBooking(tripId, bookingId) {
       await updateDoc(doc(db, 'trips', tripId), { stops: [], destination: '', updatedAt: serverTimestamp() });
     }
   }
+  await recalculateTripDates(tripId);
 }
 
 export async function sendBookingNotifications(tripId, { bookerUid, bookerName, hotelName, tripName }) {

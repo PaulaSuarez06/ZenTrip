@@ -28,8 +28,11 @@ import AdminRoute from './components/auth/guards/AdminRoute';
 import InspirationReader from './components/inspiration/InspirationReader';
 import CommunityPage from './components/community/CommunityPage';
 import CommunityPostPublic from './components/community/CommunityPostPublic';
+import TripSharePublic from './components/trips/share/TripSharePublic';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminInspirations from './components/admin/AdminInspirations';
+import AdminDestinations from './components/admin/AdminDestinations';
+import ExplorePage from './components/explore/ExplorePage';
 
 const router = createBrowserRouter([
   { path: '/', element: <Landing /> },
@@ -54,6 +57,7 @@ const router = createBrowserRouter([
           { path: ROUTES.LEGAL.PRIVACY, element: <PrivacyPolicy /> },
           { path: ROUTES.LEGAL.TERMS, element: <TermsOfUse /> },
           { path: ROUTES.INSPIRATION.READER, element: <InspirationReader /> },
+          { path: ROUTES.EXPLORE, element: <ExplorePage /> },
           { path: ROUTES.COMMUNITY, element: <CommunityPage /> },
           { path: ROUTES.COMMUNITY_POST, element: <CommunityPage /> },
         ],
@@ -66,6 +70,7 @@ const router = createBrowserRouter([
             children: [
               { path: ROUTES.ADMIN.DASHBOARD, element: <AdminDashboard /> },
               { path: ROUTES.ADMIN.READINGS, element: <AdminInspirations /> },
+              { path: ROUTES.ADMIN.DESTINATIONS, element: <AdminDestinations /> },
             ],
           },
         ],
@@ -99,6 +104,7 @@ const router = createBrowserRouter([
       { path: ROUTES.PUBLIC_POST, element: <CommunityPostPublic /> },
     ],
   },
+  { path: ROUTES.TRIP_SHARE, element: <TripSharePublic /> },
 ]);
 
 function App() {

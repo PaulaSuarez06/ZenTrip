@@ -96,9 +96,10 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
   const name        = trip.name        || 'Viaje sin nombre';
   const origin      = trip.origin      || '';
   const destination = trip.destination || '';
-  const hasStops    = (trip.stops || []).some((s) => s.name?.trim());
+  const namedStops  = (trip.stops || []).filter((s) => s.name?.trim());
+  const stopCount   = namedStops.length;
   const routeLabel  = origin && destination
-    ? hasStops ? `${origin} → ··· → ${destination}` : `${origin} → ${destination}`
+    ? stopCount > 0 ? `${origin} → ${stopCount} ${stopCount === 1 ? 'parada' : 'paradas'} → ${destination}` : `${origin} → ${destination}`
     : origin || destination;
   const { startDate, endDate } = deriveDatesFromTrip(trip);
   const status      = isDraft ? 'borrador' : (trip.status || 'proximo');

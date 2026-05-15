@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getInspirations } from '../../services/inspirationsService';
 import InspirationCard from './components/InspirationCard';
+import { ROUTES } from '../../config/routes';
 
 const LAST_READ_KEY = 'zt_last_read_inspiration';
 
@@ -25,6 +27,7 @@ function pickFour(articles, lastReadId) {
 }
 
 export default function InspirationSection() {
+  const navigate = useNavigate();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,9 +49,13 @@ export default function InspirationSection() {
           <h2 className="title-h2-desktop text-secondary-5">Deja que el mundo te llame</h2>
           <p className="body-2 text-neutral-4 mt-1">Ideas, rutas y experiencias para que no pares de soñar</p>
         </div>
-        <div className="shrink-0 mt-1 bg-primary-1 text-primary-3 body-3 font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap cursor-default">
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.EXPLORE)}
+          className="shrink-0 mt-1 bg-primary-1 text-primary-3 hover:bg-primary-2 body-3 font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap cursor-pointer"
+        >
           Ver más ideas →
-        </div>
+        </button>
       </div>
 
       {loading ? (
