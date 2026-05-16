@@ -21,7 +21,11 @@ export function useTripInvitations(tripId, tripName, initialMembers = [], onMemb
     if (!tripId || !isCreator) return;
     let active = true;
     getTripPublicInviteLink(tripId, '')
-      .then((data) => { if (active) setInviteLink(data?.shareLink || ''); })
+      .then((data) => {
+        if (!active) return;
+        const token = data?.token;
+        setInviteLink(token ? `${window.location.origin}/auth/login?join=${encodeURIComponent(token)}` : (data?.shareLink || ''));
+      })
       .catch(() => {});
     return () => { active = false; };
   }, [tripId, isCreator]);

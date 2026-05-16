@@ -120,10 +120,39 @@ export default function NotificationPanel({ onClose }) {
     ? notifications
     : notifications.filter((n) => validInvitationIds.has(n.id));
 
+  // Filtra tripNotifications cuyos viajes ya no existen y auto-marca las huérfanas como leídas
+  const [validTripNotifIds, setValidTripNotifIds] = useState(null);
+  useEffect(() => {
+    if (!tripNotifications.length) { setValidTripNotifIds(new Set()); return; }
+    let cancelled = false;
+    const uniqueTripIds = [...new Set(tripNotifications.map((n) => n.tripId).filter(Boolean))];
+    Promise.all(
+      uniqueTripIds.map(async (tripId) => {
+        try {
+          const snap = await getDoc(doc(db, 'trips', tripId));
+          return snap.exists() ? tripId : null;
+        } catch { return null; }
+      })
+    ).then((existing) => {
+      if (cancelled) return;
+      const validTripIdSet = new Set(existing.filter(Boolean));
+      setValidTripNotifIds(new Set(tripNotifications.filter((n) => validTripIdSet.has(n.tripId)).map((n) => n.id)));
+      // Auto-marcar como leídas las notificaciones de viajes eliminados
+      tripNotifications
+        .filter((n) => n.tripId && !validTripIdSet.has(n.tripId))
+        .forEach((n) => markTripNotificationRead(n.id).catch(() => {}));
+    });
+    return () => { cancelled = true; };
+  }, [tripNotifications, markTripNotificationRead]);
+
+  const validTripNotifications = validTripNotifIds === null
+    ? tripNotifications
+    : tripNotifications.filter((n) => validTripNotifIds.has(n.id));
+
   // Lista única ordenada por fecha descendente (más reciente arriba)
   const allSorted = [
     ...acceptedNotifications.map((n) => ({ ...n, _kind: 'accepted' })),
-    ...tripNotifications.map((n) => ({ ...n, _kind: 'trip' })),
+    ...validTripNotifications.map((n) => ({ ...n, _kind: 'trip' })),
     ...validInvitations.map((n) => ({ ...n, _kind: 'invitation' })),
   ].sort((a, b) => getTimestamp(b) - getTimestamp(a));
 
@@ -139,8 +168,8 @@ export default function NotificationPanel({ onClose }) {
     };
   }, [onClose]);
 
-  const hasAny = validInvitations.length > 0 || acceptedNotifications.length > 0 || tripNotifications.length > 0;
-  const hasDismissable = tripNotifications.length > 0 || acceptedNotifications.length > 0;
+  const hasAny = validInvitations.length > 0 || acceptedNotifications.length > 0 || validTripNotifications.length > 0;
+  const hasDismissable = validTripNotifications.length > 0 || acceptedNotifications.length > 0;
 
   const goToTrip = (tripId, state = null) => {
     if (!tripId) return;
