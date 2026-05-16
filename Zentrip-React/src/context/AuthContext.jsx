@@ -6,14 +6,14 @@ import { clearSessionExpiry } from '../components/auth/login/services/loginFireb
 
 const AuthContext = createContext(null);
 
-function mapProfile(data) {
+function mapProfile(data, googlePhotoURL = '') {
   const firstName = data?.firstName || '';
   const lastName = data?.lastName || '';
   const phone = data?.phone || '';
   const country = data?.country || '';
   const language = data?.language || 'Español';
   const currency = data?.currency || 'EUR €';
-  const profilePhoto = data?.profilePhoto || '';
+  const profilePhoto = data?.profilePhoto || googlePhotoURL || '';
 
   const normalizeTripGroupType = (value) => {
     const normalized = String(value || '').toLowerCase().trim();
@@ -64,9 +64,9 @@ export function AuthProvider({ children }) {
     setProfileLoading(true);
     try {
       const data = await getUserProfile(firebaseUser.uid);
-      setProfile(mapProfile(data));
+      setProfile(mapProfile(data, firebaseUser.photoURL));
     } catch {
-      setProfile(mapProfile(null));
+      setProfile(mapProfile(null, firebaseUser.photoURL));
     } finally {
       setProfileLoading(false);
     }

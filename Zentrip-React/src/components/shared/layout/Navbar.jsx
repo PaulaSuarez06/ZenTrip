@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useNavbarController } from "./hooks/useNavbarController";
+import { useAuth } from "../../../context/AuthContext";
 import UserAvatar from "../../ui/UserAvatar";
 import NotificationPanel from "../notifications/NotificationPanel";
 import ChatMessagePanel from "../notifications/ChatMessagePanel";
@@ -63,6 +65,10 @@ function LanguageSelector() {
 }
 
 const Header = () => {
+    const { user } = useAuth();
+    const location = useLocation();
+    const isPublicPostGuest = !user && location.pathname.startsWith('/p/');
+
     const {
         avatarSrc,
         initials,
@@ -156,7 +162,7 @@ const Header = () => {
             </button>
 
             {/* Nav desktop */}
-            <nav className="hidden md:flex flex-1 items-center justify-center gap-8 px-4">
+            <nav className={`hidden md:flex flex-1 items-center justify-center gap-8 px-4 ${isPublicPostGuest ? 'invisible' : ''}`}>
                 {NAV_ITEMS.map((item, idx) => {
                     const onClick =
                         item === 'Mis viajes' ? handleGoToMyTrips :
@@ -177,7 +183,7 @@ const Header = () => {
             </nav>
 
             {/* Iconos derecha */}
-            <div className="flex items-center gap-5 md:gap-6 ml-auto">
+            <div className={`flex items-center gap-5 md:gap-6 ml-auto ${isPublicPostGuest ? 'hidden' : ''}`}>
 
                 {/* Notificaciones */}
                 <div className="relative">
@@ -279,7 +285,7 @@ const Header = () => {
             </div>
 
             {/* Nav móvil */}
-            {menuOpen && (
+            {menuOpen && !isPublicPostGuest && (
                 <div
                     ref={mobileMenuRef}
                     className="absolute top-full left-2 right-2 mt-2 rounded-2xl border border-secondary-1 px-6 py-4 flex flex-col gap-4 md:hidden z-50 backdrop-blur"

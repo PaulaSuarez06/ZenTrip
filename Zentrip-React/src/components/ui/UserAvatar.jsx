@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 function buildInitialsFromName(fullName = '') {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return 'ZT';
@@ -19,16 +21,28 @@ export default function UserAvatar({
   overlayOpacity = 0.35,
   initialsClass = 'body-3 text-slate-600 font-bold',
 }) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
   const initialsToShow = initials ?? buildInitialsFromName(fullName);
+  const showImage = src && !imgError;
 
   return (
     <div
       className={`relative rounded-full overflow-hidden flex items-center justify-center ${backgroundClass} ${sizeClass} ${containerClass}`}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
-      {src ? (
+      {showImage ? (
         <>
-          <img src={src} alt={alt} className="w-full h-full object-cover" />
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
           {showColorOverlay && backgroundColor ? (
             <span
               className="absolute inset-0"

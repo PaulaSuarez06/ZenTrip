@@ -212,6 +212,8 @@ export async function publishTrip({ trip, members, activities, userId, userProfi
   };
 
   const ref = await addDoc(collection(db, POSTS_COL), post);
+  // Store the post ID on the trip so syncPublishedPost can skip the collection query.
+  await updateDoc(doc(db, 'trips', trip.id), { communityPostId: ref.id });
   return ref.id;
 }
 
@@ -304,6 +306,11 @@ export async function addComment(postId, userId, userProfile, text, postOwnerId,
   }
 }
 
+export async function deleteComment(postId, commentId) {
+  await deleteDoc(doc(db, POSTS_COL, postId, COMMENTS_COL, commentId));
+  await updateDoc(doc(db, POSTS_COL, postId), { commentsCount: increment(-1) });
+}
+
 export async function getComments(postId) {
   const q = query(
     collection(db, POSTS_COL, postId, COMMENTS_COL),
@@ -325,8 +332,79 @@ export async function getSavedPosts(userId) {
     .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
 
+export async function syncPublishedPost(tripId) {
+  const tripSnap = await getDoc(doc(db, 'trips', tripId));
+  if (!tripSnap.exists()) return;
+  const tripData = tripSnap.data();
+  let communityPostId = tripData.communityPostId;
+
+  if (!communityPostId) {
+    // Backfill for posts published before communityPostId was stored on the trip doc.
+    const postsSnap = await getDocs(query(collection(db, POSTS_COL), where('tripId', '==', tripId)));
+    if (postsSnap.empty) return;
+    communityPostId = postsSnap.docs[0].id;
+    updateDoc(doc(db, 'trips', tripId), { communityPostId }); // fire-and-forget, repair for next time
+  }
+
+  const postSnap = await getDoc(doc(db, POSTS_COL, communityPostId));
+  if (!postSnap.exists()) return;
+  const post = postSnap.data();
+
+  const days = (() => {
+    if (!tripData.startDate || !tripData.endDate) return null;
+    const s = new Date(tripData.startDate + 'T00:00:00');
+    const e = new Date(tripData.endDate + 'T00:00:00');
+    return Math.round((e - s) / 86400000) + 1;
+  })();
+
+  const [activitiesSnap, bookingsSnap, luggageGroupSnap, membersSnap] = await Promise.all([
+    getDocs(collection(db, 'trips', tripId, 'activities')),
+    post.shareBookings ? getDocs(collection(db, 'trips', tripId, 'bookings')) : Promise.resolve({ docs: [] }),
+    post.shareLuggage ? getDocs(collection(db, 'trips', tripId, 'luggageGroup')) : Promise.resolve({ docs: [] }),
+    getDocs(collection(db, 'trips', tripId, 'members')),
+  ]);
+
+  const sanitized = sanitizeActivities(activitiesSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  const rawBookings = bookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const groupLuggage = luggageGroupSnap.docs.map((d) => d.data());
+  const participantCount = membersSnap.docs.filter((d) => {
+    const m = d.data();
+    return m.invitationStatus === 'accepted' || !m.invitationStatus;
+  }).length;
+
+  const updates = {
+    destination: tripData.destination || '',
+    origin: tripData.origin || '',
+    startDate: tripData.startDate || null,
+    endDate: tripData.endDate || null,
+    days,
+    participantCount,
+    itinerary: sanitized,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (post.shareBookings) updates.bookings = sanitizeBookings(rawBookings);
+  if (post.shareLuggage) {
+    updates.luggageCategories = [...new Set(groupLuggage.map((i) => i.item).filter(Boolean))].slice(0, 20);
+    if (post.luggageScopeAll && post.userId) {
+      const personalSnap = await getDocs(
+        query(collection(db, 'trips', tripId, 'luggage'), where('userId', '==', post.userId))
+      );
+      updates.personalLuggageCategories = [...new Set(personalSnap.docs.map((d) => d.data().item).filter(Boolean))].slice(0, 30);
+    }
+  }
+
+  await updateDoc(doc(db, POSTS_COL, communityPostId), updates);
+}
+
 export async function unpublishPost(postId) {
-  await deleteDoc(doc(db, POSTS_COL, postId));
+  const postRef = doc(db, POSTS_COL, postId);
+  const postSnap = await getDoc(postRef);
+  const tripId = postSnap.exists() ? postSnap.data().tripId : null;
+  await deleteDoc(postRef);
+  if (tripId) {
+    await updateDoc(doc(db, 'trips', tripId), { communityPostId: null });
+  }
 }
 
 export async function incrementPostView(postId) {

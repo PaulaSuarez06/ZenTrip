@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getComments, addComment } from '../../services/communityService';
+import { getComments, addComment, deleteComment } from '../../services/communityService';
 import UserAvatar from '../ui/UserAvatar';
 
 function timeAgo(timestamp) {
@@ -22,7 +22,10 @@ export default function CommentsModal({ post, onClose }) {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
   const bottomRef = useRef(null);
+  const isPostOwner = user?.uid === post.userId;
 
   useEffect(() => {
     getComments(post.id).then((c) => {
@@ -34,6 +37,21 @@ export default function CommentsModal({ post, onClose }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
+
+  async function handleDelete(commentId) {
+    if (deletingId) return;
+    setConfirmId(null);
+    setDeletingId(commentId);
+    const prev = comments;
+    setComments((c) => c.filter((x) => x.id !== commentId));
+    try {
+      await deleteComment(post.id, commentId);
+    } catch {
+      setComments(prev);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleSend() {
     if (!text.trim() || submitting || !user) return;
@@ -59,6 +77,7 @@ export default function CommentsModal({ post, onClose }) {
   }
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
@@ -83,25 +102,38 @@ export default function CommentsModal({ post, onClose }) {
           {!loading && comments.length === 0 && (
             <p className="text-center body-3 text-neutral-3 py-8">Sé el primero en comentar</p>
           )}
-          {comments.map((c) => (
-            <div key={c.id} className="flex gap-3">
-              <UserAvatar
-                src={c.userAvatar}
-                fullName={c.username}
-                sizeClass="w-8 h-8"
-                backgroundColor={c.userAvatarColor}
-                initialsClass="text-xs text-white font-bold"
-                backgroundClass={c.userAvatarColor ? '' : 'bg-primary-3'}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="body-3 font-semibold text-secondary-5">@{c.username}</span>
-                  <span className="text-[11px] text-neutral-3">{timeAgo(c.createdAt)}</span>
+          {comments.map((c) => {
+            const canDelete = user && (isPostOwner || c.userId === user.uid) && !c.id.startsWith('tmp_');
+            return (
+              <div key={c.id} className="flex gap-3 group">
+                <UserAvatar
+                  src={c.userAvatar}
+                  fullName={c.username}
+                  sizeClass="w-8 h-8"
+                  backgroundColor={c.userAvatarColor}
+                  initialsClass="text-xs text-white font-bold"
+                  backgroundClass={c.userAvatarColor ? '' : 'bg-primary-3'}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="body-3 font-semibold text-secondary-5">@{c.username}</span>
+                    <span className="text-[11px] text-neutral-3">{timeAgo(c.createdAt)}</span>
+                  </div>
+                  <p className="body-3 text-neutral-5 mt-0.5">{c.text}</p>
                 </div>
-                <p className="body-3 text-neutral-5 mt-0.5">{c.text}</p>
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmId(c.id)}
+                    disabled={deletingId === c.id}
+                    className="p-1.5 rounded-full hover:bg-red-50 text-neutral-3 hover:text-red-500 shrink-0 self-start mt-0.5 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
@@ -135,5 +167,33 @@ export default function CommentsModal({ post, onClose }) {
         </div>
       </div>
     </div>
+
+      {/* Modal de confirmación de borrado */}
+      {confirmId && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmId(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs flex flex-col gap-4">
+            <p className="body-2-semibold text-secondary-5 text-center">¿Eliminar comentario?</p>
+            <p className="body-3 text-neutral-4 text-center">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmId(null)}
+                className="flex-1 border border-neutral-2 text-neutral-5 body-3 font-semibold py-2 rounded-full hover:bg-neutral-1 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(confirmId)}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white body-3 font-semibold py-2 rounded-full transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

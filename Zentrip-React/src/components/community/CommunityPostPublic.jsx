@@ -18,6 +18,7 @@ import DayCalendar from '../trips/detail/components/itinerary/DayCalendar';
 
 import { useLanguage } from '../../context/LanguageContext';
 import { buildDateHelpers } from '../../utils/localeDate';
+import { DIVISAS } from '../../utils/divisas';
 
 function timeAgo(timestamp) {
   if (!timestamp) return '';
@@ -666,7 +667,7 @@ function EquipajeTab({ categories, personalCategories, scopeAll }) {
     <div className="bg-white rounded-2xl border border-neutral-1 p-5 flex flex-col gap-5">
       <div className="flex items-center gap-2">
         <Package className="w-5 h-5 text-neutral-4" />
-        <p className="body-bold text-secondary-5">Equipaje compartido</p>
+        <p className="body-bold text-secondary-5">Equipaje</p>
         <span className="body-3 text-neutral-3 bg-neutral-1 rounded-full px-2 py-0.5">
           {categories.length + (hasPersonal ? personalCategories.length : 0)} artículos
         </span>
@@ -676,8 +677,8 @@ function EquipajeTab({ categories, personalCategories, scopeAll }) {
         <div className="flex flex-col gap-3">
           {hasPersonal && (
             <div className="flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5 text-neutral-4 shrink-0" />
-              <p className="body-3 font-semibold text-neutral-4">Equipaje grupal · {categories.length} artículos</p>
+              <Package className="w-3.5 h-3.5 text-primary-3 shrink-0" />
+              <p className="body-3 font-semibold text-primary-3">Equipaje grupal · {categories.length} artículos</p>
             </div>
           )}
           <LuggageList items={categories} />
@@ -957,19 +958,33 @@ function ReservasTab({ bookings }) {
 
 // --- Sidebar summary (persistent across all tabs) ---
 
+function getCurrencySymbol(currency) {
+  if (!currency) return '';
+  const code = currency.split(/[\s-]/)[0].trim().toUpperCase();
+  return DIVISAS.find(d => d.code === code)?.symbol || currency.split(' ').at(-1) || currency;
+}
+
+function formatBudgetAmount(amount) {
+  if (amount >= 10000) {
+    return new Intl.NumberFormat('es-ES', { notation: 'compact', maximumFractionDigits: 1 }).format(amount);
+  }
+  return Math.round(amount).toLocaleString('es-ES');
+}
+
 function SummarySidebar({ post }) {
   const displayTotal = post.expenseSummary?.totalSpent > 0
     ? post.expenseSummary.totalSpent
     : post.totalBudget;
+  const currencySymbol = getCurrencySymbol(post.budgetCurrency);
   const budgetValue = post.shareBudget && displayTotal
-    ? `${Math.round(displayTotal).toLocaleString('es-ES')}${post.budgetCurrency ? ` ${post.budgetCurrency}` : ''}`
+    ? `${formatBudgetAmount(displayTotal)} ${currencySymbol}`.trim()
     : null;
 
   const items = [
-    post.days ? { emoji: '📅', value: post.days, label: 'días' } : null,
-    post.participantCount > 0 ? { emoji: '👥', value: post.participantCount, label: post.participantCount === 1 ? 'persona' : 'personas' } : null,
-    post.itinerary?.length > 0 ? { emoji: '📋', value: post.itinerary.length, label: 'actividades' } : null,
-    budgetValue ? { emoji: '💸', value: budgetValue, label: 'presupuesto total' } : null,
+    post.days ? { Icon: CalendarDays, value: post.days, label: 'días' } : null,
+    post.participantCount > 0 ? { Icon: Users, value: post.participantCount, label: post.participantCount === 1 ? 'persona' : 'personas' } : null,
+    post.itinerary?.length > 0 ? { Icon: Ticket, value: post.itinerary.length, label: 'actividades' } : null,
+    budgetValue ? { Icon: Wallet, value: budgetValue, label: 'presupuesto total' } : null,
   ].filter(Boolean);
 
   if (items.length === 0) return null;
@@ -979,10 +994,10 @@ function SummarySidebar({ post }) {
       <div className="bg-white rounded-2xl border border-neutral-1 p-4">
         <p className="body-3 text-neutral-4 font-semibold uppercase tracking-wide mb-3">Resumen</p>
         <div className="grid grid-cols-2 gap-2">
-          {items.map(({ emoji, value, label }) => (
+          {items.map(({ Icon, value, label }) => (
             <div key={label} className="flex flex-col items-center gap-0.5 p-3 rounded-xl bg-neutral-1/60 text-center">
-              <span className="text-xl leading-none">{emoji}</span>
-              <span className="body-bold text-secondary-5 mt-0.5 truncate max-w-full text-sm">{value}</span>
+              <Icon className="w-5 h-5 text-primary-3" />
+              <span className="body-bold text-secondary-5 mt-0.5 text-sm break-words w-full">{value}</span>
               <span className="body-3 text-neutral-3 leading-tight">{label}</span>
             </div>
           ))}
@@ -1147,15 +1162,17 @@ export default function CommunityPostPublic() {
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-4">
-      {/* Back button */}
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-secondary-5 transition-colors w-fit"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Volver
-      </button>
+      {/* Back button — solo visible si hay sesión */}
+      {user && (
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-secondary-5 transition-colors w-fit"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Volver
+        </button>
+      )}
 
       {/* Header card — cover image flush at top, then content */}
       <div className="bg-white rounded-2xl overflow-hidden border border-neutral-1 shadow-sm">
