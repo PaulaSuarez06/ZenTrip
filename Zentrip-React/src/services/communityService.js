@@ -128,6 +128,16 @@ function sanitizeActivities(activities = []) {
   }));
 }
 
+export async function getExistingPost(tripId, userId) {
+  const q = query(
+    collection(db, POSTS_COL),
+    where('tripId', '==', tripId),
+    where('userId', '==', userId),
+  );
+  const snap = await getDocs(q);
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+}
+
 export async function publishTrip({ trip, members, activities, userId, userProfile, options }) {
   const {
     title,

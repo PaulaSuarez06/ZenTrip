@@ -14,20 +14,12 @@ import { getPostLoginPath } from '../../../../services/userService';
 
 export { getPostLoginPath };
 
-const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hora
-
-export function saveSessionExpiry() {
-  sessionStorage.setItem('sessionExpiry', Date.now() + SESSION_DURATION_MS);
-}
-
 export function clearSessionExpiry() {
   sessionStorage.removeItem('sessionExpiry');
 }
 
 export function isSessionExpired() {
-  const expiry = sessionStorage.getItem('sessionExpiry');
-  if (!expiry) return false;
-  return Date.now() > Number(expiry);
+  return false;
 }
 
 export async function signInWithEmail(email, password) {

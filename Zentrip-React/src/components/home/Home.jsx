@@ -39,7 +39,6 @@ const DESTINATION_TIPS = {
 };
 
 const heroImages = [
-  '/img/background/home/hero/img_hero_1.jpg',
   '/img/background/home/hero/img_hero_2.jpg',
   '/img/background/home/hero/img_hero_3.jpg',
   '/img/background/home/hero/img_hero_4.jpg',

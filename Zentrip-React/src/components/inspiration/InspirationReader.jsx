@@ -157,7 +157,7 @@ export default function InspirationReader() {
                   <div className="w-full sm:w-auto sm:ml-auto flex justify-end">
                     <button
                       type="button"
-                      onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(article.destination)}`)}
+                      onClick={() => navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination: article.destination } } })}
                       className="shrink-0 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-6 py-2.5 rounded-full transition-colors cursor-pointer sm:mr-2"
                     >
                       Planificar viaje →

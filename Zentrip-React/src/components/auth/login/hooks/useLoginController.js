@@ -7,7 +7,6 @@ import {
   refreshAuthenticatedUser,
   getPostLoginPath,
   saveUserToken,
-  saveSessionExpiry,
   sendResetPasswordEmail,
   sendVerificationEmail,
   signInWithEmail,
@@ -241,7 +240,6 @@ export function useLoginController(navigate) {
           detail: { tripId: invitationInfo.tripId, tripName: invitationInfo.tripName },
         }));
       }
-      saveSessionExpiry();
       const destination = emailMismatch ? ROUTES.HOME : (redirectTo || await getPostLoginPath(refreshedUser));
       navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : destination);
     } catch (loginError) {
@@ -349,7 +347,6 @@ export function useLoginController(navigate) {
       if (inviteToken && !emailMismatch && invitationInfo?.tripName) {
         window.dispatchEvent(new CustomEvent('zt-invitation-accepted-email', { detail: { tripName: invitationInfo.tripName } }));
       }
-      saveSessionExpiry();
       navigate(emailMismatch ? `${ROUTES.HOME}?inviteError=emailMismatch` : (redirectTo || await getPostLoginPath(user)));
     } catch (googleError) {
       const { message } = getFirebaseErrorByField(googleError);
