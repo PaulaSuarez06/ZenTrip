@@ -1,9 +1,24 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
-const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-const MONTHS_LONG = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+// Jan 1 2024 = Monday → generates Mon–Sun in order
+function getLocaleDayNames(locale) {
+  const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+  return Array.from({ length: 7 }, (_, i) => {
+    const name = fmt.format(new Date(2024, 0, 1 + i));
+    return name.charAt(0).toUpperCase() + name.slice(1, 3);
+  });
+}
+
+function getLocaleMonthName(locale, monthIndex) {
+  const fmt = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
+  const parts = fmt.formatToParts(new Date(new Date().getFullYear(), monthIndex, 1));
+  const month = parts.find(p => p.type === 'month')?.value || '';
+  const year = parts.find(p => p.type === 'year')?.value || '';
+  return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+}
 
 function toISO(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -33,6 +48,7 @@ function generateMonthGrid(year, month) {
 
 export default function HomeCalendar({ activeTripDayMap, tripNameMap, pastTripDaySet, activitiesByDate }) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const todayStr = toISO(new Date());
   const todayDate = new Date();
 
@@ -40,6 +56,8 @@ export default function HomeCalendar({ activeTripDayMap, tripNameMap, pastTripDa
   const [month, setMonth] = useState(todayDate.getMonth());
 
   const grid = useMemo(() => generateMonthGrid(year, month), [year, month]);
+  const dayNames = useMemo(() => getLocaleDayNames(language), [language]);
+  const monthLabel = useMemo(() => getLocaleMonthName(language, month), [language, month]);
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear((y) => y - 1); }
@@ -52,7 +70,7 @@ export default function HomeCalendar({ activeTripDayMap, tripNameMap, pastTripDa
   };
 
   return (
-    <div className="rounded-2xl border border-white/40 bg-white/70 p-2 sm:p-3 md:p-4 w-full">
+    <div className="rounded-2xl border border-white/40 bg-white/70 p-2 sm:p-3 md:p-4 w-full" data-no-translate>
       <div className="flex items-center justify-between mb-3">
         <button
           type="button"
@@ -62,7 +80,7 @@ export default function HomeCalendar({ activeTripDayMap, tripNameMap, pastTripDa
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-sm font-bold text-neutral-7">
-          {MONTHS_LONG[month]} {year}
+          {monthLabel}
         </span>
         <button
           type="button"
@@ -74,7 +92,7 @@ export default function HomeCalendar({ activeTripDayMap, tripNameMap, pastTripDa
       </div>
 
       <div className="grid grid-cols-7 mb-1">
-        {DAY_NAMES.map((d) => (
+        {dayNames.map((d) => (
           <div key={d} className="text-center text-[10px] font-semibold text-secondary-6/70 py-1">
             {d}
           </div>

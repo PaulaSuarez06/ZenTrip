@@ -1,9 +1,7 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import { Pencil, Trash2, LogOut } from 'lucide-react';
-import ConfirmModal from '../../../ui/ConfirmModal';
 
 export default function TripActionsMenu({ isCreator, onEditTrip, onDeleteTrip, onLeaveTrip, onClose }) {
-  const [confirmAction, setConfirmAction] = useState(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -43,7 +41,7 @@ export default function TripActionsMenu({ isCreator, onEditTrip, onDeleteTrip, o
               icon={Trash2}
               label="Eliminar viaje"
               danger
-              onClick={() => setConfirmAction('delete')}
+              onClick={() => { onClose(); onDeleteTrip(); }}
             />
           </>
         ) : (
@@ -51,34 +49,11 @@ export default function TripActionsMenu({ isCreator, onEditTrip, onDeleteTrip, o
             icon={LogOut}
             label="Salir del viaje"
             danger
-            onClick={() => setConfirmAction('leave')}
+            onClick={() => { onClose(); onLeaveTrip(); }}
           />
         )}
       </div>
 
-      {confirmAction === 'delete' && (
-        <ConfirmModal
-          title="Eliminar viaje"
-          message="¿Seguro que quieres eliminar este viaje? Esta acción no se puede deshacer y se perderán todos los datos."
-          confirmLabel="Eliminar"
-          cancelLabel="Cancelar"
-          confirmVariant="danger"
-          onConfirm={() => { setConfirmAction(null); onDeleteTrip(); }}
-          onCancel={() => { setConfirmAction(null); onClose(); }}
-        />
-      )}
-
-      {confirmAction === 'leave' && (
-        <ConfirmModal
-          title="Salir del viaje"
-          message="¿Seguro que quieres salir de este viaje? No podrás volver a acceder a menos que te inviten de nuevo."
-          confirmLabel="Salir"
-          cancelLabel="Cancelar"
-          confirmVariant="danger"
-          onConfirm={() => { setConfirmAction(null); onLeaveTrip(); }}
-          onCancel={() => { setConfirmAction(null); onClose(); }}
-        />
-      )}
     </>
   );
 }

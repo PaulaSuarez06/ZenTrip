@@ -18,8 +18,9 @@ import {
   sendLuggageGroupItemPackedNotifications,
 } from '../../../../../services/tripService';
 
-export default function LuggageTab({ tripId, tripName }) {
+export default function LuggageTab({ tripId, tripName, members = [] }) {
   const { user, profile } = useAuth();
+  const isSinglePerson = members.length <= 1;
 
   const [personalItems, setPersonalItems] = useState([]);
   const [groupItems, setGroupItems] = useState([]);
@@ -651,7 +652,7 @@ export default function LuggageTab({ tripId, tripName }) {
                   <button
                     type="button"
                     onClick={() => toggleModalItem(item)}
-                    className={`w-full px-3 py-2 pr-10 rounded-xl border text-[12px] font-semibold transition text-left break-all ${modalSelection.has(item)
+                    className={`w-full h-[50px] px-2 pr-8 rounded-xl border text-[12px] font-semibold transition text-left flex items-center justify-center ${modalSelection.has(item)
                       ? 'border-secondary-3 bg-secondary-1 text-secondary-6'
                       : 'border-secondary-2 text-secondary-5 hover:bg-secondary-1'}`}
                   >
@@ -696,9 +697,31 @@ export default function LuggageTab({ tripId, tripName }) {
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-1 p-4 sm:p-6 flex flex-col gap-5 shadow-sm">
-      <div>
+      <div className="flex flex-col gap-3">
         <h1 className="title-h3-desktop text-neutral-7">Equipaje</h1>
-        <p className="body-3 text-neutral-5 mt-1">Gestiona tu maleta y ve el progreso del grupo. Los ✓ muestran quién ya lo metió.</p>
+        <p className="body-3 text-neutral-5">Gestiona tu maleta y coordina el equipaje grupal con tus compañeros de viaje.</p>
+
+        <div className="rounded-xl bg-secondary-1 border border-secondary-2 p-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
+            <p className="body-4 font-semibold text-secondary-5"> Cómo usar:</p>
+            <div className="flex flex-col gap-2 body-3 text-neutral-6">
+              <div className="flex gap-2">
+                <span className="shrink-0 font-bold text-secondary-5">1.</span>
+                <span><strong>Crea tu lista:</strong> En "Mi maleta personal" añade todos los items que necesitas empacar (usar "Sugerencias" o "Recientes" para ir más rápido)</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="shrink-0 font-bold text-secondary-5">2.</span>
+                <span><strong>Marca como empaquetados:</strong> Cuando metas un item en la maleta, haz clic en él para marcar con ✓. La barra de progreso se actualiza automáticamente</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="shrink-0 font-bold text-secondary-5">3.</span>
+                <span><strong>Coordina con el grupo (opcional):</strong> En "Maleta grupal" crea items que compartir (botiquín, adaptadores, etc). Tus compañeros pueden apuntarse si los necesitan</span>
+              </div>
+            </div>
+          </div>
+
+         
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -774,34 +797,43 @@ export default function LuggageTab({ tripId, tripName }) {
                 return (
                 <div
                   key={group.key}
-                  className={`flex items-center justify-between p-3 rounded-xl border transition ${allPacked ? 'bg-secondary-1 border-secondary-3' : 'border-neutral-1 bg-white hover:bg-neutral-1/50'}`}
+                  className={`p-3 rounded-xl border transition ${allPacked ? 'border-secondary-3 bg-secondary-1/40' : 'border-neutral-1 bg-white hover:bg-neutral-1/50'}`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePersonalPackedGroup(itemIds, !allPacked)}
-                    disabled={submitting}
-                    className="flex items-center gap-2 flex-1 text-left"
-                  >
-                    {allPacked && <Check className="w-5 h-5 shrink-0 text-secondary-4" />}
-                    <div className="flex items-center gap-2 w-full">
-                      <span className={`body-3 ${allPacked ? 'text-secondary-5' : 'text-neutral-6'} line-clamp-2 break-all flex-1 min-w-0`}>
-                        {group.label}
-                      </span>
-                      {count > 1 && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 text-center leading-none bg-secondary-2 text-secondary-6">
-                          x{count}
-                        </span>
-                      )}
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className={`body-3 font-semibold ${allPacked ? 'text-secondary-5' : 'text-neutral-6'} line-clamp-2 break-all flex-1 min-w-0`}>
+                          {group.label}
+                        </p>
+                        {count > 1 && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 text-center leading-none bg-secondary-2 text-secondary-6">
+                            x{count}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePersonalPackedGroup(itemIds, !allPacked)}
+                        disabled={submitting}
+                        className={`mt-2 flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition disabled:opacity-50 ${
+                          allPacked
+                            ? 'bg-secondary-1 border-secondary-3 text-secondary-5'
+                            : 'border-neutral-2 text-neutral-4 hover:border-secondary-3 hover:text-secondary-5'
+                        }`}
+                      >
+                        <Check className="w-3 h-3 shrink-0" />
+                        {allPacked ? 'Empaquetado' : 'Marcar empaquetado'}
+                      </button>
                     </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePersonalGroupItems(removeId)}
-                    disabled={submitting}
-                    className="ml-2 text-neutral-4 hover:text-feedback-error-strong transition disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePersonalGroupItems(removeId)}
+                      disabled={submitting}
+                      className="ml-2 text-neutral-4 hover:text-feedback-error-strong transition disabled:opacity-50 shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               );
               })}
@@ -810,8 +842,16 @@ export default function LuggageTab({ tripId, tripName }) {
         </div>
 
         {/* Maleta Grupal */}
+        {isSinglePerson ? (
+          <div className="rounded-2xl bg-linear-to-br from-primary-1 to-primary-2 border border-primary-2 py-8 px-6 text-center flex flex-col items-center gap-3">
+            
+            <div>
+              <p className="body-3 text-primary-4">La maleta grupal se activará cuando alguien más se una al viaje</p>
+            </div>
+          </div>
+        ) : (
         <div>
-          <h2 className="title-h3-desktop text-secondary-5 mb-4"> Maleta grupal</h2>
+          <h2 className="title-h3-desktop text-secondary-5 mb-4">Maleta grupal</h2>
 
           {groupedGroupItems.length > 0 && (
             <div className="mb-4">
@@ -980,6 +1020,7 @@ export default function LuggageTab({ tripId, tripName }) {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {memberProgress.length > 0 && (

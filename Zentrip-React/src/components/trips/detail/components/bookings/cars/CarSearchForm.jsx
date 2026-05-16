@@ -15,6 +15,10 @@ function FormField({ label, icon: Icon, children }) {
   );
 }
 
+function FieldError({ msg }) {
+  return <p className="body-3 text-red-500 mt-1">{msg}</p>;
+}
+
 const inputCls = 'w-full h-10 px-3 border border-neutral-2 rounded-lg body-2 text-neutral-7 bg-white outline-none focus:border-secondary-3 focus:ring-2 focus:ring-secondary-3/20 transition';
 
 export default function CarSearchForm({
@@ -30,6 +34,7 @@ export default function CarSearchForm({
   dropOffQuery, onDropOffQueryChange,
   loading, canSearch, onSearch,
 }) {
+  const [attempted, setAttempted] = useState(false);
   const [pickUpSugg, setPickUpSugg]   = useState([]);
   const [dropOffSugg, setDropOffSugg] = useState([]);
   const [pickUpOpen, setPickUpOpen]   = useState(false);
@@ -59,6 +64,12 @@ export default function CarSearchForm({
     onDropOffQueryChange?.(val);
     clearTimeout(dropOffTimer.current);
     dropOffTimer.current = setTimeout(() => fetchSugg(val, setDropOffSugg), 350);
+  };
+
+  const handleSearch = () => {
+    setAttempted(true);
+    if (!canSearch) return;
+    onSearch();
   };
 
   const locLabel = (loc) => loc.name + (loc.city ? ` – ${loc.city}` : '');
@@ -128,6 +139,7 @@ export default function CarSearchForm({
               </ul>
             )}
           </div>
+          {attempted && !pickUpLocation && <FieldError msg="Selecciona el lugar de recogida de la lista" />}
         </FormField>
       </div>
 
@@ -157,6 +169,7 @@ export default function CarSearchForm({
                 </ul>
               )}
             </div>
+            {attempted && !dropOffLocation && <FieldError msg="Selecciona el lugar de devolución de la lista" />}
           </FormField>
         </div>
       )}
@@ -165,15 +178,19 @@ export default function CarSearchForm({
       <div className="grid grid-cols-2 gap-4 mb-4">
         <FormField label="Recogida" icon={Calendar}>
           <input type="date" value={pickUpDate} min={today} max={maxDate} onChange={(e) => { if (e.target.value <= maxDate) onPickUpDateChange(e.target.value); }} className={inputCls} />
+          {attempted && !pickUpDate && <FieldError msg="Selecciona la fecha de recogida" />}
         </FormField>
         <FormField label="Hora recogida" icon={Clock}>
           <input type="time" value={pickUpTime} onChange={(e) => onPickUpTimeChange(e.target.value)} className={inputCls} />
+          {attempted && !pickUpTime && <FieldError msg="Indica la hora de recogida" />}
         </FormField>
         <FormField label="Devolución" icon={Calendar}>
           <input type="date" value={dropOffDate} min={pickUpDate || today} max={maxDate} onChange={(e) => { if (e.target.value <= maxDate) onDropOffDateChange(e.target.value); }} className={inputCls} />
+          {attempted && !dropOffDate && <FieldError msg="Selecciona la fecha de devolución" />}
         </FormField>
         <FormField label="Hora devolución" icon={Clock}>
           <input type="time" value={dropOffTime} onChange={(e) => onDropOffTimeChange(e.target.value)} className={inputCls} />
+          {attempted && !dropOffTime && <FieldError msg="Indica la hora de devolución" />}
         </FormField>
       </div>
 
@@ -188,14 +205,15 @@ export default function CarSearchForm({
             onChange={(e) => onDriverAgeChange(Number(e.target.value))}
             className={inputCls}
           />
+          {attempted && (driverAge < 18 || driverAge > 99) && <FieldError msg="La edad debe estar entre 18 y 99 años" />}
         </FormField>
       </div>
 
       <div className="border-t border-neutral-1 mb-6" />
 
       <button
-        onClick={onSearch}
-        disabled={!canSearch || loading}
+        onClick={handleSearch}
+        disabled={loading}
         className={`w-full h-12 rounded-lg font-titles font-bold text-white flex items-center justify-center gap-2 transition ${
           canSearch && !loading ? 'bg-primary-3 hover:bg-primary-4' : 'bg-neutral-2 cursor-not-allowed'
         }`}

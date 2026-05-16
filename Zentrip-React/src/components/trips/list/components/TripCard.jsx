@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { getGradient } from '../../../../utils/gradients';
 import CoverUploadModal from './CoverUploadModal';
-
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+import { useLanguage } from '../../../../context/LanguageContext';
+import { buildDateHelpers } from '../../../../utils/localeDate';
 
 const STATUS_CONFIG = {
   en_curso:  { label: 'En curso',      className: 'bg-primary-1 text-primary-3' },
@@ -88,6 +88,8 @@ function deriveDatesFromTrip(trip) {
 }
 
 export default function TripCard({ trip, isDraft, memberCount, creatorName, totalSpent, imageHeight = 'h-36', contentGap = 'gap-2', onClick, onDelete, onEdit, onImageUpload }) {
+  const { language } = useLanguage();
+  const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
   const [confirming, setConfirming] = useState(false);
   const [nameConfirm, setNameConfirm] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -96,12 +98,17 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
   const name        = trip.name        || 'Viaje sin nombre';
   const origin      = trip.origin      || '';
   const destination = trip.destination || '';
+  const namedStops  = (trip.stops || []).filter((s) => s.name?.trim());
+  const stopCount   = namedStops.length;
+  const routeLabel  = origin && destination
+    ? stopCount > 0 ? `${origin} → ${stopCount} ${stopCount === 1 ? 'parada' : 'paradas'} → ${destination}` : `${origin} → ${destination}`
+    : origin || destination;
   const { startDate, endDate } = deriveDatesFromTrip(trip);
   const status      = isDraft ? 'borrador' : (trip.status || 'proximo');
 
   const gradient  = getGradient(destination || name);
   const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.proximo;
-  const dateLabel = formatDateRange(startDate, endDate);
+  const dateLabel = formatRange(startDate, endDate);
 
   const blockClick = confirming || nameConfirm || coverModalOpen;
 
@@ -157,10 +164,8 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
         <div className={`p-4 flex flex-col ${contentGap} flex-1`}>
           <h3 className="body-bold text-secondary-5 truncate">{name}</h3>
 
-          {(origin || destination) && (
-            <p className="body-3 text-neutral-3 truncate">
-              {origin && destination ? `${origin} → ${destination}` : origin || destination}
-            </p>
+          {routeLabel && (
+            <p className="body-3 text-neutral-3 truncate">{routeLabel}</p>
           )}
 
           <div className="flex items-center gap-4 body-3 text-neutral-4 flex-wrap">

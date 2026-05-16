@@ -3,19 +3,22 @@ import Navbar from "../components/shared/layout/Navbar";
 import Footer from "../components/shared/layout/Footer";
 import ScrollToTop from "../components/shared/ScrollToTop";
 import FloatingChatContainer from "../components/chat/FloatingChatContainer";
+import TranslationApplier from "../components/shared/TranslationApplier";
 
 export default function MainLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <ScrollToTop />
-      <div className="sticky top-0 z-40 px-4 pt-4">
-        <Navbar />
+    <TranslationApplier>
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <ScrollToTop />
+        <div className="sticky top-0 z-40 px-4 pt-4">
+          <Navbar />
+        </div>
+        <main className="flex-1 px-4 py-6">
+          <Outlet />
+        </main>
+        <Footer />
+        <FloatingChatContainer />
       </div>
-      <main className="flex-1 px-4 py-6">
-        <Outlet />
-      </main>
-      <Footer />
-      <FloatingChatContainer />
-    </div>
+    </TranslationApplier>
   );
 }

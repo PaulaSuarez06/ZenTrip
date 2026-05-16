@@ -1,6 +1,6 @@
 export default function CarCard({ car, onView }) {
   return (
-    <div className="flex flex-col sm:flex-row bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-md transition-all cursor-pointer">
+    <div onClick={() => onView(car)} className="flex flex-col sm:flex-row bg-white border border-neutral-1 rounded-xl overflow-hidden hover:border-primary-2 hover:shadow-md transition-all cursor-pointer">
 
       {/* Imagen */}
       <div className="w-full h-40 sm:h-auto sm:w-36 sm:shrink-0 bg-secondary-1 flex items-center justify-center overflow-hidden">

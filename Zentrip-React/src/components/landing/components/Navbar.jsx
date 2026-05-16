@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 const NAV_LINKS = [
   { label: "Funcionalidades", id: "funcionalidades" },
   { label: "Cómo funciona",   id: "como-funciona"   },
-  { label: "Pet-friendly",    id: "pet-friendly"    },
+  //{ label: "Pet-friendly",    id: "pet-friendly"    },
   { label: "Comunidad",       id: "comunidad"       },
 ];
 

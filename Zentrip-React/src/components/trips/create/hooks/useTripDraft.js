@@ -13,7 +13,7 @@ const INITIAL_FORM = {
   startDate: '',
   endDate: '',
   currency: '',
-  hasPet: false,
+  soloTravel: false,
   members: [],
 };
 
@@ -90,11 +90,13 @@ export function useTripDraft(prefill = null) {
     if (step === 0) {
       const errors = validate();
       if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+      if (form.soloTravel) { setStep(2); return; }
     }
     if (step < 2) setStep((s) => s + 1);
   };
 
   const handleBack = () => {
+    if (step === 2 && form.soloTravel) { setStep(0); return; }
     if (step > 0) setStep((s) => s - 1);
     else navigate(ROUTES.TRIPS.LIST);
   };

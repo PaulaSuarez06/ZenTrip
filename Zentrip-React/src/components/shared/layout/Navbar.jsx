@@ -1,12 +1,66 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavbarController } from "./hooks/useNavbarController";
 import UserAvatar from "../../ui/UserAvatar";
 import NotificationPanel from "../notifications/NotificationPanel";
 import ChatMessagePanel from "../notifications/ChatMessagePanel";
+import { useLanguage, LANGUAGES } from "../../../context/LanguageContext";
+import { useTranslatedContent } from "../../../hooks/useTranslatedContent";
 
 const TRANSLATE_ICON = "/img/header/translate.png";
 const logo = "/img/logo/logo-sin-texto-png.png";
 const NAV_ITEMS = ["Explorar", "Mis viajes", "Comunidad"];
+
+function LanguageSelector() {
+    const { language, setLanguage } = useLanguage();
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const current = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative hidden sm:block">
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                className="p-1 cursor-pointer relative"
+                aria-label="Cambiar idioma"
+                title={current.label}
+            >
+                <img src={TRANSLATE_ICON} alt="Idioma" className="w-8 h-8 object-contain" />
+                {language !== 'es' && (
+                    <span className="absolute -bottom-0.5 -right-0.5 text-[11px] leading-none">{current.flag}</span>
+                )}
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-full mt-2 w-44 bg-white/95 backdrop-blur-sm border border-neutral-2 rounded-2xl shadow-lg overflow-hidden z-50 py-1">
+                    {LANGUAGES.map((lang) => (
+                        <button
+                            key={lang.code}
+                            type="button"
+                            onClick={() => { setLanguage(lang.code); setOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 body-3 font-semibold transition-colors text-left ${
+                                language === lang.code
+                                    ? 'bg-primary-1 text-primary-3'
+                                    : 'text-neutral-5 hover:bg-neutral-1'
+                            }`}
+                        >
+                            <span className="text-lg">{lang.flag}</span>
+                            {lang.label}
+                            {language === lang.code && <span className="ml-auto text-primary-3">✓</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 const Header = () => {
     const {
@@ -31,6 +85,7 @@ const Header = () => {
         handleGoToAdmin,
         handleGoHome,
         handleGoToMyTrips,
+        handleGoToExplore,
         handleGoToCommunity,
         handleLogout,
         isAdmin,
@@ -39,6 +94,7 @@ const Header = () => {
     const profileMenuRef = useRef(null);
     const mobileMenuRef = useRef(null);
     const hamburgerRef = useRef(null);
+    const translatedNavItems = useTranslatedContent(NAV_ITEMS);
 
     useEffect(() => {
         if (!profileMenuOpen) return undefined;
@@ -93,7 +149,7 @@ const Header = () => {
                 onClick={handleGoHome}
             >
                 <img src={logo} alt="ZenTrip" className="h-10 w-auto" />
-                <span className="title-h3-desktop whitespace-nowrap mt-1">
+                <span className="title-h3-desktop whitespace-nowrap mt-1" data-no-translate>
                     <span className="text-secondary-5">Zen</span>
                     <span className="text-primary-3">Trip</span>
                 </span>
@@ -101,10 +157,11 @@ const Header = () => {
 
             {/* Nav desktop */}
             <nav className="hidden md:flex flex-1 items-center justify-center gap-8 px-4">
-                {NAV_ITEMS.map((item) => {
+                {NAV_ITEMS.map((item, idx) => {
                     const onClick =
                         item === 'Mis viajes' ? handleGoToMyTrips :
                         item === 'Comunidad' ? handleGoToCommunity :
+                        item === 'Explorar' ? handleGoToExplore :
                         handleGoHome;
                     return (
                         <button
@@ -113,7 +170,7 @@ const Header = () => {
                             onClick={onClick}
                             className="body-2-semibold text-neutral-7 hover:text-primary-3 transition-colors duration-200 bg-transparent border-none p-0 cursor-pointer"
                         >
-                            {item}
+                            {translatedNavItems[idx] ?? item}
                         </button>
                     );
                 })}
@@ -157,10 +214,7 @@ const Header = () => {
                 </div>
 
                 {/* Idioma */}
-                <button className="p-1 hidden sm:block cursor-pointer">
-                    <img src={TRANSLATE_ICON} alt="Idioma" className="w-8 h-8 object-contain" />
-
-                </button>
+                <LanguageSelector />
 
                 {/* Avatar */}
                 <div ref={profileMenuRef} className="relative shrink-0">

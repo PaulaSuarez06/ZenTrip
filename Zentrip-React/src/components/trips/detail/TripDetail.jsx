@@ -70,12 +70,13 @@ export default function TripDetail() {
   const [activeTab, setActiveTab] = useState(location.state?.activeTab ?? 'itinerario');
   const [initialBooking, setInitialBooking]         = useState(null);
   const [initialRouteData, setInitialRouteData]     = useState(null);
-  const [initialBookingSubTab, setInitialBookingSubTab]   = useState(location.state?.subTab ?? 'hoteles');
+  const [initialBookingSubTab, setInitialBookingSubTab]   = useState(location.state?.subTab ?? 'todas');
   const [highlightBookingId, setHighlightBookingId]       = useState(location.state?.highlightBookingId ?? null);
   const [highlightActivityId, setHighlightActivityId]     = useState(location.state?.highlightActivityId ?? null);
   const [highlightDate, setHighlightDate]                 = useState(location.state?.highlightDate ?? null);
   const [showLeaveModal, setShowLeaveModal]         = useState(false);
   const [chatMessages, setChatMessages]             = useState([]);
+  const [showDeleteModal, setShowDeleteModal]       = useState(false);
   const { markTripChatAsRead } = useChatNotifications();
   const { setActiveChatTrip } = useChatUI();
 
@@ -304,10 +305,13 @@ export default function TripDetail() {
 
   const handleLeaveTrip = async () => {
     try {
+      console.log('[TripDetail] Iniciando salida del viaje...');
       await removeMemberFromTrip(tripId, user.uid);
-      navigate('/trips');
+      console.log('[TripDetail] Salida exitosa, recargando página...');
+      window.location.href = '/trips';
     } catch (err) {
       console.error('[TripDetail] Error al salir del viaje:', err);
+      setShowLeaveModal(false);
     }
   };
 
@@ -343,10 +347,13 @@ export default function TripDetail() {
 
   const handleDeleteTrip = async () => {
     try {
+      console.log('[TripDetail] Iniciando eliminación del viaje...');
       await deleteTrip(tripId);
-      navigate(ROUTES.TRIPS.LIST);
+      console.log('[TripDetail] Viaje eliminado exitosamente, navegando...');
+      window.location.href = ROUTES.TRIPS.LIST;
     } catch (err) {
       console.error('[TripDetail] Error al eliminar viaje:', err);
+      alert('Error al eliminar el viaje. Intenta nuevamente.');
     }
   };
 
@@ -475,6 +482,17 @@ export default function TripDetail() {
           onCancel={() => setShowLeaveModal(false)}
         />
       )}
+      {showDeleteModal && (
+        <ConfirmModal
+          title="Eliminar viaje"
+          message="¿Seguro que quieres eliminar este viaje? Esta acción no se puede deshacer y se perderán todos los datos."
+          confirmLabel="Eliminar"
+          cancelLabel="Cancelar"
+          confirmVariant="danger"
+          onConfirm={handleDeleteTrip}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
       {/* Back link */}
       <button
         type="button"
@@ -493,7 +511,7 @@ export default function TripDetail() {
         currentWeather={currentWeather}
         isCreator={isCreator}
         onEditTrip={handleEditTrip}
-        onDeleteTrip={handleDeleteTrip}
+        onDeleteTrip={() => setShowDeleteModal(true)}
         onLeaveTrip={() => setShowLeaveModal(true)}
       />
 

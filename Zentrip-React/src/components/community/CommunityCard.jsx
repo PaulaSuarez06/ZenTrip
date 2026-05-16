@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Heart, MessageCircle, Bookmark, MapPin, Users, Calendar, Copy, Check, Trash2 } from 'lucide-react';
 import { getGradient } from '../../utils/gradients';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { toggleLike, toggleSave } from '../../services/communityService';
 import { followUser, unfollowUser } from '../../services/followService';
 import UserAvatar from '../ui/UserAvatar';
+import { useLanguage } from '../../context/LanguageContext';
+import { buildDateHelpers } from '../../utils/localeDate';
 
 function useCopyLink(postId) {
   const [copied, setCopied] = useState(false);
@@ -19,8 +21,6 @@ function useCopyLink(postId) {
   }
   return { copied, copy };
 }
-
-const MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
 function timeAgo(timestamp) {
   if (!timestamp) return '';
@@ -38,22 +38,11 @@ function timeAgo(timestamp) {
   return `hace ${months} mes${months !== 1 ? 'es' : ''}`;
 }
 
-function formatDateRange(startDate, endDate) {
-  if (!startDate && !endDate) return null;
-  const parse = (d) => { const [y, m, day] = d.split('-'); return { y: +y, m: +m - 1, d: +day }; };
-  if (startDate && endDate) {
-    const s = parse(startDate);
-    const e = parse(endDate);
-    if (s.y === e.y && s.m === e.m)
-      return `${s.d}-${e.d} ${MONTHS_SHORT[s.m]} ${s.y}`;
-    return `${s.d} ${MONTHS_SHORT[s.m]} - ${e.d} ${MONTHS_SHORT[e.m]} ${e.y}`;
-  }
-  return null;
-}
-
 export default function CommunityCard({ post, onCommentClick, onDelete, followingIds = [], onFollowChange, onPostUpdate }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
   const { copied, copy } = useCopyLink(post.id);
   const [likes, setLikes] = useState(post.likes ?? 0);
   const [likedBy, setLikedBy] = useState(post.likedBy ?? []);
@@ -68,7 +57,7 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
   const isOwner = user ? user.uid === post.userId : false;
-  const dateLabel = formatDateRange(post.startDate, post.endDate);
+  const dateLabel = formatRange(post.startDate, post.endDate);
 
   useEffect(() => {
     setFollowing(followingIds.includes(post.userId));

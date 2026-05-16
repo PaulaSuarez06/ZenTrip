@@ -148,4 +148,5 @@ const getRoomListController = async (req, res, next) => {
   }
 };
 
+// reseñas de hotel
 module.exports = { searchHotelsController, getHotelDetailsController, getHotelPoliciesController, getHotelPhotosController, getChildrenPoliciesController, getRoomListController };

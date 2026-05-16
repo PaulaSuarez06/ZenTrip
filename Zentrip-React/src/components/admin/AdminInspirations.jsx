@@ -71,6 +71,7 @@ function cloneForm(article) {
 function RichTextEditor({ value, onChange, placeholder }) {
   const ref = useRef(null);
   const focused = useRef(false);
+  const [activeFormats, setActiveFormats] = useState({});
 
   useEffect(() => {
     if (!focused.current && ref.current) {
@@ -78,34 +79,52 @@ function RichTextEditor({ value, onChange, placeholder }) {
     }
   }, [value]);
 
-  const exec = (cmd, value = null) => {
-    ref.current.focus();
-    document.execCommand(cmd, false, value);
-    onChange(ref.current.innerHTML);
+  const updateActiveFormats = () => {
+    setActiveFormats({
+      bold:          document.queryCommandState('bold'),
+      italic:        document.queryCommandState('italic'),
+      underline:     document.queryCommandState('underline'),
+      unorderedList: document.queryCommandState('insertUnorderedList'),
+      orderedList:   document.queryCommandState('insertOrderedList'),
+    });
   };
 
-  const ToolBtn = ({ cmd, htmlValue, label }) => (
-    <button
-      type="button"
-      onMouseDown={(e) => {
-        e.preventDefault();
-        exec(htmlValue ? 'insertHTML' : cmd, htmlValue ?? null);
-      }}
-      className="px-2 py-1 rounded body-3 hover:bg-neutral-2 text-secondary-5 transition-colors cursor-pointer select-none"
-    >
-      {label}
-    </button>
-  );
+  const exec = (cmd, val = null) => {
+    ref.current.focus();
+    document.execCommand(cmd, false, val);
+    onChange(ref.current.innerHTML);
+    updateActiveFormats();
+  };
+
+  const ToolBtn = ({ cmd, activeKey, label }) => {
+    const isActive = activeFormats[activeKey ?? cmd];
+    return (
+      <button
+        type="button"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          exec(cmd);
+        }}
+        className={`px-2 py-1 rounded body-3 transition-colors cursor-pointer select-none ${
+          isActive
+            ? 'bg-primary-3 text-white'
+            : 'hover:bg-neutral-2 text-secondary-5'
+        }`}
+      >
+        {label}
+      </button>
+    );
+  };
 
   return (
     <div className="border border-neutral-2 rounded-lg overflow-hidden">
       <div className="flex gap-0.5 px-2 py-1 border-b border-neutral-2 bg-slate-50">
-        <ToolBtn cmd="bold"      label={<strong>N</strong>} />
-        <ToolBtn cmd="italic"    label={<em>K</em>} />
-        <ToolBtn cmd="underline" label={<u>S</u>} />
+        <ToolBtn cmd="bold"                activeKey="bold"          label={<strong>N</strong>} />
+        <ToolBtn cmd="italic"              activeKey="italic"        label={<em>K</em>} />
+        <ToolBtn cmd="underline"           activeKey="underline"     label={<u>S</u>} />
         <span className="w-px bg-neutral-2 mx-1 self-stretch" />
-        <ToolBtn cmd="insertUnorderedList" label="• Lista" />
-        <ToolBtn cmd="insertOrderedList" label="1. Lista" />
+        <ToolBtn cmd="insertUnorderedList" activeKey="unorderedList" label="• Lista" />
+        <ToolBtn cmd="insertOrderedList"   activeKey="orderedList"   label="1. Lista" />
       </div>
       <div className="relative">
         {!value && (
@@ -117,10 +136,13 @@ function RichTextEditor({ value, onChange, placeholder }) {
           ref={ref}
           contentEditable
           suppressContentEditableWarning
-          onFocus={() => { focused.current = true; }}
+          onFocus={() => { focused.current = true; updateActiveFormats(); }}
           onBlur={() => { focused.current = false; onChange(ref.current.innerHTML); }}
           onInput={() => onChange(ref.current.innerHTML)}
-          className="min-h-20 p-3 body-3 focus:outline-none"
+          onKeyUp={updateActiveFormats}
+          onMouseUp={updateActiveFormats}
+          onSelect={updateActiveFormats}
+          className="min-h-20 p-3 body-3 focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_li]:mb-0.5"
         />
       </div>
     </div>

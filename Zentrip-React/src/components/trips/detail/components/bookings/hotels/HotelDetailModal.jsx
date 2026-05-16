@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
-import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink } from 'lucide-react';
+import { X, MapPin, ChevronLeft, ChevronRight, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, ExternalLink, Maximize2 } from 'lucide-react';
+import ImageLightbox from '../ImageLightbox';
 import { apiClient } from '../../../../../../services/apiClient';
 import { addActivity, addBooking, getBookings, sendBookingNotifications, updateBooking } from '../../../../../../services/tripService';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { ScoreBadge, StarRow } from './HotelAtoms';
 import BookingReceiptUpload from '../BookingReceiptUpload';
+import PassengerSelector from '../../../../shared/PassengerSelector';
 
-// ─── HotelDetailModal ─────────────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
 
-export default function HotelDetailModal({ hotel, searchParams, tripId, trip, onClose, userTrips = [], loadingUserTrips = false, onSaveToExistingTrip, onCreateNewTrip }) {
+export default function HotelDetailModal({ hotel, searchParams, tripId, trip, members = [], onClose, userTrips = [], loadingUserTrips = false, onSaveToExistingTrip, onCreateNewTrip }) {
   const { checkIn, checkOut, adults, rooms, currency } = searchParams;
   const { user, profile } = useAuth();
 
@@ -22,11 +28,19 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
   const [policies, setPolicies] = useState([]);
   const [roomList, setRoomList] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(true);
-  const [booking, setBooking]   = useState(false);
-  const [booked, setBooked]     = useState(false);
+
+  // 'detail' | 'confirm' | 'booked' | 'duplicate'
+  const [step, setStep] = useState('detail');
+  const [saving, setSaving] = useState(false);
   const [bookingId, setBookingId] = useState(null);
-  const [duplicate, setDuplicate] = useState(false);
+  const [receiptUrls, setReceiptUrls] = useState([]);
+
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState('all');
+
+  const acceptedMembers = members.filter((m) => m.invitationStatus === 'accepted');
+  const canSave = selectedMembers === 'all' || (Array.isArray(selectedMembers) && selectedMembers.length > 0);
 
   const POLICY_LABELS = {
     POLICY_CHILDREN: 'Niños',
@@ -118,7 +132,6 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     return () => { cancelled = true; };
   }, [hotel.id, checkIn, checkOut, adults, rooms, currency]);
 
-  // Si no estamos en un viaje específico, comprobamos en la BD los viajes del usuario
   useEffect(() => {
     if (tripId || !user) return;
 
@@ -140,7 +153,6 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
 
   const getBookingData = () => {
     const bookingUrl = `https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`;
-    // Dirección del hotel: específica > nombre+ciudad > ciudad > nombre
     const cityStr = hotel.loc || hotel.city || '';
     const address =
       prop.location?.address ||
@@ -153,8 +165,8 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     return {
       type: 'hotel',
       hotelId: hotel.id,
-      name: hotel.name, // Requerido por el controlador Node
-      city: hotel.loc || '', // Requerido por el controlador Node
+      name: hotel.name,
+      city: hotel.loc || '',
       hotelName: hotel.name,
       hotelStars: hotel.stars,
       hotelScore: hotel.score,
@@ -168,7 +180,8 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
       currency: hotel.currency,
       status: 'reservado',
       bookingUrl,
-      address, // <--- SIEMPRE GUARDAR DIRECCIÓN
+      address,
+      members: selectedMembers,
       createdBy: {
         uid: user.uid,
         name: profile?.displayName || profile?.firstName || user.email,
@@ -177,20 +190,24 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     };
   };
 
-  const handleBooked = async () => {
+  const handleBooked = () => {
     if (!tripId) {
       setShowTripSelector(true);
       return;
     }
+    setStep('confirm');
+  };
 
-    setBooking(true);
+  const handleSave = async () => {
+    if (!tripId) return;
+    setSaving(true);
     try {
       const existing = await getBookings(tripId);
       const isDuplicate = existing.some(
         (b) => b.hotelId === hotel.id && b.checkIn === checkIn && b.checkOut === checkOut
       );
       if (isDuplicate) {
-        setDuplicate(true);
+        setStep('duplicate');
         return;
       }
       const bookingData = getBookingData();
@@ -205,7 +222,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         status: 'reservado',
         address,
       });
-      const newBookingId = await addBooking(tripId, { ...bookingData, activityId });
+      const newBookingId = await addBooking(tripId, { ...bookingData, activityId, receiptUrls: receiptUrls.length ? receiptUrls : [] });
       await sendBookingNotifications(tripId, {
         bookerUid: user.uid,
         bookerName: profile?.displayName || profile?.firstName || 'Un miembro',
@@ -213,11 +230,11 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         tripName: trip?.name || '',
       });
       setBookingId(newBookingId);
-      setBooked(true);
+      setStep('booked');
     } catch (err) {
       console.error('[HotelDetailModal] Error al guardar reserva:', err);
     } finally {
-      setBooking(false);
+      setSaving(false);
     }
   };
 
@@ -226,7 +243,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
     setSaveError(null);
     try {
       await onSaveToExistingTrip(targetTripId, getBookingData());
-      setBooked(true);
+      setStep('booked');
       setShowTripSelector(false);
     } catch {
       setSaveError('No se pudo guardar la reserva. Inténtalo de nuevo.');
@@ -262,26 +279,39 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-neutral-7/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-neutral-7/60 backdrop-blur-sm" onClick={step !== 'booked' ? onClose : undefined} />
 
       {/* Panel */}
       <div className="relative z-10 w-full max-w-2xl max-h-[90vh] bg-white rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
 
         {/* Header fijo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-1 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <ScoreBadge score={reviewScore} />
-            <div className="min-w-0">
-              <p className="body-2-semibold text-neutral-7 truncate">{hotel.name}</p>
-              <StarRow stars={hotel.stars} />
+          {step === 'confirm' ? (
+            <button
+              type="button"
+              onClick={() => setStep('detail')}
+              className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-neutral-6 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver
+            </button>
+          ) : (
+            <div className="flex items-center gap-3 min-w-0">
+              <ScoreBadge score={reviewScore} />
+              <div className="min-w-0">
+                <p className="body-2-semibold text-neutral-7 truncate">{hotel.name}</p>
+                <StarRow stars={hotel.stars} />
+              </div>
             </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full border border-neutral-2 flex items-center justify-center text-neutral-5 hover:bg-neutral-1 transition shrink-0 ml-3"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          )}
+          {step !== 'booked' && (
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full border border-neutral-2 flex items-center justify-center text-neutral-5 hover:bg-neutral-1 transition shrink-0 ml-3"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Selector de viaje (Modal interno) */}
@@ -295,7 +325,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
             </div>
             <div className="flex-1 overflow-y-auto p-5">
               <p className="body-3 text-neutral-4 mb-4">Selecciona el viaje donde quieres guardar este alojamiento:</p>
-              
+
               {(loadingUserTrips || internalLoading) ? (
                 <div className="flex justify-center py-10">
                   <span className="w-6 h-6 border-2 border-primary-3 border-t-transparent rounded-full animate-spin" />
@@ -337,7 +367,7 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
                   {saveError && (
                     <p className="body-3 text-feedback-error-strong text-center py-1">{saveError}</p>
                   )}
-                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Crear un nuevo viaje</button>
+                  <button onClick={() => onCreateNewTrip(hotel.loc, checkIn, checkOut, getBookingData())} className="w-full p-4 border-2 border-dashed border-neutral-2 rounded-xl text-neutral-5 body-2-semibold hover:border-primary-3 hover:text-primary-3 hover:bg-primary-1/30 transition text-center mt-2">+ Planificar un nuevo viaje</button>
                 </div>
               )}
             </div>
@@ -347,212 +377,282 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, on
         {/* Contenido scrollable */}
         <div className="overflow-y-auto flex-1">
 
-          {/* Galería de fotos */}
-          {photos.length > 0 && (
-            <div className="relative h-52 bg-neutral-1">
-              <img src={photos[photoIndex]} alt={hotel.name} className="w-full h-full object-cover" />
-              {photos.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setPhotoIndex((i) => (i - 1 + photos.length) % photos.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-neutral-6" />
-                  </button>
-                  <button
-                    onClick={() => setPhotoIndex((i) => (i + 1) % photos.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition"
-                  >
-                    <ChevronRight className="w-4 h-4 text-neutral-6" />
-                  </button>
-                  <span className="absolute bottom-2 right-3 text-[11px] bg-neutral-7/60 text-white px-2 py-0.5 rounded-full">
-                    {photoIndex + 1} / {photos.length}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-
-          <div className="p-5">
-
-            {/* Valoración y ubicación */}
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                {address && (
-                  <p className="flex items-center gap-1 body-3 text-neutral-4 mb-2">
-                    <MapPin className="w-3 h-3 shrink-0" /> {address}
-                  </p>
+          {step === 'confirm' ? (
+            <div className="p-5 flex flex-col gap-5">
+              {/* Resumen del hotel */}
+              <div className="bg-secondary-1/40 rounded-xl p-4 flex items-center gap-3">
+                {photos[0] && (
+                  <img src={photos[0]} alt={hotel.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
                 )}
-                {reviewWord && (
-                  <div className="flex items-center gap-2">
-                    <span className="body-2-semibold text-neutral-7">{reviewWord}</span>
-                    {reviewCount > 0 && <span className="body-3 text-neutral-4">({reviewCount.toLocaleString()} valoraciones)</span>}
+                <div className="min-w-0">
+                  <p className="body-2-semibold text-neutral-7 truncate">{hotel.name}</p>
+                  {(hotel.loc || address) && <p className="body-3 text-neutral-4 truncate">📍 {hotel.loc || address}</p>}
+                  <p className="body-3 text-neutral-4">
+                    {[
+                      `${fmtDate(checkIn)} → ${fmtDate(checkOut)}`,
+                      nights > 0 ? `${nights} noche${nights !== 1 ? 's' : ''}` : null,
+                      hotel.price != null && nights > 0 ? `${hotel.price * nights} ${hotel.currency}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+
+              {acceptedMembers.length > 0 && (
+                <PassengerSelector
+                  members={acceptedMembers}
+                  value={selectedMembers}
+                  onChange={setSelectedMembers}
+                  label="¿Para quién es el alojamiento?"
+                />
+              )}
+
+              <div>
+                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Captura de la reserva</p>
+                <BookingReceiptUpload onUpdate={(urls) => setReceiptUrls(urls)} />
+              </div>
+            </div>
+
+          ) : step === 'booked' ? (
+            <div className="p-5 flex flex-col items-center py-10 gap-4 text-center">
+              <div className="w-16 h-16 rounded-full bg-auxiliary-green-1 flex items-center justify-center text-3xl">✓</div>
+              <div>
+                <p className="body-semibold text-neutral-7">Alojamiento guardado en el viaje</p>
+                <p className="body-3 text-neutral-4 mt-1">{hotel.name}</p>
+              </div>
+            </div>
+
+          ) : (
+            <>
+              {/* Galería de fotos */}
+              {photos.length > 0 && (
+                <div className="relative h-52 bg-neutral-1 cursor-pointer" onClick={() => setLightboxOpen(true)}>
+                  <img src={photos[photoIndex]} alt={hotel.name} className="w-full h-full object-cover" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+                    className="absolute top-2 right-2 w-8 h-8 bg-neutral-7/60 text-white rounded-full flex items-center justify-center hover:bg-neutral-7 transition"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                  {photos.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPhotoIndex((i) => (i - 1 + photos.length) % photos.length); }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-neutral-6" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPhotoIndex((i) => (i + 1) % photos.length); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition"
+                      >
+                        <ChevronRight className="w-4 h-4 text-neutral-6" />
+                      </button>
+                      <span className="absolute bottom-2 right-3 text-[11px] bg-neutral-7/60 text-white px-2 py-0.5 rounded-full pointer-events-none">
+                        {photoIndex + 1} / {photos.length}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+              {lightboxOpen && (
+                <ImageLightbox
+                  photos={photos}
+                  index={photoIndex}
+                  onChange={setPhotoIndex}
+                  onClose={() => setLightboxOpen(false)}
+                />
+              )}
+
+              <div className="p-5">
+
+                {/* Valoración y ubicación */}
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    {address && (
+                      <p className="flex items-center gap-1 body-3 text-neutral-4 mb-2">
+                        <MapPin className="w-3 h-3 shrink-0" /> {address}
+                      </p>
+                    )}
+                    {reviewWord && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="body-2-semibold text-neutral-7">{reviewWord}</span>
+                        {reviewCount > 0 && <span className="body-3 text-neutral-4">({reviewCount.toLocaleString()} valoraciones)</span>}
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded">Booking.com</span>
+                      </div>
+                    )}
+                  </div>
+                  {hotel.price != null && (
+                    <div className="text-right shrink-0">
+                      <p className="body-3 text-neutral-4">desde</p>
+                      <p className="title-h3-desktop text-neutral-7 leading-tight">{hotel.price} {hotel.currency}<span className="body-3 text-neutral-4 font-normal"> /noche</span></p>
+                      {nights > 0 && (
+                        <p className="body-3 font-bold text-primary-3 mt-0.5">
+                          {hotel.price * nights} {hotel.currency} total ({nights} noche{nights !== 1 ? 's' : ''})
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Descripción */}
+                {loadingDetails && !description && (
+                  <div className="flex items-center gap-2 body-3 text-neutral-4 mb-4">
+                    <span className="w-4 h-4 border-2 border-neutral-2 border-t-secondary-3 rounded-full animate-spin" />
+                    Cargando detalles…
                   </div>
                 )}
-              </div>
-              {hotel.price != null && (
-                <div className="text-right shrink-0">
-                  <p className="body-3 text-neutral-4">desde</p>
-                  <p className="title-h3-desktop text-neutral-7 leading-tight">{hotel.price} {hotel.currency}<span className="body-3 text-neutral-4 font-normal"> /noche</span></p>
-                  {nights > 0 && (
-                    <p className="body-3 font-bold text-primary-3 mt-0.5">
-                      {hotel.price * nights} {hotel.currency} total ({nights} noche{nights !== 1 ? 's' : ''})
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                {description && (
+                  <div className="mb-5">
+                    <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-2">Descripción</p>
+                    <p className="body-3 text-neutral-5 leading-relaxed">{description}</p>
+                  </div>
+                )}
 
-            {/* Descripción */}
-            {loadingDetails && !description && (
-              <div className="flex items-center gap-2 body-3 text-neutral-4 mb-4">
-                <span className="w-4 h-4 border-2 border-neutral-2 border-t-secondary-3 rounded-full animate-spin" />
-                Cargando detalles…
-              </div>
-            )}
-            {description && (
-              <div className="mb-5">
-                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-2">Descripción</p>
-                <p className="body-3 text-neutral-5 leading-relaxed">{description}</p>
-              </div>
-            )}
-
-            {/* Check-in / Check-out */}
-            {(checkinTime || checkoutTime) && (
-              <div className="bg-secondary-1/40 rounded-xl p-4 mb-5">
-                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Horarios</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {checkinTime && (
-                    <div>
-                      <p className="body-3 text-neutral-4 mb-0.5">Check-in</p>
-                      <p className="body-2-semibold text-neutral-7">Desde {checkinTime}</p>
-                    </div>
-                  )}
-                  {checkoutTime && (
-                    <div>
-                      <p className="body-3 text-neutral-4 mb-0.5">Check-out</p>
-                      <p className="body-2-semibold text-neutral-7">Hasta {checkoutTime}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Instalaciones */}
-            {facilities.length > 0 && (
-              <div className="mb-5">
-                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Instalaciones</p>
-                <div className="flex flex-wrap gap-2">
-                  {facilities.slice(0, 12).map((f, i) => {
-                    const name = typeof f === 'string' ? f : (f.name || f.label || '');
-                    return (
-                      <span key={i} className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 bg-neutral-1 text-neutral-6 rounded-full">
-                        <span className="text-secondary-3">{getFacilityIcon(name)}</span>
-                        {name}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Habitaciones */}
-            {roomList.length > 0 && (
-              <div className="mb-5">
-                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Habitaciones disponibles</p>
-                <div className="flex flex-col gap-2">
-                  {roomList.map((r, i) => (
-                    <div key={i} className="border border-neutral-1 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="body-3 font-semibold text-neutral-7 truncate">{r.name}</p>
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {r.size > 0 && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-1 text-neutral-5">{r.size} m²</span>
-                          )}
-                          {r.maxOccupancy > 0 && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-1 text-neutral-5">Máx. {r.maxOccupancy} pers.</span>
-                          )}
-                          {r.breakfastIncluded && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-auxiliary-green-1 text-auxiliary-green-5">Desayuno incl.</span>
-                          )}
-                          {r.halfBoard && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-auxiliary-green-1 text-auxiliary-green-5">Media pensión</span>
-                          )}
-                          {r.refundable && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary-1 text-secondary-4">Cancelación gratis</span>
-                          )}
+                {/* Check-in / Check-out */}
+                {(checkinTime || checkoutTime) && (
+                  <div className="bg-secondary-1/40 rounded-xl p-4 mb-5">
+                    <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Horarios</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {checkinTime && (
+                        <div>
+                          <p className="body-3 text-neutral-4 mb-0.5">Check-in</p>
+                          <p className="body-2-semibold text-neutral-7">Desde {checkinTime}</p>
                         </div>
-                      </div>
-                      {r.pricePerNight && (
-                        <div className="text-right shrink-0">
-                          <p className="body-2-semibold text-neutral-7">{r.pricePerNight}</p>
-                          <p className="body-3 text-neutral-4">/noche</p>
+                      )}
+                      {checkoutTime && (
+                        <div>
+                          <p className="body-3 text-neutral-4 mb-0.5">Check-out</p>
+                          <p className="body-2-semibold text-neutral-7">Hasta {checkoutTime}</p>
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </div>
+                )}
 
-            {/* Políticas */}
-            {policies.length > 0 && (
-              <div className="mb-5">
-                <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Políticas</p>
-                <div className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl p-4 flex flex-col gap-2">
-                  {policies.map((p, i) => (
-                    <div key={i}>
-                      {POLICY_LABELS[p.type] && (
-                        <p className="body-3 font-bold text-neutral-5 mb-0.5">{POLICY_LABELS[p.type]}</p>
-                      )}
-                      <p className="body-3 text-neutral-6">{p.text}</p>
+                {/* Instalaciones */}
+                {facilities.length > 0 && (
+                  <div className="mb-5">
+                    <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Instalaciones</p>
+                    <div className="flex flex-wrap gap-2">
+                      {facilities.slice(0, 12).map((f, i) => {
+                        const name = typeof f === 'string' ? f : (f.name || f.label || '');
+                        return (
+                          <span key={i} className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 bg-neutral-1 text-neutral-6 rounded-full">
+                            <span className="text-secondary-3">{getFacilityIcon(name)}</span>
+                            {name}
+                          </span>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </div>
+                )}
 
-          </div>
+                {/* Habitaciones */}
+                {roomList.length > 0 && (
+                  <div className="mb-5">
+                    <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Habitaciones disponibles</p>
+                    <div className="flex flex-col gap-2">
+                      {roomList.map((r, i) => (
+                        <div key={i} className="border border-neutral-1 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="body-3 font-semibold text-neutral-7 truncate">{r.name}</p>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {r.size > 0 && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-1 text-neutral-5">{r.size} m²</span>
+                              )}
+                              {r.maxOccupancy > 0 && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-1 text-neutral-5">Máx. {r.maxOccupancy} pers.</span>
+                              )}
+                              {r.breakfastIncluded && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-auxiliary-green-1 text-auxiliary-green-5">Desayuno incl.</span>
+                              )}
+                              {r.halfBoard && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-auxiliary-green-1 text-auxiliary-green-5">Media pensión</span>
+                              )}
+                              {r.refundable && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary-1 text-secondary-4">Cancelación gratis</span>
+                              )}
+                            </div>
+                          </div>
+                          {r.pricePerNight && (
+                            <div className="text-right shrink-0">
+                              <p className="body-2-semibold text-neutral-7">{r.pricePerNight}</p>
+                              <p className="body-3 text-neutral-4">/noche</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Políticas */}
+                {policies.length > 0 && (
+                  <div className="mb-5">
+                    <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Políticas</p>
+                    <div className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl p-4 flex flex-col gap-2">
+                      {policies.map((p, i) => (
+                        <div key={i}>
+                          {POLICY_LABELS[p.type] && (
+                            <p className="body-3 font-bold text-neutral-5 mb-0.5">{POLICY_LABELS[p.type]}</p>
+                          )}
+                          <p className="body-3 text-neutral-6">{p.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer fijo con acciones */}
         <div className="px-5 py-4 border-t border-neutral-1 flex flex-col gap-3 shrink-0 bg-white">
-          {duplicate ? (
+          {step === 'duplicate' ? (
             <div className="h-11 rounded-lg bg-feedback-warning border border-feedback-warning-strong text-feedback-warning-strong flex items-center justify-center gap-2 body-2-semibold">
               ⚠️ Ya tienes este hotel reservado
             </div>
-          ) : booked ? (
+          ) : step === 'booked' ? (
             <>
               <div className="h-11 rounded-lg bg-auxiliary-green-2 text-auxiliary-green-5 flex items-center justify-center gap-2 body-2-semibold">
-                ✓ Reserva guardada
+                ✓ Alojamiento guardado en el viaje
               </div>
-              <BookingReceiptUpload
-                onUpdate={async (urls) => {
-                  if (bookingId) {
-                    await updateBooking(tripId, bookingId, { receiptUrls: urls });
-                  }
-                }}
-              />
+              {bookingId && receiptUrls.length === 0 && (
+                <BookingReceiptUpload
+                  onUpdate={async (urls) => {
+                    if (bookingId) {
+                      await updateBooking(tripId, bookingId, { receiptUrls: urls });
+                    }
+                  }}
+                />
+              )}
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={onClose}
                 className="h-10 rounded-lg border border-neutral-2 body-3 text-neutral-5 hover:bg-neutral-1 transition"
               >
-                Continuar
+                Cerrar
               </button>
             </>
+          ) : step === 'confirm' ? (
+            <button
+              onClick={handleSave}
+              disabled={saving || !canSave}
+              className={`h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${saving || !canSave ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'}`}
+            >
+              {saving
+                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Guardando…</>
+                : '✓ Guardar en el itinerario'}
+            </button>
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleBooked}
-                disabled={booking}
-                className={`flex-1 h-11 rounded-lg body-2-semibold text-white flex items-center justify-center gap-2 transition ${
-                  booking ? 'bg-neutral-2 cursor-not-allowed' : 'bg-auxiliary-green-4 hover:bg-auxiliary-green-5'
-                }`}
+                className="flex-1 h-11 rounded-lg body-2-semibold text-white bg-auxiliary-green-4 hover:bg-auxiliary-green-5 flex items-center justify-center gap-2 transition"
               >
-                {booking ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Procesando…</>
-                ) : !tripId ? 'Reservar' : '✓ He reservado'}
+                {!tripId ? 'Reservar' : '✓ He reservado'}
               </button>
               <a
                 href={`https://www.booking.com/searchresults.es.html?dest_id=${hotel.id}&dest_type=hotel&checkin=${checkIn}&checkout=${checkOut}&group_adults=${adults}&no_rooms=${rooms}`}
