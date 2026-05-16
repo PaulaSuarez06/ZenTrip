@@ -219,6 +219,47 @@ export default function NotificationPanel({ onClose }) {
               }
 
               if (n._kind === 'trip') {
+                // ── Actividad social: like, comentario, guardado, nuevo seguidor ──
+                if (n.type === 'post_liked' || n.type === 'post_commented' || n.type === 'post_saved' || n.type === 'new_follower') {
+                  const emoji = n.type === 'post_liked' ? '❤️' : n.type === 'post_commented' ? '💬' : n.type === 'post_saved' ? '🔖' : '👤';
+                  const title = n.type === 'post_liked' ? 'Le gustó tu viaje' : n.type === 'post_commented' ? 'Comentó en tu viaje' : n.type === 'post_saved' ? 'Guardó tu viaje' : 'Nuevo seguidor';
+                  const body = n.type === 'new_follower'
+                    ? <><span className="font-semibold text-secondary-5">{n.actorName}</span> ha empezado a seguirte.</>
+                    : <><span className="font-semibold text-secondary-5">{n.actorName}</span>{n.type === 'post_liked' ? ' dio me gusta a ' : n.type === 'post_commented' ? ' comentó en ' : ' guardó '}<span className="font-semibold text-neutral-7">"{n.postTitle}"</span>.</>;
+
+                  const handleClick = async () => {
+                    await markTripNotificationRead(n.id);
+                    if (n.postId) navigate(`/p/${n.postId}`);
+                    onClose();
+                  };
+
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={n.postId ? handleClick : undefined}
+                      className={`px-4 py-3 rounded-xl border bg-white border-neutral-2 ${n.postId ? 'cursor-pointer hover:brightness-95' : ''} transition-all`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="body-3 font-semibold text-neutral-7 mb-0.5">{title}</p>
+                          <p className="body-3 text-neutral-5 leading-snug">{body}</p>
+                          {formatNotificationDate(n.createdAt) && (
+                            <p className="body-3 text-neutral-3 mt-1">{formatNotificationDate(n.createdAt)}</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); markTripNotificationRead(n.id); }}
+                            className="mt-2 body-3 font-semibold text-neutral-3 hover:text-neutral-5 transition-colors cursor-pointer"
+                          >
+                            Marcar como leído ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 // ── Solicitud de permiso para compartir (al creador) ──
                 if (n.type === 'share_request') {
                   return (

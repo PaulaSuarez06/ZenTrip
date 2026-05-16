@@ -40,7 +40,7 @@ function timeAgo(timestamp) {
 
 export default function CommunityCard({ post, onCommentClick, onDelete, followingIds = [], onFollowChange, onPostUpdate }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { language } = useLanguage();
   const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
   const { copied, copy } = useCopyLink(post.id);
@@ -78,7 +78,7 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
     setLikes(newLikes);
     onPostUpdate?.(post.id, { likedBy: newLikedBy, likes: newLikes });
     try {
-      await toggleLike(post.id, user.uid);
+      await toggleLike(post.id, user.uid, profile);
     } catch {
       setLikedBy(prevLikedBy);
       setLikes(prevLikes);
@@ -98,7 +98,7 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
     setSavedBy(newSavedBy);
     onPostUpdate?.(post.id, { savedBy: newSavedBy });
     try {
-      await toggleSave(post.id, user.uid);
+      await toggleSave(post.id, user.uid, profile);
     } catch {
       setSavedBy(prevSavedBy);
       onPostUpdate?.(post.id, { savedBy: prevSavedBy });
@@ -115,7 +115,7 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
     setFollowing(nowFollowing);
     try {
       if (nowFollowing) {
-        await followUser(user.uid, post.userId);
+        await followUser(user.uid, post.userId, profile);
       } else {
         await unfollowUser(user.uid, post.userId);
       }

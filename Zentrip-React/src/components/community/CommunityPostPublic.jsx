@@ -1002,7 +1002,7 @@ function SummarySidebar({ post }) {
 export default function CommunityPostPublic() {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { language } = useLanguage();
   const { formatRange } = useMemo(() => buildDateHelpers(language), [language]);
 
@@ -1041,7 +1041,7 @@ export default function CommunityPostPublic() {
     const nowLiked = !isLiked;
     setLikedBy((prev) => nowLiked ? [...prev, user.uid] : prev.filter((id) => id !== user.uid));
     setLikes((prev) => prev + (nowLiked ? 1 : -1));
-    try { await toggleLike(post.id, user.uid); }
+    try { await toggleLike(post.id, user.uid, profile); }
     catch {
       setLikedBy((prev) => nowLiked ? prev.filter((id) => id !== user.uid) : [...prev, user.uid]);
       setLikes((prev) => prev + (nowLiked ? -1 : 1));
@@ -1069,7 +1069,7 @@ export default function CommunityPostPublic() {
     setSaveLoading(true);
     const nowSaved = !isSaved;
     setSavedBy((prev) => nowSaved ? [...prev, user.uid] : prev.filter((id) => id !== user.uid));
-    try { await toggleSave(post.id, user.uid); }
+    try { await toggleSave(post.id, user.uid, profile); }
     catch { setSavedBy((prev) => nowSaved ? prev.filter((id) => id !== user.uid) : [...prev, user.uid]); }
     finally { setSaveLoading(false); }
   }

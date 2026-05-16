@@ -50,7 +50,7 @@ export default function CommentsModal({ post, onClose }) {
     setComments((prev) => [...prev, optimistic]);
     setText('');
     try {
-      await addComment(post.id, user.uid, profile, optimistic.text);
+      await addComment(post.id, user.uid, profile, optimistic.text, post.userId, post.title);
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
     } finally {

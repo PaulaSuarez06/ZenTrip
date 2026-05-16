@@ -19,6 +19,34 @@ import { db } from '../config/firebaseConfig';
 
 const POSTS_COL = 'community_posts';
 const COMMENTS_COL = 'comments';
+const NOTIFICATIONS_COL = 'notifications';
+
+async function deleteSocialNotification(type, actorUid, postId) {
+  const q = query(
+    collection(db, NOTIFICATIONS_COL),
+    where('type', '==', type),
+    where('actorUid', '==', actorUid),
+  );
+  const snap = await getDocs(q);
+  const matches = snap.docs.filter((d) => d.data().postId === postId);
+  await Promise.all(matches.map((d) => deleteDoc(d.ref)));
+}
+
+async function createSocialNotification(type, recipientUid, actorUid, actorProfile, extraData = {}) {
+  if (!recipientUid || !actorUid || recipientUid === actorUid) return;
+  const actorName = actorProfile?.username || actorProfile?.firstName || actorProfile?.displayName || 'Alguien';
+  await addDoc(collection(db, NOTIFICATIONS_COL), {
+    type,
+    recipientUid,
+    actorUid,
+    actorName,
+    actorAvatar: actorProfile?.profilePhoto || null,
+    actorAvatarColor: actorProfile?.avatarColor || null,
+    read: false,
+    createdAt: serverTimestamp(),
+    ...extraData,
+  });
+}
 
 // Sanitize bookings: keep only non-sensitive fields
 function sanitizeBookings(bookings = []) {
@@ -211,30 +239,42 @@ export async function getUserCommunityPosts(userId) {
     .filter((p) => p.userId === userId);
 }
 
-export async function toggleLike(postId, userId) {
+export async function toggleLike(postId, userId, actorProfile) {
   const ref = doc(db, POSTS_COL, postId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
-  const liked = (snap.data().likedBy || []).includes(userId);
+  const data = snap.data();
+  const liked = (data.likedBy || []).includes(userId);
   await updateDoc(ref, {
     likedBy: liked ? arrayRemove(userId) : arrayUnion(userId),
     likes: increment(liked ? -1 : 1),
   });
+  if (!liked && actorProfile) {
+    createSocialNotification('post_liked', data.userId, userId, actorProfile, { postId, postTitle: data.title || '' });
+  } else if (liked) {
+    deleteSocialNotification('post_liked', userId, postId);
+  }
   return !liked;
 }
 
-export async function toggleSave(postId, userId) {
+export async function toggleSave(postId, userId, actorProfile) {
   const ref = doc(db, POSTS_COL, postId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
-  const saved = (snap.data().savedBy || []).includes(userId);
+  const data = snap.data();
+  const saved = (data.savedBy || []).includes(userId);
   await updateDoc(ref, {
     savedBy: saved ? arrayRemove(userId) : arrayUnion(userId),
   });
+  if (!saved && actorProfile) {
+    createSocialNotification('post_saved', data.userId, userId, actorProfile, { postId, postTitle: data.title || '' });
+  } else if (saved) {
+    deleteSocialNotification('post_saved', userId, postId);
+  }
   return !saved;
 }
 
-export async function addComment(postId, userId, userProfile, text) {
+export async function addComment(postId, userId, userProfile, text, postOwnerId, postTitle) {
   const comment = {
     userId,
     username:
@@ -249,6 +289,9 @@ export async function addComment(postId, userId, userProfile, text) {
   };
   await addDoc(collection(db, POSTS_COL, postId, COMMENTS_COL), comment);
   await updateDoc(doc(db, POSTS_COL, postId), { commentsCount: increment(1) });
+  if (postOwnerId && userProfile) {
+    createSocialNotification('post_commented', postOwnerId, userId, userProfile, { postId, postTitle: postTitle || '' });
+  }
 }
 
 export async function getComments(postId) {
