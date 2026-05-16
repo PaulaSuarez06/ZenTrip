@@ -997,7 +997,7 @@ function SummarySidebar({ post }) {
           {items.map(({ Icon, value, label }) => (
             <div key={label} className="flex flex-col items-center gap-0.5 p-3 rounded-xl bg-neutral-1/60 text-center">
               <Icon className="w-5 h-5 text-primary-3" />
-              <span className="body-bold text-secondary-5 mt-0.5 text-sm break-words w-full">{value}</span>
+              <span className="body-bold text-secondary-5 mt-0.5 text-sm wrap-break- w-full">{value}</span>
               <span className="body-3 text-neutral-3 leading-tight">{label}</span>
             </div>
           ))}
