@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavbarController } from "./hooks/useNavbarController";
 import UserAvatar from "../../ui/UserAvatar";
 import NotificationPanel from "../notifications/NotificationPanel";
+import ChatMessagePanel from "../notifications/ChatMessagePanel";
 import { useLanguage, LANGUAGES } from "../../../context/LanguageContext";
 import { useTranslatedContent } from "../../../hooks/useTranslatedContent";
 
@@ -71,12 +72,15 @@ const Header = () => {
         menuOpen,
         profileMenuOpen,
         notificationPanelOpen,
+        chatPanelOpen,
         toggleProfileMenu,
         toggleMobileMenu,
         closeMobileMenu,
         closeProfileMenu,
         toggleNotificationPanel,
         closeNotificationPanel,
+        toggleChatPanel,
+        closeChatPanel,
         handleGoToEditProfile,
         handleGoToAdmin,
         handleGoHome,
@@ -193,20 +197,21 @@ const Header = () => {
                 </div>
 
                 {/* Mensajes */}
-                <button className="relative p-1 cursor-pointer">
-                    <svg width="25" height="25" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24.5 13.4167C24.504 14.9565 24.1442 16.4755 23.45 17.85C22.6268 19.497 21.3614 20.8824 19.7954 21.8508C18.2293 22.8193 16.4246 23.3326 14.5833 23.3333C13.0435 23.3374 11.5245 22.9776 10.15 22.2833L3.5 24.5L5.71667 17.85C5.02242 16.4755 4.66265 14.9565 4.66667 13.4167C4.66738 11.5754 5.18071 9.77066 6.14917 8.20464C7.11763 6.63863 8.50296 5.37316 10.15 4.55C11.5245 3.85576 13.0435 3.49599 14.5833 3.5H15.1667C17.5984 3.63416 19.8952 4.66056 21.6173 6.38267C23.3394 8.10479 24.3658 10.4016 24.5 12.8333V13.4167Z" stroke="#1E1E1E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-
-
-                    {messageCount > 0 && (
-                        <span
-                            className="absolute -top-1 -right-1 bg-primary-3 text-white body-3 rounded-full flex items-center justify-center min-w-4.5 h-4.5"
-                        >
-                            {messageCount}
-                        </span>
+                <div className="relative">
+                    <button className="relative p-1 cursor-pointer" onClick={toggleChatPanel} aria-label="Mensajes">
+                        <svg width="25" height="25" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M24.5 13.4167C24.504 14.9565 24.1442 16.4755 23.45 17.85C22.6268 19.497 21.3614 20.8824 19.7954 21.8508C18.2293 22.8193 16.4246 23.3326 14.5833 23.3333C13.0435 23.3374 11.5245 22.9776 10.15 22.2833L3.5 24.5L5.71667 17.85C5.02242 16.4755 4.66265 14.9565 4.66667 13.4167C4.66738 11.5754 5.18071 9.77066 6.14917 8.20464C7.11763 6.63863 8.50296 5.37316 10.15 4.55C11.5245 3.85576 13.0435 3.49599 14.5833 3.5H15.1667C17.5984 3.63416 19.8952 4.66056 21.6173 6.38267C23.3394 8.10479 24.3658 10.4016 24.5 12.8333V13.4167Z" stroke="#1E1E1E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {messageCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex min-w-5 h-5 items-center justify-center rounded-full bg-primary-3 px-1 text-[10px] font-semibold leading-none text-white shadow-sm">
+                                {messageCount > 99 ? '99+' : messageCount}
+                            </span>
+                        )}
+                    </button>
+                    {chatPanelOpen && (
+                        <ChatMessagePanel onClose={closeChatPanel} />
                     )}
-                </button>
+                </div>
 
                 {/* Idioma */}
                 <LanguageSelector />

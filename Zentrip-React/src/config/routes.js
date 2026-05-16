@@ -28,6 +28,7 @@ export const ROUTES = {
   INSPIRATION: {
     READER: '/inspiracion/:id',
   },
+  MESSAGES: '/mensajes',
   EXPLORE: '/explorar',
   COMMUNITY: '/comunidad',
   COMMUNITY_POST: '/comunidad/:postId',

@@ -266,6 +266,16 @@ export async function getTripMembersFirestore(tripId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+export function subscribeToTripMembers(tripId, callback) {
+  const q = query(
+    collection(db, 'trips', tripId, 'members'),
+    where('invitationStatus', '==', 'accepted'),
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ uid: d.id, ...d.data() })));
+  });
+}
+
 export async function removeMemberFromTrip(tripId, memberUid) {
   return apiClient.delete(`/trips/${tripId}/members/${memberUid}`);
 }
@@ -1095,13 +1105,23 @@ export async function updateGroupLuggageItemPacked(tripId, itemId, uid, packed) 
   }
 }
 
-export async function sendMessage(tripId, uid, displayName, text) {
+export async function sendMessage(tripId, uid, displayName, text, replyTo = null, mentions = []) {
   await addDoc(collection(db, 'trips', tripId, 'messages'), {
     uid,
     displayName,
     text,
+    ...(replyTo ? { replyTo } : {}),
+    ...(mentions.length ? { mentions } : {}),
     createdAt: serverTimestamp(),
   });
+  const mentionUids = mentions.map((m) => m.uid);
+  updateDoc(doc(db, 'trips', tripId), {
+    lastMessage: {
+      uid, displayName, text, createdAt: Date.now(),
+      ...(replyTo ? { replyToUid: replyTo.uid } : {}),
+      ...(mentionUids.length ? { mentionUids } : {}),
+    },
+  }).catch(() => {});
 }
 
 export function subscribeToMessages(tripId, callback) {

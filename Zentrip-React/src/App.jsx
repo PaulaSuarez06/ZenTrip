@@ -2,6 +2,10 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ChatNotificationProvider } from './context/ChatNotificationContext';
+import { ChatUIProvider } from './context/ChatUIContext';
+import { PrivateChatProvider } from './context/PrivateChatContext';
+import MessagesPage from './components/messages/MessagesPage';
 import { LanguageProvider } from './context/LanguageContext';
 import { ROUTES } from './config/routes';
 import Register from './components/auth/register/Register';
@@ -54,6 +58,7 @@ const router = createBrowserRouter([
           { path: ROUTES.TRIPS.CREATE, element: <CreateTrip /> },
           { path: ROUTES.TRIPS.LIST, element: <MisViajes /> },
           { path: ROUTES.TRIPS.DETAIL, element: <TripDetail /> },
+          { path: ROUTES.MESSAGES, element: <MessagesPage /> },
           { path: ROUTES.PROFILE.SETUP, element: <EditProfile isOnboarding /> },
           { path: ROUTES.LEGAL.PRIVACY, element: <PrivacyPolicy /> },
           { path: ROUTES.LEGAL.TERMS, element: <TermsOfUse /> },
@@ -113,7 +118,13 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <NotificationProvider>
-          <RouterProvider router={router} />
+          <ChatNotificationProvider>
+            <ChatUIProvider>
+              <PrivateChatProvider>
+                <RouterProvider router={router} />
+              </PrivateChatProvider>
+            </ChatUIProvider>
+          </ChatNotificationProvider>
         </NotificationProvider>
       </AuthProvider>
     </LanguageProvider>

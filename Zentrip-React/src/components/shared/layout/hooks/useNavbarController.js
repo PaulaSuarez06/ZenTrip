@@ -4,6 +4,8 @@ import { ROUTES } from "../../../../config/routes";
 import { useProfileAvatar } from "../../../../hooks/useProfileAvatar";
 import { useAuth } from "../../../../context/AuthContext";
 import { useNotifications } from "../../../../context/NotificationContext";
+import { useChatNotifications } from "../../../../context/ChatNotificationContext";
+import { usePrivateChat } from "../../../../context/PrivateChatContext";
 
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
   .split(',')
@@ -15,13 +17,15 @@ export function useNavbarController() {
   const { avatarSrc, initials } = useProfileAvatar();
   const { profile, user, logout } = useAuth();
   const { unseenCount: notificationCount } = useNotifications();
+  const { chatUnreadCount } = useChatNotifications();
+  const { pendingCount, unreadPrivateCount } = usePrivateChat();
   const avatarColor = profile?.avatarColor || "";
   const isAdmin = !!user && ADMIN_EMAILS.includes(user.email);
 
-  const messageCount = 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [chatPanelOpen, setChatPanelOpen] = useState(false);
 
   const toggleNotificationPanel = () => {
     setNotificationPanelOpen((prev) => {
@@ -29,12 +33,27 @@ export function useNavbarController() {
       if (next) {
         setMenuOpen(false);
         setProfileMenuOpen(false);
+        setChatPanelOpen(false);
       }
       return next;
     });
   };
 
   const closeNotificationPanel = () => setNotificationPanelOpen(false);
+
+  const toggleChatPanel = () => {
+    setChatPanelOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setMenuOpen(false);
+        setProfileMenuOpen(false);
+        setNotificationPanelOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const closeChatPanel = () => setChatPanelOpen(false);
 
   const toggleProfileMenu = () => {
     setProfileMenuOpen((prev) => {
@@ -109,16 +128,19 @@ export function useNavbarController() {
     avatarColor,
     isAdmin,
     notificationCount,
-    messageCount,
+    messageCount: chatUnreadCount + pendingCount + unreadPrivateCount,
     menuOpen,
     profileMenuOpen,
     notificationPanelOpen,
+    chatPanelOpen,
     toggleProfileMenu,
     toggleMobileMenu,
     closeMobileMenu,
     closeProfileMenu,
     toggleNotificationPanel,
     closeNotificationPanel,
+    toggleChatPanel,
+    closeChatPanel,
     handleGoToEditProfile,
     handleGoToAdmin,
     handleGoHome,
