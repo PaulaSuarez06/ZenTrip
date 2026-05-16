@@ -2,29 +2,27 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ExternalLink, Minus, Send, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useChatNotifications } from '../../context/ChatNotificationContext';
-import { usePrivateChat } from '../../context/PrivateChatContext';
-import { sendMessage, subscribeToMessages } from '../../services/tripService';
+import { sendMessage, subscribeToMessages, subscribeToTripMembers } from '../../services/tripService';
 import { sendPrivateMessage, subscribeToPrivateMessages } from '../../services/privateChatService';
 import { ROUTES } from '../../config/routes';
 import { useMemberProfiles } from '../../hooks/useMemberProfiles';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useChatInput } from '../../hooks/useChatInput';
+import { useUnreadSinceTs } from '../../hooks/useUnreadSinceTs';
 import ChatMessageList from './ChatMessageList';
 import MentionPicker from './MentionPicker';
 import UserAvatar from '../ui/UserAvatar';
 
 export default function FloatingChatWindow({ chat, minimized, onClose, onToggleMinimize, mobile = false }) {
   const { user, profile } = useAuth();
-  const { markTripChatAsRead } = useChatNotifications();
-  const { markPrivateChatAsRead } = usePrivateChat();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
-  // -1 = timestamp aún no leído de localStorage (igual que ConversationView)
-  const [unreadSinceTs, setUnreadSinceTs] = useState(-1);
+  const [tripMembers, setTripMembers] = useState([]);
   const containerRef = useRef(null);
 
   const isGroup = chat.type === 'group';
+
+  const { unreadSinceTs, markRead } = useUnreadSinceTs(chat.id, isGroup);
 
   // Al cambiar de chat: reinicia mensajes
   useEffect(() => {
@@ -35,17 +33,10 @@ export default function FloatingChatWindow({ chat, minimized, onClose, onToggleM
     return unsub;
   }, [chat.id, isGroup]);
 
-  // Lee el timestamp ANTES de marcar como leído; incluye user?.uid en deps
-  // para que se ejecute aunque el usuario cargue después del montaje
   useEffect(() => {
-    if (!user?.uid) return;
-    const key = isGroup
-      ? `zentrp_chat_${chat.id}_${user.uid}`
-      : `zentrp_pchat_${chat.id}_${user.uid}`;
-    setUnreadSinceTs(parseInt(localStorage.getItem(key) || '0', 10));
-    if (isGroup) markTripChatAsRead(chat.id);
-    else markPrivateChatAsRead(chat.id);
-  }, [chat.id, isGroup, user?.uid]);
+    if (!isGroup) { setTripMembers([]); return; }
+    return subscribeToTripMembers(chat.id, setTripMembers);
+  }, [chat.id, isGroup]);
 
   useChatScroll({
     chatId: chat.id,
@@ -53,10 +44,8 @@ export default function FloatingChatWindow({ chat, minimized, onClose, onToggleM
     unreadSinceTs,
     containerRef,
     minimized,
-    onAfterScroll: () => {
-      if (isGroup) markTripChatAsRead(chat.id);
-      else markPrivateChatAsRead(chat.id);
-    },
+    onAfterScroll: markRead,
+    currentUserId: user?.uid,
   });
 
   const displayName = profile?.displayName || profile?.firstName || user?.email || 'Usuario';
@@ -65,16 +54,10 @@ export default function FloatingChatWindow({ chat, minimized, onClose, onToggleM
 
   const mentionMembers = useMemo(() => {
     if (!isGroup) return [];
-    const seen = new Set();
-    const list = [];
-    for (const m of messages) {
-      if (m.uid && m.displayName && m.uid !== user?.uid && !m.isIntro && !seen.has(m.uid)) {
-        seen.add(m.uid);
-        list.push({ uid: m.uid, displayName: m.displayName });
-      }
-    }
-    return list;
-  }, [messages, user?.uid, isGroup]);
+    return tripMembers
+      .filter((m) => m.uid && m.uid !== user?.uid)
+      .map((m) => ({ uid: m.uid, displayName: m.displayName || m.firstName || m.name || m.email || 'Usuario' }));
+  }, [tripMembers, user?.uid, isGroup]);
 
   const { text, sending, replyTo, setReplyTo, mentionQuery, inputRef,
     handleTextChange, handleMentionSelect, handleSend, handleKeyDown,

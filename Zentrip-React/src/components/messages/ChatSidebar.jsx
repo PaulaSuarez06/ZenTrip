@@ -29,8 +29,8 @@ function formatSidebarTime(val) {
 
 export default function ChatSidebar({ selectedChat, onSelect, onNewChat }) {
   const { user, profile } = useAuth();
-  const { allTripChats } = useChatNotifications();
-  const { privateChats, pendingRequests, accept, reject } = usePrivateChat();
+  const { allTripChats, tripReadTimestamps } = useChatNotifications();
+  const { allPrivateChats, pendingRequests, accept, reject } = usePrivateChat();
   const [search, setSearch] = useState('');
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [suggestedStatuses, setSuggestedStatuses] = useState({});
@@ -56,9 +56,9 @@ export default function ChatSidebar({ selectedChat, onSelect, onNewChat }) {
 
   const existingChatMap = useMemo(() => {
     const map = {};
-    privateChats.forEach((c) => { if (c.otherUid) map[c.otherUid] = c; });
+    allPrivateChats.forEach((c) => { if (c.otherUid) map[c.otherUid] = c; });
     return map;
-  }, [privateChats]);
+  }, [allPrivateChats]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -85,15 +85,6 @@ export default function ChatSidebar({ selectedChat, onSelect, onNewChat }) {
     return () => clearTimeout(timeout);
   }, [search, user?.uid, existingChatMap]);
 
-  const isAtMentioned = (lastMessage) => {
-    if (!lastMessage || lastMessage.uid === user?.uid) return false;
-    return (
-      lastMessage.replyToUid === user?.uid ||
-      lastMessage.mentionUids?.includes(user?.uid) ||
-      lastMessage.mentionUids?.includes('todos')
-    );
-  };
-
   const groupItems = allTripChats.map((t) => ({
     key: `group_${t.id}`,
     type: 'group',
@@ -105,11 +96,16 @@ export default function ChatSidebar({ selectedChat, onSelect, onNewChat }) {
       : 'Sin mensajes',
     lastTime: t.lastMessage?.createdAt,
     isUnread: t.isUnread,
-    atMe: isAtMentioned(t.lastMessage),
+    atMe: t.hasMention || (
+      !!t.lastMessage &&
+      t.lastMessage.uid !== user?.uid &&
+      toMs(t.lastMessage.createdAt) > (tripReadTimestamps?.[t.id] ?? 0) &&
+      (t.lastMessage.mentionUids?.includes(user?.uid) || t.lastMessage.mentionUids?.includes('todos'))
+    ),
     otherUser: null,
   }));
 
-  const privateItems = privateChats.map((c) => ({
+  const privateItems = allPrivateChats.map((c) => ({
     key: `private_${c.id}`,
     type: 'private',
     id: c.id,
@@ -119,8 +115,8 @@ export default function ChatSidebar({ selectedChat, onSelect, onNewChat }) {
       ? `${c.lastMessage.uid === user?.uid ? 'Tú: ' : ''}${c.lastMessage.text}`
       : 'Sin mensajes',
     lastTime: c.lastMessage?.createdAt,
-    isUnread: false,
-    atMe: isAtMentioned(c.lastMessage),
+    isUnread: c.isUnread,
+    atMe: c.hasMention ?? false,
     otherUser: c.otherUser,
     otherUid: c.otherUid,
   }));

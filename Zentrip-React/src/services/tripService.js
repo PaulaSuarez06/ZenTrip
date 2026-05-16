@@ -217,6 +217,16 @@ export async function getTripMembersFirestore(tripId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+export function subscribeToTripMembers(tripId, callback) {
+  const q = query(
+    collection(db, 'trips', tripId, 'members'),
+    where('invitationStatus', '==', 'accepted'),
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ uid: d.id, ...d.data() })));
+  });
+}
+
 export async function removeMemberFromTrip(tripId, memberUid) {
   await updateDoc(doc(db, 'trips', tripId, 'members', memberUid), {
     invitationStatus: 'removed',

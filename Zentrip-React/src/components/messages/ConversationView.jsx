@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useUnreadSinceTs } from '../../hooks/useUnreadSinceTs';
 import { MoreVertical, Send, Users, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useChatNotifications } from '../../context/ChatNotificationContext';
 import { useChatUI } from '../../context/ChatUIContext';
-import { sendMessage, subscribeToMessages } from '../../services/tripService';
+import { sendMessage, subscribeToMessages, subscribeToTripMembers } from '../../services/tripService';
 import { sendPrivateMessage, subscribeToPrivateMessages } from '../../services/privateChatService';
 import { blockUser, subscribeToIsBlockedBy, subscribeToMyBlocks, unblockUser } from '../../services/blockService';
 import { usePrivateChat } from '../../context/PrivateChatContext';
@@ -18,12 +19,12 @@ import UserAvatar from '../ui/UserAvatar';
 
 export default function ConversationView({ chat, onChatUpdate }) {
   const { user, profile } = useAuth();
-  const { markTripChatAsRead, allTripChats } = useChatNotifications();
-  const { markPrivateChatAsRead, accept, reject } = usePrivateChat();
+  const { allTripChats } = useChatNotifications();
+  const { accept, reject } = usePrivateChat();
   const { setActiveChatTrip } = useChatUI();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
-  const [unreadSinceTs, setUnreadSinceTs] = useState(-1);
+  const [tripMembers, setTripMembers] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [blockedByMe, setBlockedByMe] = useState(new Set());
@@ -48,19 +49,16 @@ export default function ConversationView({ chat, onChatUpdate }) {
   }, [chat?.id, isGroup, isRequest]);
 
   useEffect(() => {
-    if (!chat || isRequest) return;
-    const lsKey = isGroup
-      ? `zentrp_chat_${chat.id}_${user?.uid}`
-      : `zentrp_pchat_${chat.id}_${user?.uid}`;
-    setUnreadSinceTs(parseInt(localStorage.getItem(lsKey) || '0', 10));
-    if (isGroup) {
-      markTripChatAsRead(chat.id);
-      setActiveChatTrip(chat.id);
-    } else {
-      markPrivateChatAsRead(chat.id);
-    }
-    return () => { if (isGroup) setActiveChatTrip(null); };
-  }, [chat?.id, isGroup, isRequest, user?.uid, markTripChatAsRead, markPrivateChatAsRead, setActiveChatTrip]);
+    if (!isGroup || !chat?.id) { setTripMembers([]); return; }
+    return subscribeToTripMembers(chat.id, setTripMembers);
+  }, [chat?.id, isGroup]);
+
+  // setActiveChatTrip: marca el viaje activo para suprimir notificaciones del chat grupal
+  useEffect(() => {
+    if (!chat || isRequest || !isGroup) return;
+    setActiveChatTrip(chat.id);
+    return () => setActiveChatTrip(null);
+  }, [chat?.id, isGroup, isRequest, setActiveChatTrip]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -79,16 +77,15 @@ export default function ConversationView({ chat, onChatUpdate }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
+  const { unreadSinceTs, markRead } = useUnreadSinceTs(!isRequest ? chat?.id : null, isGroup);
+
   useChatScroll({
     chatId: chat?.id,
     messages,
     unreadSinceTs,
     containerRef,
-    onAfterScroll: () => {
-      if (!chat) return;
-      if (isGroup) markTripChatAsRead(chat.id);
-      else markPrivateChatAsRead(chat.id);
-    },
+    onAfterScroll: markRead,
+    currentUserId: user?.uid,
   });
 
   const displayName = profile?.displayName || profile?.firstName || user?.email || 'Usuario';
@@ -97,16 +94,10 @@ export default function ConversationView({ chat, onChatUpdate }) {
 
   const mentionMembers = useMemo(() => {
     if (!isGroup) return [];
-    const seen = new Set();
-    const list = [];
-    for (const m of messages) {
-      if (m.uid && m.displayName && m.uid !== user?.uid && !m.isIntro && !seen.has(m.uid)) {
-        seen.add(m.uid);
-        list.push({ uid: m.uid, displayName: m.displayName });
-      }
-    }
-    return list;
-  }, [messages, user?.uid, isGroup]);
+    return tripMembers
+      .filter((m) => m.uid && m.uid !== user?.uid)
+      .map((m) => ({ uid: m.uid, displayName: m.displayName || m.firstName || m.name || m.email || 'Usuario' }));
+  }, [tripMembers, user?.uid, isGroup]);
 
   const { text, sending, replyTo, setReplyTo, mentionQuery, inputRef,
     handleTextChange, handleMentionSelect, handleSend, handleKeyDown,

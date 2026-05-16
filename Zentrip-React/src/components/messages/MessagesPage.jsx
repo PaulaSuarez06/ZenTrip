@@ -12,6 +12,11 @@ export default function MessagesPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   const handleSelect = (chat) => {
     setSelectedChat(chat);
     setShowConversation(true);
@@ -64,7 +69,7 @@ export default function MessagesPage() {
           <div className="md:hidden px-4 py-2 border-b border-neutral-1 bg-white shrink-0">
             <button
               type="button"
-              onClick={() => setShowConversation(false)}
+              onClick={() => { setShowConversation(false); setSelectedChat(null); }}
               className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-neutral-6 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />

@@ -1,49 +1,76 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
-export function useChatScroll({ chatId, messages, unreadSinceTs, containerRef, minimized = false, onAfterScroll }) {
+function toMs(createdAt) {
+  if (!createdAt) return 0;
+  if (typeof createdAt === 'number') return createdAt;
+  if (typeof createdAt.toMillis === 'function') return createdAt.toMillis();
+  if (createdAt.seconds) return createdAt.seconds * 1000;
+  return 0;
+}
+
+export function useChatScroll({ chatId, messages, unreadSinceTs, containerRef, minimized = false, onAfterScroll, currentUserId }) {
   const isFirstLoad = useRef(true);
-  // true solo cuando el usuario ha scrolleado él mismo hasta estar cerca del fondo;
-  // evita que el segundo snapshot de Firebase anule el scroll al divisor de no leídos
   const userNearBottom = useRef(true);
+  const onAfterScrollRef = useRef(onAfterScroll);
+  onAfterScrollRef.current = onAfterScroll;
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   useEffect(() => {
     isFirstLoad.current = true;
     userNearBottom.current = true;
   }, [chatId]);
 
-  // Listener de scroll para rastrear si el usuario está voluntariamente cerca del fondo
+  // Detecta si el usuario está cerca del fondo para marcar como leído al scrollear
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onScroll = () => {
-      userNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      const wasNear = userNearBottom.current;
+      userNearBottom.current = nearBottom;
+      if (nearBottom && !wasNear && messagesRef.current.length > 0) {
+        const lastMsg = messagesRef.current[messagesRef.current.length - 1];
+        const lastTs = Math.max(Date.now(), toMs(lastMsg.createdAt) + 1);
+        onAfterScrollRef.current?.(lastTs);
+      }
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, [containerRef]);
 
-  useEffect(() => {
+  // Posicionamiento inicial: primer mensaje no leído o fondo
+  useLayoutEffect(() => {
     if (minimized || messages.length === 0 || unreadSinceTs === -1) return;
     const el = containerRef.current;
     if (!el) return;
 
     if (isFirstLoad.current) {
-      const divider = el.querySelector('[data-unread-divider]');
-      if (divider) {
-        const top = divider.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
-        el.scrollTop = top;
-        // Tras ir al divisor, el usuario NO está en el fondo → no auto-scrollear en próximas actualizaciones
+      const lastMsg = messages[messages.length - 1];
+      const lastTs = Math.max(Date.now(), toMs(lastMsg?.createdAt) + 1);
+      const firstUnread = el.querySelector('[data-first-unread]');
+      if (firstUnread) {
+        const offsetTop = firstUnread.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+        el.scrollTop = Math.max(0, offsetTop - 16);
         userNearBottom.current = false;
       } else {
         el.scrollTop = el.scrollHeight;
         userNearBottom.current = true;
       }
       isFirstLoad.current = false;
-    } else if (userNearBottom.current) {
-      // Solo auto-scroll si el usuario estaba cerca del fondo voluntariamente
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      onAfterScroll?.(lastTs);
     }
+  }, [messages.length, unreadSinceTs, minimized]);
 
-    onAfterScroll?.();
+  // Auto-scroll solo cuando el propio usuario envía un mensaje
+  useEffect(() => {
+    if (minimized || messages.length === 0 || unreadSinceTs === -1 || isFirstLoad.current) return;
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.uid !== currentUserId) return;
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    const lastTs = Math.max(Date.now(), toMs(lastMsg.createdAt) + 1);
+    onAfterScroll?.(lastTs);
   }, [messages.length, unreadSinceTs, minimized]);
 }

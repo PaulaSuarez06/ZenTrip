@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Reply } from 'lucide-react';
 import UserAvatar from '../ui/UserAvatar';
 import { buildGroups, bubbleRadius } from '../../utils/chatGroups';
@@ -18,7 +18,7 @@ function ReplyQuote({ replyTo, isOwn, currentUserId, onJump }) {
   return (
     <div
       className={`mb-1.5 rounded-md px-2 py-1 border-l-2 text-[11px] overflow-hidden ${
-        isOwn ? 'bg-white/30' : 'bg-white'
+        isOwn ? 'bg-neutral-1' : 'bg-white'
       } ${onJump ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''}`}
       style={{ borderColor: color }}
       onClick={onJump}
@@ -53,10 +53,29 @@ export default function ChatMessageList({
 }) {
   const groups = buildGroups(messages);
   const [highlightedMsgId, setHighlightedMsgId] = useState(null);
-  const [atMeIdx, setAtMeIdx] = useState(null);
   const [seenCount, setSeenCount] = useState(0);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const autoHighlightDone = useRef(false);
 
-  // Solo menciones no leídas (posteriores al último acceso) de otros usuarios
+  useEffect(() => {
+    const el = containerRef?.current;
+    if (!el) return;
+    const check = () => setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 80);
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    return () => el.removeEventListener('scroll', check);
+  }, [containerRef]);
+
+  const firstUnreadMsgId = useMemo(() => {
+    if (!currentUserId || unreadSinceTs < 1) return null;
+    for (const msg of messages) {
+      if (!msg.isIntro && msg.uid !== currentUserId && toMs(msg.createdAt) > unreadSinceTs) {
+        return msg.id;
+      }
+    }
+    return null;
+  }, [messages, currentUserId, unreadSinceTs]);
+
   const atMeMessages = useMemo(() => {
     if (!currentUserId || unreadSinceTs < 1) return [];
     return messages.filter((m) =>
@@ -70,82 +89,84 @@ export default function ChatMessageList({
     );
   }, [messages, currentUserId, unreadSinceTs]);
 
-  // true mientras el usuario navega con los botones @/↓ (suprime el IntersectionObserver)
-  const isNavigating = atMeIdx !== null;
   const unreadAtCount = atMeMessages.length - seenCount;
   const showAtBadge = unreadAtCount > 0;
-  // Flecha ↓ solo si hay menciones más nuevas por ver
-  const canGoDown = isNavigating && atMeIdx < atMeMessages.length - 1;
 
-  // Descuenta menciones automáticamente al scrollear (solo cuando NO se navega con @)
   useEffect(() => {
-    if (isNavigating || !containerRef?.current || !atMeMessages.length) return;
-    const root = containerRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const msgId = entry.target.getAttribute('data-msgid');
-          const idx = atMeMessages.findIndex((m) => m.id === msgId);
-          if (idx >= 0) setSeenCount((prev) => Math.max(prev, idx + 1));
-        });
-      },
-      { root, threshold: 0.5 },
-    );
-    atMeMessages.forEach((msg) => {
-      const el = root.querySelector(`[data-msgid="${msg.id}"]`);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  // isNavigating en deps para reactivar el observer al salir del modo navegación
-  }, [atMeMessages, containerRef, isNavigating]);
+    setSeenCount(0);
+    autoHighlightDone.current = false;
+  }, [unreadSinceTs]);
 
-  // Divisor de no leídos — solo cuenta mensajes de otros, no los propios
-  const unreadGroupIdx = unreadSinceTs > 0
-    ? groups.findIndex((g) => g.msgs.some((m) => !m.isIntro && m.uid !== currentUserId && toMs(m.createdAt) > unreadSinceTs))
-    : -1;
-  const unreadCount = unreadGroupIdx >= 0
-    ? messages.filter((m) => !m.isIntro && m.uid !== currentUserId && toMs(m.createdAt) > unreadSinceTs).length
-    : 0;
+  useEffect(() => {
+    if (autoHighlightDone.current || !atMeMessages.length || !containerRef?.current) return;
+    autoHighlightDone.current = true;
+
+    const container = containerRef.current;
+    const { top: cTop, bottom: cBottom } = container.getBoundingClientRect();
+    const visibleNow = atMeMessages.filter((m) => {
+      const el = container.querySelector(`[data-msgid="${m.id}"]`);
+      if (!el) return false;
+      const { top, bottom } = el.getBoundingClientRect();
+      return bottom > cTop && top < cBottom;
+    });
+
+    if (visibleNow.length) {
+      // Solo resaltar visualmente; el badge lo descarta el usuario con clicks
+      setHighlightedMsgId(visibleNow[0].id);
+      const timer = setTimeout(() => setHighlightedMsgId(null), 3000);
+      return () => clearTimeout(timer);
+    }
+
+    // Menciones fuera del viewport — esperar scroll inicial y luego observar
+    let done = false;
+    let observer = null;
+    const setupTimer = setTimeout(() => {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (done) return;
+          const visible = entries.find((e) => e.isIntersecting);
+          if (!visible) return;
+          done = true;
+          observer.disconnect();
+          const msgId = visible.target.getAttribute('data-msgid');
+          const idx = atMeMessages.findIndex((m) => m.id === msgId);
+          setHighlightedMsgId(msgId);
+          setTimeout(() => {
+            setHighlightedMsgId(null);
+            setSeenCount((prev) => Math.max(prev, idx + 1));
+          }, 2000);
+        },
+        { root: container, threshold: 0.5 },
+      );
+      atMeMessages.forEach((m) => {
+        const el = container.querySelector(`[data-msgid="${m.id}"]`);
+        if (el) observer.observe(el);
+      });
+    }, 600);
+    return () => { clearTimeout(setupTimer); observer?.disconnect(); };
+  }, [atMeMessages, containerRef]);
 
   const handleJumpToMessage = (messageId) => {
-    if (!containerRef?.current) return;
-    const el = containerRef.current.querySelector(`[data-msgid="${messageId}"]`);
+    const container = containerRef?.current;
+    if (!container) return;
+    const el = container.querySelector(`[data-msgid="${messageId}"]`);
     if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const elRect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+    const centered = relativeTop - container.clientHeight / 2 + el.offsetHeight / 2;
+    container.scrollTo({ top: Math.max(0, centered), behavior: 'smooth' });
     setHighlightedMsgId(messageId);
     setTimeout(() => setHighlightedMsgId(null), 1500);
   };
 
-  // Click en @: va a la mención más antigua sin ver; NO la marca como vista todavía
+  // Cada click salta a la siguiente mención no vista (seenCount), ya esté arriba o abajo
   const handleAtBadgeClick = () => {
     if (!showAtBadge) return;
-    const targetIdx = seenCount;
-    if (targetIdx >= atMeMessages.length) return;
-    handleJumpToMessage(atMeMessages[targetIdx].id);
-    // Si es la única pendiente, se considera vista al llegar y salimos del modo navegación
-    if (targetIdx === atMeMessages.length - 1) {
-      setSeenCount(atMeMessages.length);
-      setAtMeIdx(null);
-    } else {
-      setAtMeIdx(targetIdx);
-    }
-  };
-
-  // Flecha ↓: la mención actual queda como vista y se avanza a la siguiente
-  const handleAtDown = (e) => {
-    e.stopPropagation();
-    if (!canGoDown) return;
-    const nextIdx = atMeIdx + 1;
-    handleJumpToMessage(atMeMessages[nextIdx].id);
-    // Al llegar a la última, se marcan todas como vistas y se desactiva la navegación
-    if (nextIdx === atMeMessages.length - 1) {
-      setSeenCount(atMeMessages.length);
-      setAtMeIdx(null);
-    } else {
-      setSeenCount((prev) => Math.max(prev, atMeIdx + 1));
-      setAtMeIdx(nextIdx);
-    }
+    const idx = seenCount;
+    if (idx >= atMeMessages.length) return;
+    handleJumpToMessage(atMeMessages[idx].id);
+    setSeenCount(idx + 1);
   };
 
   return (
@@ -170,16 +191,6 @@ export default function ChatMessageList({
           const mp = memberProfiles[group.uid];
           return (
             <Fragment key={`g-${gIdx}-${group.msgs[0].id}`}>
-              {/* Unread divider */}
-              {gIdx === unreadGroupIdx && (
-                <div data-unread-divider className="flex items-center gap-2 my-1 shrink-0">
-                  <div className="flex-1 h-px bg-neutral-2" />
-                  <span className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-neutral-4 font-medium whitespace-nowrap px-1`}>
-                    {unreadCount} mensaje{unreadCount !== 1 ? 's' : ''} sin leer
-                  </span>
-                  <div className="flex-1 h-px bg-neutral-2" />
-                </div>
-              )}
               <div
                 className={`flex items-start ${compact ? 'gap-1.5 max-w-[85%]' : 'gap-2 max-w-[70%]'} ${isOwn ? 'self-end flex-row-reverse' : 'self-start flex-row'}`}
               >
@@ -212,6 +223,7 @@ export default function ChatMessageList({
                         <div
                           key={msg.id}
                           data-msgid={msg.id}
+                          data-first-unread={msg.id === firstUnreadMsgId || undefined}
                           className={`group/msg flex items-center w-fit ${compact ? 'gap-1' : 'gap-1.5'} ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
                         >
                           <div
@@ -256,28 +268,32 @@ export default function ChatMessageList({
         {bottomRef && <div ref={bottomRef} />}
       </div>
 
-      {/* @ mention navigator */}
-      {showAtBadge && (
-        <div className={`absolute ${compact ? 'bottom-2 right-2' : 'bottom-3 right-3'} z-10 flex flex-col items-center gap-1 select-none`}>
-          <button
-            type="button"
-            onClick={handleAtBadgeClick}
-            title="Ir a mención"
-            className={`bg-primary-3 text-white rounded-full shadow-lg font-bold hover:bg-primary-4 transition-colors flex items-center justify-center gap-0.5 ${
-              compact ? 'text-[11px] px-2 py-1' : 'text-xs px-2.5 py-1.5'
-            }`}
-          >
-            <span>@</span>
-            {unreadAtCount > 1 && <span>{unreadAtCount}</span>}
-          </button>
-          {canGoDown && (
+      {/* Botones flotantes: @ arriba, flecha abajo debajo */}
+      {(showAtBadge || showScrollDown) && (
+        <div className={`absolute ${compact ? 'bottom-2 right-2' : 'bottom-3 right-3'} z-10 flex flex-col items-center gap-2 select-none`}>
+          {showAtBadge && (
             <button
               type="button"
-              onClick={handleAtDown}
-              title="Siguiente mención"
-              className="w-7 h-7 rounded-full bg-white border border-neutral-2 shadow-md flex items-center justify-center text-neutral-5 hover:bg-neutral-1 transition-colors"
+              onClick={handleAtBadgeClick}
+              title="Ir a mención"
+              className={`bg-primary-3 text-white rounded-full shadow-lg font-bold hover:bg-primary-4 transition-colors flex items-center justify-center gap-0.5 ${
+                compact ? 'text-[11px] px-2 py-1' : 'text-xs px-2.5 py-1.5'
+              }`}
             >
-              <ChevronDown className="w-3.5 h-3.5" />
+              <span>@</span>
+              {unreadAtCount > 1 && <span>{unreadAtCount}</span>}
+            </button>
+          )}
+          {showScrollDown && (
+            <button
+              type="button"
+              onClick={() => containerRef?.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' })}
+              title="Ir al final"
+              className={`bg-white border border-neutral-2 text-neutral-5 rounded-full shadow-md hover:bg-neutral-1 transition-colors flex items-center justify-center ${
+                compact ? 'w-7 h-7' : 'w-8 h-8'
+              }`}
+            >
+              <ChevronDown className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
             </button>
           )}
         </div>

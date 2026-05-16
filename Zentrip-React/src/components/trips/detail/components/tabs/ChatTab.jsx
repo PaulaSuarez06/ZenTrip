@@ -1,35 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Send, X } from 'lucide-react';
 import { useAuth } from '../../../../../context/AuthContext';
-import { useChatNotifications } from '../../../../../context/ChatNotificationContext';
 import { sendMessage } from '../../../../../services/tripService';
 import { useMemberProfiles } from '../../../../../hooks/useMemberProfiles';
 import { useChatScroll } from '../../../../../hooks/useChatScroll';
 import { useChatInput } from '../../../../../hooks/useChatInput';
+import { useUnreadSinceTs } from '../../../../../hooks/useUnreadSinceTs';
 import ChatMessageList from '../../../../chat/ChatMessageList';
 import MentionPicker from '../../../../chat/MentionPicker';
 
 export default function ChatTab({ tripId, messages = [], members = [] }) {
   const { user, profile } = useAuth();
-  const { markTripChatAsRead } = useChatNotifications();
-  // -1 = timestamp aún no leído de localStorage (igual que ConversationView y FloatingChatWindow)
-  const [unreadSinceTs, setUnreadSinceTs] = useState(-1);
   const containerRef = useRef(null);
 
-  // Lee el timestamp ANTES de marcar como leído; incluye user?.uid en deps
-  // para que se ejecute aunque el usuario cargue después del montaje
-  useEffect(() => {
-    if (!user?.uid) return;
-    setUnreadSinceTs(parseInt(localStorage.getItem(`zentrp_chat_${tripId}_${user.uid}`) || '0', 10));
-    markTripChatAsRead(tripId);
-  }, [tripId, user?.uid]);
+  const { unreadSinceTs, markRead } = useUnreadSinceTs(tripId, true);
 
   useChatScroll({
     chatId: tripId,
     messages,
     unreadSinceTs,
     containerRef,
-    onAfterScroll: () => markTripChatAsRead(tripId),
+    onAfterScroll: markRead,
+    currentUserId: user?.uid,
   });
 
   const displayName = profile?.displayName || profile?.firstName || user?.email || 'Usuario';
@@ -39,7 +31,7 @@ export default function ChatTab({ tripId, messages = [], members = [] }) {
   const chatMembers = useMemo(() =>
     members
       .filter((m) => m.uid && m.uid !== user?.uid)
-      .map((m) => ({ uid: m.uid, displayName: m.name || m.firstName || m.email || 'Usuario' })),
+      .map((m) => ({ uid: m.uid, displayName: m.displayName || m.name || m.firstName || m.email || 'Usuario' })),
     [members, user?.uid]
   );
 

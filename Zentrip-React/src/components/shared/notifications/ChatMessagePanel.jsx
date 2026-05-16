@@ -25,7 +25,7 @@ function toMs(val) {
 export default function ChatMessagePanel({ onClose }) {
   const { user } = useAuth();
   const { openChat, openPrivateChat, activeChatTripId } = useChatUI();
-  const { allTripChats, unreadChats, markTripChatAsRead, markAllChatsAsRead } = useChatNotifications();
+  const { allTripChats, unreadChats, markTripChatAsRead, markAllChatsAsRead, tripReadTimestamps } = useChatNotifications();
   const {
     pendingRequests, accept, reject,
     unreadPrivateChats, markPrivateChatAsRead,
@@ -85,15 +85,6 @@ export default function ChatMessagePanel({ onClose }) {
     onClose();
   };
 
-  const isAtMentioned = (lastMessage) => {
-    if (!lastMessage || lastMessage.uid === user?.uid) return false;
-    return (
-      lastMessage.replyToUid === user?.uid ||
-      lastMessage.mentionUids?.includes(user?.uid) ||
-      lastMessage.mentionUids?.includes('todos')
-    );
-  };
-
   const allChats = [
     ...allTripChats
       .filter((t) => t.lastMessage)
@@ -103,7 +94,12 @@ export default function ChatMessagePanel({ onClose }) {
         id: t.id,
         name: t.name,
         isUnread: t.isUnread,
-        atMe: isAtMentioned(t.lastMessage),
+        atMe: t.hasMention || (
+          !!t.lastMessage &&
+          t.lastMessage.uid !== user?.uid &&
+          toMs(t.lastMessage.createdAt) > (tripReadTimestamps?.[t.id] ?? 0) &&
+          (t.lastMessage.mentionUids?.includes(user?.uid) || t.lastMessage.mentionUids?.includes('todos'))
+        ),
         lastMessage: t.lastMessage,
         coverImage: t.coverImage || null,
         otherUser: null,
@@ -117,7 +113,7 @@ export default function ChatMessagePanel({ onClose }) {
         id: c.id,
         name: c.otherUser?.displayName,
         isUnread: c.isUnread,
-        atMe: isAtMentioned(c.lastMessage),
+        atMe: c.hasMention ?? false,
         lastMessage: c.lastMessage,
         otherUser: c.otherUser,
         sortTs: toMs(c.lastMessage?.createdAt),

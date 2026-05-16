@@ -80,11 +80,14 @@ export function PrivateChatProvider({ children }) {
     };
   }, [uid]);
 
-  const markPrivateChatAsRead = useCallback((chatId) => {
+  const markPrivateChatAsRead = useCallback((chatId, ts) => {
     if (!uidRef.current) return;
-    const ts = Date.now();
-    localStorage.setItem(lsKey(chatId, uidRef.current), ts.toString());
-    setReadTimestamps((prev) => ({ ...prev, [chatId]: ts }));
+    const key = lsKey(chatId, uidRef.current);
+    const prev = parseInt(localStorage.getItem(key) || '0', 10);
+    const newTs = Math.max(prev, ts ?? Date.now());
+    if (newTs === prev) return;
+    localStorage.setItem(key, newTs.toString());
+    setReadTimestamps((p) => ({ ...p, [chatId]: newTs }));
   }, []);
 
   const accept = useCallback(async (requestId, fromUid, fromDisplayName, message) => {
@@ -114,7 +117,11 @@ export function PrivateChatProvider({ children }) {
   const unreadPrivateChats = chatsWithProfiles.filter(isPrivateUnread);
 
   const allPrivateChats = chatsWithProfiles
-    .map((chat) => ({ ...chat, isUnread: isPrivateUnread(chat) }))
+    .map((chat) => ({
+      ...chat,
+      isUnread: isPrivateUnread(chat),
+      hasMention: isPrivateUnread(chat) && chat.lastMessage?.replyToUid === uid,
+    }))
     .sort((a, b) => toMs(b.lastMessage?.createdAt) - toMs(a.lastMessage?.createdAt));
 
   const markAllPrivateChatsAsRead = useCallback(() => {
@@ -142,6 +149,7 @@ export function PrivateChatProvider({ children }) {
       markAllPrivateChatsAsRead,
       accept,
       reject,
+      privateReadTimestamps: readTimestamps,
     }}>
       {children}
     </PrivateChatContext.Provider>

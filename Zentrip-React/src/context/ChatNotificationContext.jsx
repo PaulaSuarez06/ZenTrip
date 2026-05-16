@@ -73,14 +73,29 @@ export function ChatNotificationProvider({ children }) {
             const msgQ = query(
               collection(db, 'trips', tripId, 'messages'),
               orderBy('createdAt', 'desc'),
-              limit(1),
+              limit(5),
             );
             msgUnsub = onSnapshot(msgQ, (msgSnap) => {
-              const msgDoc = msgSnap.docs[0];
-              const lastMessage = msgDoc ? { id: msgDoc.id, ...msgDoc.data() } : null;
+              const docs = msgSnap.docs;
+              const rawLast = docs[0] ? { id: docs[0].id, ...docs[0].data() } : null;
+              const lastMessage = rawLast ? {
+                ...rawLast,
+                createdAt: rawLast.createdAt ?? (docs[0].metadata.hasPendingWrites ? Date.now() : null),
+                mentionUids: rawLast.mentionUids ?? rawLast.mentions?.map((m) => m.uid),
+                replyToUid: rawLast.replyToUid ?? rawLast.replyTo?.uid,
+              } : null;
+              const currentUid = uidRef.current;
+              const lastMentionTs = docs.reduce((maxTs, d) => {
+                const data = d.data();
+                if (data.uid === currentUid) return maxTs;
+                const uids = data.mentionUids ?? data.mentions?.map((m) => m.uid) ?? [];
+                const replyUid = data.replyToUid ?? data.replyTo?.uid;
+                if (!uids.includes(currentUid) && !uids.includes('todos') && replyUid !== currentUid) return maxTs;
+                return Math.max(maxTs, toMs(data.createdAt));
+              }, 0);
               setTripSummaries((prev) => ({
                 ...prev,
-                [tripId]: { id: tripId, name: meta.name, coverImage: meta.coverImage, lastMessage },
+                [tripId]: { id: tripId, name: meta.name, coverImage: meta.coverImage, lastMessage, lastMentionTs },
               }));
               setReadTimestamps((prev) => {
                 if (prev[tripId] !== undefined) return prev;
@@ -113,11 +128,14 @@ export function ChatNotificationProvider({ children }) {
     };
   }, [uid]);
 
-  const markTripChatAsRead = useCallback((tripId) => {
+  const markTripChatAsRead = useCallback((tripId, ts) => {
     if (!uidRef.current) return;
-    const ts = Date.now();
-    localStorage.setItem(lsKey(tripId, uidRef.current), ts.toString());
-    setReadTimestamps((prev) => ({ ...prev, [tripId]: ts }));
+    const key = lsKey(tripId, uidRef.current);
+    const prev = parseInt(localStorage.getItem(key) || '0', 10);
+    const newTs = Math.max(prev, ts ?? Date.now());
+    if (newTs === prev) return;
+    localStorage.setItem(key, newTs.toString());
+    setReadTimestamps((p) => ({ ...p, [tripId]: newTs }));
   }, []);
 
   const markAllChatsAsRead = useCallback(() => {
@@ -155,7 +173,21 @@ export function ChatNotificationProvider({ children }) {
     }));
 
   const allTripChats = Object.values(tripSummaries)
-    .map((trip) => ({ ...trip, isUnread: isUnread(trip) }))
+    .map((trip) => {
+      const readTs = readTimestamps[trip.id] ?? 0;
+      const unread = isUnread(trip);
+      const mentionFromTs = (trip.lastMentionTs ?? 0) > readTs;
+      const mentionFromLastMsg = unread && (
+        trip.lastMessage?.mentionUids?.includes(uid) ||
+        trip.lastMessage?.mentionUids?.includes('todos') ||
+        trip.lastMessage?.replyToUid === uid
+      );
+      return {
+        ...trip,
+        isUnread: unread,
+        hasMention: mentionFromTs || mentionFromLastMsg,
+      };
+    })
     .sort((a, b) => toMs(b.lastMessage?.createdAt) - toMs(a.lastMessage?.createdAt));
 
   const chatUnreadCount = unreadChats.length;
@@ -167,6 +199,7 @@ export function ChatNotificationProvider({ children }) {
       allTripChats,
       markTripChatAsRead,
       markAllChatsAsRead,
+      tripReadTimestamps: readTimestamps,
     }}>
       {children}
     </ChatNotificationContext.Provider>
