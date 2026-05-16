@@ -117,6 +117,15 @@ export async function deleteTrip(tripId) {
     })
   );
 
+  // Limpiar colecciones de nivel raíz asociadas al viaje
+  const rootCollections = ['notifications', 'trip_shares', 'trip_share_requests', 'tripPublicInvitations', 'invitations'];
+  await Promise.all(
+    rootCollections.map(async (col) => {
+      const snap = await getDocs(query(collection(db, col), where('tripId', '==', tripId)));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    })
+  );
+
   await deleteDoc(doc(db, 'trips', tripId));
 }
 

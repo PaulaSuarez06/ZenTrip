@@ -62,8 +62,9 @@ export function useCreateTripController() {
     getTripPublicInvitePreview()
       .then((data) => {
         if (!active) return;
-        setPreviewJoinToken(data?.token || '');
-        setInviteLink(data?.shareLink || '');
+        const previewToken = data?.token || '';
+        setPreviewJoinToken(previewToken);
+        setInviteLink(previewToken ? `${window.location.origin}/auth/login?join=${encodeURIComponent(previewToken)}` : (data?.shareLink || ''));
       })
       .catch((error) => {
         if (!active) return;
@@ -177,7 +178,10 @@ export function useCreateTripController() {
 
       try {
         const linkResponse = await getTripPublicInviteLink(tripId, previewJoinToken);
-        const sharedLink = linkResponse?.shareLink || '';
+        const linkToken = linkResponse?.token;
+        const sharedLink = linkToken
+          ? `${window.location.origin}/auth/login?join=${encodeURIComponent(linkToken)}`
+          : (linkResponse?.shareLink || '');
         if (sharedLink) {
           setInviteLink(sharedLink);
           if (navigator?.clipboard?.writeText) await navigator.clipboard.writeText(sharedLink);
