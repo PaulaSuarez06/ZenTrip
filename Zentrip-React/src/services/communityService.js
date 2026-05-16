@@ -19,6 +19,34 @@ import { db } from '../config/firebaseConfig';
 
 const POSTS_COL = 'community_posts';
 const COMMENTS_COL = 'comments';
+const NOTIFICATIONS_COL = 'notifications';
+
+async function deleteSocialNotification(type, actorUid, postId) {
+  const q = query(
+    collection(db, NOTIFICATIONS_COL),
+    where('type', '==', type),
+    where('actorUid', '==', actorUid),
+  );
+  const snap = await getDocs(q);
+  const matches = snap.docs.filter((d) => d.data().postId === postId);
+  await Promise.all(matches.map((d) => deleteDoc(d.ref)));
+}
+
+async function createSocialNotification(type, recipientUid, actorUid, actorProfile, extraData = {}) {
+  if (!recipientUid || !actorUid || recipientUid === actorUid) return;
+  const actorName = actorProfile?.username || actorProfile?.firstName || actorProfile?.displayName || 'Alguien';
+  await addDoc(collection(db, NOTIFICATIONS_COL), {
+    type,
+    recipientUid,
+    actorUid,
+    actorName,
+    actorAvatar: actorProfile?.profilePhoto || null,
+    actorAvatarColor: actorProfile?.avatarColor || null,
+    read: false,
+    createdAt: serverTimestamp(),
+    ...extraData,
+  });
+}
 
 // Sanitize bookings: keep only non-sensitive fields
 function sanitizeBookings(bookings = []) {
@@ -100,6 +128,16 @@ function sanitizeActivities(activities = []) {
   }));
 }
 
+export async function getExistingPost(tripId, userId) {
+  const q = query(
+    collection(db, POSTS_COL),
+    where('tripId', '==', tripId),
+    where('userId', '==', userId),
+  );
+  const snap = await getDocs(q);
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+}
+
 export async function publishTrip({ trip, members, activities, userId, userProfile, options }) {
   const {
     title,
@@ -174,6 +212,8 @@ export async function publishTrip({ trip, members, activities, userId, userProfi
   };
 
   const ref = await addDoc(collection(db, POSTS_COL), post);
+  // Store the post ID on the trip so syncPublishedPost can skip the collection query.
+  await updateDoc(doc(db, 'trips', trip.id), { communityPostId: ref.id });
   return ref.id;
 }
 
@@ -211,30 +251,42 @@ export async function getUserCommunityPosts(userId) {
     .filter((p) => p.userId === userId);
 }
 
-export async function toggleLike(postId, userId) {
+export async function toggleLike(postId, userId, actorProfile) {
   const ref = doc(db, POSTS_COL, postId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
-  const liked = (snap.data().likedBy || []).includes(userId);
+  const data = snap.data();
+  const liked = (data.likedBy || []).includes(userId);
   await updateDoc(ref, {
     likedBy: liked ? arrayRemove(userId) : arrayUnion(userId),
     likes: increment(liked ? -1 : 1),
   });
+  if (!liked && actorProfile) {
+    createSocialNotification('post_liked', data.userId, userId, actorProfile, { postId, postTitle: data.title || '' });
+  } else if (liked) {
+    deleteSocialNotification('post_liked', userId, postId);
+  }
   return !liked;
 }
 
-export async function toggleSave(postId, userId) {
+export async function toggleSave(postId, userId, actorProfile) {
   const ref = doc(db, POSTS_COL, postId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
-  const saved = (snap.data().savedBy || []).includes(userId);
+  const data = snap.data();
+  const saved = (data.savedBy || []).includes(userId);
   await updateDoc(ref, {
     savedBy: saved ? arrayRemove(userId) : arrayUnion(userId),
   });
+  if (!saved && actorProfile) {
+    createSocialNotification('post_saved', data.userId, userId, actorProfile, { postId, postTitle: data.title || '' });
+  } else if (saved) {
+    deleteSocialNotification('post_saved', userId, postId);
+  }
   return !saved;
 }
 
-export async function addComment(postId, userId, userProfile, text) {
+export async function addComment(postId, userId, userProfile, text, postOwnerId, postTitle) {
   const comment = {
     userId,
     username:
@@ -249,6 +301,14 @@ export async function addComment(postId, userId, userProfile, text) {
   };
   await addDoc(collection(db, POSTS_COL, postId, COMMENTS_COL), comment);
   await updateDoc(doc(db, POSTS_COL, postId), { commentsCount: increment(1) });
+  if (postOwnerId && userProfile) {
+    createSocialNotification('post_commented', postOwnerId, userId, userProfile, { postId, postTitle: postTitle || '' });
+  }
+}
+
+export async function deleteComment(postId, commentId) {
+  await deleteDoc(doc(db, POSTS_COL, postId, COMMENTS_COL, commentId));
+  await updateDoc(doc(db, POSTS_COL, postId), { commentsCount: increment(-1) });
 }
 
 export async function getComments(postId) {
@@ -272,8 +332,79 @@ export async function getSavedPosts(userId) {
     .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
 }
 
+export async function syncPublishedPost(tripId) {
+  const tripSnap = await getDoc(doc(db, 'trips', tripId));
+  if (!tripSnap.exists()) return;
+  const tripData = tripSnap.data();
+  let communityPostId = tripData.communityPostId;
+
+  if (!communityPostId) {
+    // Backfill for posts published before communityPostId was stored on the trip doc.
+    const postsSnap = await getDocs(query(collection(db, POSTS_COL), where('tripId', '==', tripId)));
+    if (postsSnap.empty) return;
+    communityPostId = postsSnap.docs[0].id;
+    updateDoc(doc(db, 'trips', tripId), { communityPostId }); // fire-and-forget, repair for next time
+  }
+
+  const postSnap = await getDoc(doc(db, POSTS_COL, communityPostId));
+  if (!postSnap.exists()) return;
+  const post = postSnap.data();
+
+  const days = (() => {
+    if (!tripData.startDate || !tripData.endDate) return null;
+    const s = new Date(tripData.startDate + 'T00:00:00');
+    const e = new Date(tripData.endDate + 'T00:00:00');
+    return Math.round((e - s) / 86400000) + 1;
+  })();
+
+  const [activitiesSnap, bookingsSnap, luggageGroupSnap, membersSnap] = await Promise.all([
+    getDocs(collection(db, 'trips', tripId, 'activities')),
+    post.shareBookings ? getDocs(collection(db, 'trips', tripId, 'bookings')) : Promise.resolve({ docs: [] }),
+    post.shareLuggage ? getDocs(collection(db, 'trips', tripId, 'luggageGroup')) : Promise.resolve({ docs: [] }),
+    getDocs(collection(db, 'trips', tripId, 'members')),
+  ]);
+
+  const sanitized = sanitizeActivities(activitiesSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  const rawBookings = bookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const groupLuggage = luggageGroupSnap.docs.map((d) => d.data());
+  const participantCount = membersSnap.docs.filter((d) => {
+    const m = d.data();
+    return m.invitationStatus === 'accepted' || !m.invitationStatus;
+  }).length;
+
+  const updates = {
+    destination: tripData.destination || '',
+    origin: tripData.origin || '',
+    startDate: tripData.startDate || null,
+    endDate: tripData.endDate || null,
+    days,
+    participantCount,
+    itinerary: sanitized,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (post.shareBookings) updates.bookings = sanitizeBookings(rawBookings);
+  if (post.shareLuggage) {
+    updates.luggageCategories = [...new Set(groupLuggage.map((i) => i.item).filter(Boolean))].slice(0, 20);
+    if (post.luggageScopeAll && post.userId) {
+      const personalSnap = await getDocs(
+        query(collection(db, 'trips', tripId, 'luggage'), where('userId', '==', post.userId))
+      );
+      updates.personalLuggageCategories = [...new Set(personalSnap.docs.map((d) => d.data().item).filter(Boolean))].slice(0, 30);
+    }
+  }
+
+  await updateDoc(doc(db, POSTS_COL, communityPostId), updates);
+}
+
 export async function unpublishPost(postId) {
-  await deleteDoc(doc(db, POSTS_COL, postId));
+  const postRef = doc(db, POSTS_COL, postId);
+  const postSnap = await getDoc(postRef);
+  const tripId = postSnap.exists() ? postSnap.data().tripId : null;
+  await deleteDoc(postRef);
+  if (tripId) {
+    await updateDoc(doc(db, 'trips', tripId), { communityPostId: null });
+  }
 }
 
 export async function incrementPostView(postId) {

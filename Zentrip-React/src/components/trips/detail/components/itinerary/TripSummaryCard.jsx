@@ -1,3 +1,4 @@
+import { CalendarDays, Ticket, Wallet, Luggage } from 'lucide-react';
 
 function countTripDays(startDate, endDate) {
   if (!startDate || !endDate) return 0;
@@ -6,10 +7,10 @@ function countTripDays(startDate, endDate) {
   return Math.round((e - s) / 86400000) + 1;
 }
 
-function SummaryItem({ emoji, value, label, valueNode }) {
+function SummaryItem({ Icon, value, label, valueNode }) {
   return (
     <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-slate-50">
-      <span className="w-5 h-5 text-lg" role="img" aria-label={label}>{emoji}</span>
+      <Icon className="w-5 h-5 text-primary-3" />
       {valueNode ?? <span className="body-bold text-secondary-5">{value}</span>}
       <span className="body-3 text-neutral-3 text-center leading-tight">{label}</span>
     </div>
@@ -33,10 +34,10 @@ export default function TripSummaryCard({ trip, activityCount = 0, budget = 0, p
     <div className="bg-white rounded-2xl border border-neutral-1 p-4">
       <p className="body-3 text-neutral-4 font-semibold uppercase tracking-wide mb-3">Resumen</p>
       <div className="grid grid-cols-2 gap-2">
-        <SummaryItem emoji="📅" value={days || '—'} label="días" />
-        <SummaryItem emoji="📝" value={activityCount} label="actividades" />
-        <SummaryItem emoji="💸" value={budget ? Intl.NumberFormat('es', { notation: 'compact', maximumFractionDigits: 1 }).format(budget) : '—'} label="gastos" />
-        <SummaryItem emoji="🧳" label="equipaje" valueNode={luggageValueNode} />
+        <SummaryItem Icon={CalendarDays} value={days || '—'} label="días" />
+        <SummaryItem Icon={Ticket} value={activityCount} label="actividades" />
+        <SummaryItem Icon={Wallet} value={budget ? Intl.NumberFormat('es', { notation: 'compact', maximumFractionDigits: 1 }).format(budget) : '—'} label="gastos" />
+        <SummaryItem Icon={Luggage} label="equipaje" valueNode={luggageValueNode} />
       </div>
     </div>
   );

@@ -607,16 +607,7 @@ export default function AdminInspirations() {
 
               {/* Secciones del artículo */}
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <label className="body-3 font-semibold text-secondary-5">Contenido del artículo</label>
-                  <button
-                    type="button"
-                    onClick={addSection}
-                    className="body-3 text-primary-3 font-semibold hover:underline cursor-pointer"
-                  >
-                    + Añadir sección
-                  </button>
-                </div>
+                <label className="body-3 font-semibold text-secondary-5">Contenido del artículo</label>
 
                 {form.body.map((section, si) => (
                   <div key={si} className="border border-neutral-1 rounded-xl p-4 flex flex-col gap-3 bg-slate-50">
@@ -645,6 +636,14 @@ export default function AdminInspirations() {
                     />
                   </div>
                 ))}
+
+                <button
+                  type="button"
+                  onClick={addSection}
+                  className="body-3 text-primary-3 font-semibold hover:underline cursor-pointer self-start"
+                >
+                  + Añadir sección
+                </button>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { doc, setDoc, deleteDoc, getDocs, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, getDocs, collection, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
 const COL = 'follows';
@@ -7,12 +7,25 @@ function docId(followerId, followedId) {
   return `${followerId}_${followedId}`;
 }
 
-export async function followUser(followerId, followedId) {
+export async function followUser(followerId, followedId, followerProfile) {
   await setDoc(doc(db, COL, docId(followerId, followedId)), {
     followerId,
     followedId,
     createdAt: new Date().toISOString(),
   });
+  if (followerProfile) {
+    const actorName = followerProfile.username || followerProfile.firstName || followerProfile.displayName || 'Alguien';
+    addDoc(collection(db, 'notifications'), {
+      type: 'new_follower',
+      recipientUid: followedId,
+      actorUid: followerId,
+      actorName,
+      actorAvatar: followerProfile.profilePhoto || null,
+      actorAvatarColor: followerProfile.avatarColor || null,
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+  }
 }
 
 export async function unfollowUser(followerId, followedId) {

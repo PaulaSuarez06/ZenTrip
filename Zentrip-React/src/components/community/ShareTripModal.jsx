@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { X, Image, Wallet, Package, Shield, Users, AlertCircle, CheckCircle2, Link, Copy, Check, Folder, Ticket, Globe, ChevronLeft } from 'lucide-react';
 import { getGalleryPhotos, getGroupLuggage, getUserLuggage, getBookings } from '../../services/tripService';
 import { getPersonalBudgetsTotal, getExpenseAggregates } from '../../services/budgetService';
-import { publishTrip } from '../../services/communityService';
+import { publishTrip, getExistingPost } from '../../services/communityService';
 import { upsertTripShare, revokeTripShare, getSharePermissionStatus, requestSharePermission } from '../../services/tripShareService';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../config/routes';
 
 const STEPS = ['titulo', 'opciones', 'confirmar'];
 
@@ -203,6 +205,7 @@ function CopyTripLinkPanel({ trip, activities, memberCount, options = {} }) {
 }
 
 export default function ShareTripModal({ trip, members, activities, user, profile, isCreator, onClose }) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState(null); // null | 'copy' | 'publish'
   const [copyStep, setCopyStep] = useState('titulo'); // 'titulo' | 'opciones' | 'confirmar' | 'enlace'
   const [step, setStep] = useState(0);
@@ -256,6 +259,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
   const [submitting, setSubmitting] = useState(false);
   const [publishedPostId, setPublishedPostId] = useState(null);
   const [error, setError] = useState('');
+  const [existingPost, setExistingPost] = useState(null); // false = checked, no post; object = already published
 
   const hasBudget = (groupBudgetTotal != null && groupBudgetTotal > 0) || (trip?.budget != null && Number(trip.budget) > 0);
   const effectiveBudget = groupBudgetTotal > 0 ? groupBudgetTotal : (trip?.budget ? Number(trip.budget) : null);
@@ -306,6 +310,11 @@ export default function ShareTripModal({ trip, members, activities, user, profil
       setLoading(false);
     });
   }, [trip?.id]);
+
+  useEffect(() => {
+    if (mode !== 'publish') return;
+    getExistingPost(trip.id, user.uid).then((post) => setExistingPost(post || false));
+  }, [mode, trip.id, user.uid]);
 
   async function handlePublish() {
     setSubmitting(true);
@@ -412,7 +421,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
         )}
 
         {/* Step indicator — publish */}
-        {mode === 'publish' && !publishedPostId && (
+        {mode === 'publish' && !publishedPostId && !existingPost && (
           <div className="flex items-center gap-2 px-6 pt-4">
             {STEPS.map((s, i) => (
               <div key={s} className="flex items-center gap-2 flex-1">
@@ -705,6 +714,26 @@ export default function ShareTripModal({ trip, members, activities, user, profil
             />
           )}
 
+          {/* ── YA PUBLICADO ── */}
+          {mode === 'publish' && existingPost && !publishedPostId && (
+            <div className="flex flex-col items-center gap-5 py-4 text-center">
+              <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center">
+                <AlertCircle className="w-7 h-7 text-amber-500" />
+              </div>
+              <div>
+                <p className="title-h3-desktop text-secondary-5 mb-1">Ya está publicado</p>
+                <p className="body-3 text-neutral-4">Ya has publicado este viaje en la comunidad. Solo puedes tener una publicación por viaje.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { onClose(); navigate(ROUTES.COMMUNITY_POST.replace(':postId', existingPost.id)); }}
+                className="w-full bg-primary-3 hover:bg-orange-400 text-white body-2-semibold py-2.5 rounded-full transition-colors"
+              >
+                Ver publicación →
+              </button>
+            </div>
+          )}
+
           {/* ── DONE ── */}
           {mode === 'publish' && publishedPostId && (
             <div className="flex flex-col items-center gap-5 py-4 text-center">
@@ -733,7 +762,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
 
           {/* ── STEP 0: Título ── */}
-          {mode === 'publish' && !publishedPostId && step === 0 && (
+          {mode === 'publish' && !publishedPostId && !existingPost && step === 0 && (
             <>
               <div>
                 <p className="body-2 text-neutral-5 mb-1 font-semibold">Título público del viaje</p>
@@ -811,7 +840,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
 
           {/* ── STEP 1: Opciones de privacidad ── */}
-          {mode === 'publish' && !publishedPostId && step === 1 && (
+          {mode === 'publish' && !publishedPostId && !existingPost && step === 1 && (
             <>
               <div>
                 <p className="body-2 font-semibold text-neutral-5 mb-1">¿Qué quieres compartir?</p>
@@ -960,7 +989,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
           )}
 
           {/* ── STEP 2: Confirmación ── */}
-          {mode === 'publish' && !publishedPostId && step === 2 && (
+          {mode === 'publish' && !publishedPostId && !existingPost && step === 2 && (
             <>
               <div className="bg-neutral-1/60 rounded-xl p-4 flex flex-col gap-3">
                 <p className="body-2 font-semibold text-neutral-5">Tu publicación incluirá:</p>
@@ -1037,7 +1066,7 @@ export default function ShareTripModal({ trip, members, activities, user, profil
         )}
 
         {/* Footer buttons — publish */}
-        {mode === 'publish' && !publishedPostId && (
+        {mode === 'publish' && !publishedPostId && !existingPost && (
           <div className="px-6 pb-5 flex gap-3 sticky bottom-0 bg-white pt-3 border-t border-neutral-1">
             {step > 0 && (
               <button

@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useTripDetail } from './hooks/useTripDetail';
 import { useWeather } from './hooks/useWeather';
 import { addActivity, updateActivity, deleteActivity, removeMemberFromTrip, sendManualActivityNotifications, deleteTrip, getTripById, getTripMembersFirestore, subscribeToMessages } from '../../../services/tripService';
+import { getExistingPost } from '../../../services/communityService';
 import { STORAGE_KEY } from '../create/hooks/useTripDraft';
 import { ROUTES } from '../../../config/routes';
 import { addExpense, updateExpense, getExpenseByLinkedActivity, deleteExpensesByLinkedActivity } from '../../../services/budgetService';
@@ -24,6 +25,7 @@ import BudgetTab from './components/tabs/BudgetTab';
 import ChatTab from './components/tabs/ChatTab';
 import { useChatNotifications } from '../../../context/ChatNotificationContext';
 import { useChatUI } from '../../../context/ChatUIContext';
+import { useTripPublishedSync } from './hooks/useTripPublishedSync';
 
 
 function LoadingState() {
@@ -147,6 +149,16 @@ export default function TripDetail() {
   } = useTripDetail(tripId);
 
   const { weatherByDate, locationByDate, currentWeather } = useWeather(trip?.destination, trip?.stops);
+
+  const [resolvedPostId, setResolvedPostId] = useState(null);
+  useEffect(() => {
+    if (!trip || !user?.uid) return;
+    if (trip.communityPostId) { setResolvedPostId(trip.communityPostId); return; }
+    // Retrocompatibilidad: buscar el post por tripId solo si el usuario es el dueño
+    if (trip.uid !== user.uid) return;
+    getExistingPost(tripId, user.uid).then((post) => { if (post) setResolvedPostId(post.id); });
+  }, [trip, tripId, user?.uid]);
+  useTripPublishedSync(tripId, resolvedPostId);
 
   const [addActivityModal, setAddActivityModal] = useState({ open: false, date: null, mode: 'create', activity: null });
 
