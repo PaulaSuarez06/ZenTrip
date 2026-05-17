@@ -39,7 +39,7 @@ export default function CommunitySection() {
   if (!loading && cards.length === 0) return null;
 
   return (
-    <section className="pt-8 pb-16 px-16 sm:px-24 lg:px-32">
+    <section className="pt-8 pb-16 px-4 sm:px-6 md:px-8 lg:px-12">
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Comunidad</p>

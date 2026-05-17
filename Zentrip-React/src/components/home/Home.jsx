@@ -279,7 +279,7 @@ export default function Home() {
             <ImageLoadGate src={destinations[0].imageUrl} alt={destinations[0].name}>
               <div
                 onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(destinations[0].name)}`)}
-                className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-56 sm:h-64 md:h-80 lg:h-96"
+                className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-56 sm:h-64 md:h-80 lg:h-auto"
                 style={{ backgroundImage: `url(${destinations[0].imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               >
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
