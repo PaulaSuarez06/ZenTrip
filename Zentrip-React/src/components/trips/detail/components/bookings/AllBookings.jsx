@@ -40,9 +40,15 @@ function RouteCard({ booking, tripId, onCancelled, highlighted = false }) {
         </div>
         <div className="min-w-0">
           <p className="body-2-semibold text-neutral-7 truncate">{booking.name || 'Ruta guardada'}</p>
-          <p className="body-3 text-neutral-4">
-            {[booking.distance, booking.duration].filter(Boolean).join(' · ')}
-          </p>
+          {booking.waypoints && booking.waypoints.length > 0 ? (
+            <p className="body-3 text-neutral-5 truncate">
+              De <span className="font-semibold">{typeof booking.waypoints[0] === 'string' ? booking.waypoints[0] : booking.waypoints[0]?.value || '—'}</span> a <span className="font-semibold">{typeof booking.waypoints[booking.waypoints.length - 1] === 'string' ? booking.waypoints[booking.waypoints.length - 1] : booking.waypoints[booking.waypoints.length - 1]?.value || '—'}</span>
+            </p>
+          ) : (
+            <p className="body-3 text-neutral-4">
+              {[booking.distance, booking.duration].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
       </div>
       <button

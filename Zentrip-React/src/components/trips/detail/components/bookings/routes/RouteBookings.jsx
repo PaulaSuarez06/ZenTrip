@@ -45,8 +45,10 @@ function RouteCard({ booking, tripId, highlighted = false, onDeleted, onOpenRout
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="body-2-semibold text-neutral-7 truncate">{booking.name || 'Ruta guardada'}</p>
-          {booking.date && (
-            <p className="body-3 text-neutral-4 mt-0.5">{formatDayLong(booking.date)}</p>
+          {booking.waypoints && booking.waypoints.length > 0 && (
+            <p className="body-3 text-neutral-5 mt-0.5 truncate">
+              De <span className="font-semibold">{typeof booking.waypoints[0] === 'string' ? booking.waypoints[0] : booking.waypoints[0]?.value || '—'}</span> a <span className="font-semibold">{typeof booking.waypoints[booking.waypoints.length - 1] === 'string' ? booking.waypoints[booking.waypoints.length - 1] : booking.waypoints[booking.waypoints.length - 1]?.value || '—'}</span>
+            </p>
           )}
         </div>
         <button
@@ -65,6 +67,12 @@ function RouteCard({ booking, tripId, highlighted = false, onDeleted, onOpenRout
           <ModeIcon className="w-3.5 h-3.5" />
           {MODE_LABEL[booking.travelMode] || booking.travelMode}
         </span>
+        {booking.departureTime && booking.arrivalTime && (
+          <span className="flex items-center gap-1 body-3 text-secondary-4 font-semibold">
+            <Clock className="w-3.5 h-3.5" />
+            {booking.departureTime} → {booking.arrivalTime}
+          </span>
+        )}
         {booking.distance && (
           <span className="flex items-center gap-1 body-3 text-neutral-4">
             <Route className="w-3.5 h-3.5 text-primary-3" />

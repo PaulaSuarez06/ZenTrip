@@ -83,7 +83,13 @@ export default function ActivityCard({ activity, members = [], onDelete, onView,
         ) : (
           <>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-              <h4 className="body-bold text-secondary-5 wrap-break-word">{activity.name}</h4>
+              {activity.type === 'ruta' && (activity.origin || activity.destination) ? (
+                <h4 className="body-bold text-secondary-5 wrap-break-word">
+                  De <span className="font-semibold">{activity.origin || '—'}</span> a <span className="font-semibold">{activity.destination || '—'}</span>
+                </h4>
+              ) : (
+                <h4 className="body-bold text-secondary-5 wrap-break-word">{activity.name}</h4>
+              )}
               <div className="flex items-center flex-wrap gap-1.5 sm:shrink-0">
                 <span className={`body-3 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${badgeClass}`}>
                   {badgeLabel}

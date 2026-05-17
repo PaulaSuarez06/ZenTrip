@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { onSnapshot, doc } from 'firebase/firestore';
+import { onSnapshot, doc, collection, query, where } from 'firebase/firestore';
 import { db } from '../../../../config/firebaseConfig';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTripById, getTripMembers, getActivities, getBookings } from '../../../../services/tripService';
@@ -10,6 +10,7 @@ export function useTripDetail(tripId) {
   const [trip, setTrip] = useState(null);
   const [members, setMembers] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [accessDenied, setAccessDenied] = useState(false);
@@ -54,8 +55,12 @@ export function useTripDetail(tripId) {
           let acts = activitiesResult.value;
           if (bookingsResult.status === 'fulfilled') {
             const bkgs = bookingsResult.value;
+            // Separar rutas del resto de bookings
+            const routeBookings = bkgs.filter((b) => b.type === 'ruta');
+            const otherBookings = bkgs.filter((b) => b.type !== 'ruta');
+
             acts = acts.map((act) => {
-              const bk = bkgs.find((b) => b.activityId === act.id);
+              const bk = otherBookings.find((b) => b.activityId === act.id);
               if (!bk) return act;
               const addr =
                 bk.type === 'vuelo' ? (bk.destinationAddress || '') :
@@ -68,6 +73,7 @@ export function useTripDetail(tripId) {
               if (act.lng == null && bk.lng != null) extra.lng = bk.lng;
               return { ...act, ...extra };
             });
+            setRoutes(routeBookings);
           }
           setActivities(acts);
         } else {
@@ -96,13 +102,57 @@ export function useTripDetail(tripId) {
     return unsub;
   }, [tripId, user?.uid]);
 
+  // Listener en tiempo real: actualizar rutas cuando se agregan/modifican bookings
+  useEffect(() => {
+    if (!tripId) return;
+    const bookingsRef = collection(db, 'trips', tripId, 'bookings');
+    const q = query(bookingsRef, where('type', '==', 'ruta'));
+    const unsub = onSnapshot(q, (snap) => {
+      const routeBookings = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setRoutes(routeBookings);
+    });
+    return unsub;
+  }, [tripId]);
+
   // Actividades agrupadas por fecha: { 'YYYY-MM-DD': [activity, ...] }
-  const activitiesByDate = activities.reduce((acc, act) => {
-    if (!act.date) return acc;
-    if (!acc[act.date]) acc[act.date] = [];
-    acc[act.date].push(act);
+  const activitiesByDate = (() => {
+    const acc = activities.reduce((obj, act) => {
+      if (!act.date) return obj;
+      if (!obj[act.date]) obj[act.date] = [];
+      obj[act.date].push(act);
+      return obj;
+    }, {});
+
+    // Agregar rutas como actividades
+    routes.forEach((route) => {
+      if (!route.date) return;
+      if (!acc[route.date]) acc[route.date] = [];
+
+      // Extraer origen y destino de los waypoints
+      const waypoints = route.waypoints || [];
+      const origin = waypoints.length > 0 ? (typeof waypoints[0] === 'string' ? waypoints[0] : waypoints[0]?.value) : '';
+      const destination = waypoints.length > 1 ? (typeof waypoints[waypoints.length - 1] === 'string' ? waypoints[waypoints.length - 1] : waypoints[waypoints.length - 1]?.value) : '';
+
+      acc[route.date].push({
+        id: route.id,
+        type: 'ruta',
+        name: route.name || 'Ruta guardada',
+        startTime: route.departureTime || null,
+        endTime: route.arrivalTime || null,
+        date: route.date,
+        source: 'booking',
+        bookingId: route.id,
+        distance: route.distance,
+        duration: route.duration,
+        travelMode: route.travelMode,
+        origin,
+        destination,
+        waypoints,
+      });
+    });
+
     return acc;
-  }, {});
+  })();
 
   // Días del viaje: rango derivado del trip/stops + cualquier fecha de actividad existente
   const tripDays = (() => {
@@ -147,5 +197,6 @@ export function useTripDetail(tripId) {
     accessDenied,
     setActivities,
     setMembers,
+    setRoutes,
   };
 }
