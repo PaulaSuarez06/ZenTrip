@@ -12,24 +12,29 @@ const TRANSLATE_ICON = "/img/header/translate.png";
 const logo = "/img/logo/logo-sin-texto-png.png";
 const NAV_ITEMS = ["Explorar", "Mis viajes", "Comunidad"];
 
-function LanguageSelector() {
+function LanguageSelector({ open, onToggle, onClose }) {
     const { language, setLanguage } = useLanguage();
-    const [open, setOpen] = useState(false);
     const ref = useRef(null);
     const current = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
     useEffect(() => {
         if (!open) return;
-        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
         document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+        document.addEventListener('touchstart', handler);
+        return () => {
+            document.removeEventListener('mousedown', handler);
+            document.removeEventListener('touchstart', handler);
+        };
+    }, [open, onClose]);
 
     return (
         <div ref={ref} className="relative">
             <button
                 type="button"
-                onClick={() => setOpen((v) => !v)}
+                onClick={onToggle}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
                 className="p-1 cursor-pointer relative"
                 aria-label="Cambiar idioma"
                 title={current.label}
@@ -46,7 +51,7 @@ function LanguageSelector() {
                         <button
                             key={lang.code}
                             type="button"
-                            onClick={() => { setLanguage(lang.code); setOpen(false); }}
+                            onClick={() => { setLanguage(lang.code); onClose(); }}
                             className={`w-full flex items-center gap-3 px-4 py-2.5 body-3 font-semibold transition-colors text-left ${
                                 language === lang.code
                                     ? 'bg-primary-1 text-primary-3'
@@ -79,6 +84,9 @@ const Header = () => {
         profileMenuOpen,
         notificationPanelOpen,
         chatPanelOpen,
+        languageSelectorOpen,
+        toggleLanguageSelector,
+        closeLanguageSelector,
         toggleProfileMenu,
         toggleMobileMenu,
         closeMobileMenu,
@@ -187,7 +195,7 @@ const Header = () => {
 
                 {/* Notificaciones */}
                 <div className="relative">
-                    <button className="relative p-1 cursor-pointer" onClick={toggleNotificationPanel} onMouseDown={(e) => e.stopPropagation()} aria-label="Notificaciones">
+                    <button className="relative p-1 cursor-pointer" onClick={toggleNotificationPanel} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} aria-label="Notificaciones">
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M16.0183 24.5C15.8132 24.8536 15.5188 25.1471 15.1646 25.3511C14.8104 25.5552 14.4088 25.6625 14 25.6625C13.5912 25.6625 13.1896 25.5552 12.8354 25.3511C12.4812 25.1471 12.1868 24.8536 11.9817 24.5M21 9.33334C21 7.47683 20.2625 5.69635 18.9497 4.3836C17.637 3.07084 15.8565 2.33334 14 2.33334C12.1435 2.33334 10.363 3.07084 9.05025 4.3836C7.7375 5.69635 7 7.47683 7 9.33334C7 17.5 3.5 19.8333 3.5 19.8333H24.5C24.5 19.8333 21 17.5 21 9.33334Z" stroke="#1E1E1E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -204,7 +212,7 @@ const Header = () => {
 
                 {/* Mensajes */}
                 <div className="relative">
-                    <button className="relative p-1 cursor-pointer" onClick={toggleChatPanel} onMouseDown={(e) => e.stopPropagation()} aria-label="Mensajes">
+                    <button className="relative p-1 cursor-pointer" onClick={toggleChatPanel} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} aria-label="Mensajes">
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M24.5 13.4167C24.504 14.9565 24.1442 16.4755 23.45 17.85C22.6268 19.497 21.3614 20.8824 19.7954 21.8508C18.2293 22.8193 16.4246 23.3326 14.5833 23.3333C13.0435 23.3374 11.5245 22.9776 10.15 22.2833L3.5 24.5L5.71667 17.85C5.02242 16.4755 4.66265 14.9565 4.66667 13.4167C4.66738 11.5754 5.18071 9.77066 6.14917 8.20464C7.11763 6.63863 8.50296 5.37316 10.15 4.55C11.5245 3.85576 13.0435 3.49599 14.5833 3.5H15.1667C17.5984 3.63416 19.8952 4.66056 21.6173 6.38267C23.3394 8.10479 24.3658 10.4016 24.5 12.8333V13.4167Z" stroke="#1E1E1E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -220,7 +228,7 @@ const Header = () => {
                 </div>
 
                 {/* Idioma */}
-                <LanguageSelector />
+                <LanguageSelector open={languageSelectorOpen} onToggle={toggleLanguageSelector} onClose={closeLanguageSelector} />
 
                 {/* Avatar */}
                 <div ref={profileMenuRef} className="relative shrink-0">
@@ -295,6 +303,7 @@ const Header = () => {
                         const onClick =
                             item === 'Mis viajes' ? handleGoToMyTrips :
                             item === 'Comunidad' ? handleGoToCommunity :
+                            item === 'Explorar' ? handleGoToExplore :
                             handleGoHome;
                         return (
                             <button

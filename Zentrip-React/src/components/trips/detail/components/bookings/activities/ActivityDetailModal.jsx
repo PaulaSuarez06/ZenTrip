@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TimeSelect from '../../../../../../components/ui/TimeSelect';
 import { X, ExternalLink, Globe, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import ImageLightbox from '../ImageLightbox';
 import { getAttractionDetails } from '../../../../../../services/attractionService';
@@ -205,12 +206,7 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
 
               <div>
                 <label className="body-3 font-bold text-neutral-5 uppercase tracking-wider block mb-3">Hora de la actividad</label>
-                <input
-                  type="time"
-                  value={activityTime}
-                  onChange={(e) => setActivityTime(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-neutral-2 rounded-lg body-2 text-neutral-7 focus:outline-none focus:border-primary-3 focus:ring-1 focus:ring-primary-3"
-                />
+                <TimeSelect value={activityTime} onChange={setActivityTime} />
               </div>
 
               {acceptedMembers.length > 0 && (

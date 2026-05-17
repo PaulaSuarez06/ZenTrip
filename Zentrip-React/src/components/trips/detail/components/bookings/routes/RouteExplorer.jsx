@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import TimeSelect from '../../../../../../components/ui/TimeSelect';
 import { useJsApiLoader, GoogleMap, DirectionsRenderer } from '@react-google-maps/api';
 import { Plus, X, Navigation, Clock, Route, MapPin, Car, Shuffle, Footprints, Bike, Bus, Save, Check, Pencil, ExternalLink } from 'lucide-react';
 import BookingBanner from '../BookingBanner';
@@ -667,12 +668,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
               <div className="flex gap-3 flex-wrap">
                 <div className="flex-1 min-w-36 flex flex-col gap-2">
                   <label className="body-3 font-semibold text-neutral-5">Hora de salida</label>
-                  <input
-                    type="time"
-                    value={departureTime}
-                    onChange={(e) => { setDepartureTime(e.target.value); setIsDirty(true); }}
-                    className="w-full px-3 py-2 border border-neutral-2 rounded-lg body-3 text-neutral-7 focus:outline-none focus:border-primary-3"
-                  />
+                  <TimeSelect value={departureTime} onChange={(v) => { setDepartureTime(v); setIsDirty(true); }} />
                 </div>
                 {departureTime && (
                   <div className="flex-1 min-w-36 flex flex-col gap-2">

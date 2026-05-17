@@ -272,4 +272,65 @@ const removeMemberFromTrip = async (req, res, next) => {
   }
 };
 
-module.exports = { getTripMembers, getUserTrips, addHotelBookingToTrip, deleteCloudinaryImage, removeMemberFromTrip };
+/**
+ * DELETE /api/trips/:tripId
+ * Elimina un viaje completo junto con todas sus subcollections y documentos relacionados.
+ * Solo el creador del viaje puede eliminarlo.
+ */
+const deleteTrip = async (req, res, next) => {
+  const { tripId } = req.params;
+  const requestingUid = req.user.uid;
+
+  if (!tripId) return next(new AppError('tripId requerido', 400, 'VALIDATION_ERROR'));
+
+  try {
+    const db = admin.firestore();
+
+    // Verificar que el viaje existe y que el usuario es el creador
+    const tripSnap = await db.collection('trips').doc(tripId).get();
+    if (!tripSnap.exists) return next(new AppError('Viaje no encontrado', 404, 'NOT_FOUND'));
+
+    const tripData = tripSnap.data();
+    if (tripData.uid !== requestingUid) {
+      return next(new AppError('Solo el creador puede eliminar el viaje', 403, 'FORBIDDEN'));
+    }
+
+    // Eliminar subcollections simples en paralelo
+    const subcollections = ['members', 'activities', 'bookings', 'galleryFolders', 'galleryPhotos', 'luggage', 'expenses', 'personalBudgets'];
+    await Promise.all(
+      subcollections.map(async (sub) => {
+        const snap = await db.collection('trips').doc(tripId).collection(sub).get();
+        await Promise.all(snap.docs.map((d) => d.ref.delete()));
+      })
+    );
+
+    // Eliminar luggageGroup con su subcollection anidada selections
+    const groupSnap = await db.collection('trips').doc(tripId).collection('luggageGroup').get();
+    await Promise.all(
+      groupSnap.docs.map(async (groupDoc) => {
+        const selectionsSnap = await groupDoc.ref.collection('selections').get();
+        await Promise.all(selectionsSnap.docs.map((d) => d.ref.delete()));
+        await groupDoc.ref.delete();
+      })
+    );
+
+    // Eliminar documentos en colecciones raíz relacionados con este viaje
+    const rootCollections = ['notifications', 'trip_shares', 'trip_share_requests', 'tripPublicInvitations', 'invitations'];
+    await Promise.all(
+      rootCollections.map(async (col) => {
+        const snap = await db.collection(col).where('tripId', '==', tripId).get();
+        await Promise.all(snap.docs.map((d) => d.ref.delete()));
+      })
+    );
+
+    // Eliminar el documento del viaje
+    await db.collection('trips').doc(tripId).delete();
+
+    res.json({ message: 'Viaje eliminado correctamente' });
+  } catch (error) {
+    console.error('[deleteTrip] Error:', error);
+    return next(error);
+  }
+};
+
+module.exports = { getTripMembers, getUserTrips, addHotelBookingToTrip, deleteCloudinaryImage, removeMemberFromTrip, deleteTrip };

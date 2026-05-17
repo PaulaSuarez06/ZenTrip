@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TimeSelect from '../../../../../../components/ui/TimeSelect';
 import { X, ExternalLink, Phone, Globe, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import ImageLightbox from '../ImageLightbox';
 import { getRestaurantDetails } from '../../../../../../services/restaurantService';
@@ -176,12 +177,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
               {/* Hora de la reserva */}
               <div>
                 <label className="body-3 font-bold text-neutral-5 uppercase tracking-wider block mb-3">Hora de la reserva</label>
-                <input
-                  type="time"
-                  value={reservationTime}
-                  onChange={(e) => setReservationTime(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-neutral-2 rounded-lg body-2 text-neutral-7 focus:outline-none focus:border-primary-3 focus:ring-1 focus:ring-primary-3"
-                />
+                <TimeSelect value={reservationTime} onChange={setReservationTime} />
               </div>
 
               {/* Selector de miembros */}

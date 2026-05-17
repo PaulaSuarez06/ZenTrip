@@ -126,26 +126,26 @@ export default function ActivityBookingCard({ booking, tripId, members = [], onC
           </div>
         )}
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-2">
           {booking.mapsUrl && (
             <a
               href={booking.mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 h-9 min-w-120px rounded-lg border border-secondary-3 text-secondary-3 body-3 font-bold flex items-center justify-center gap-1.5 hover:bg-secondary-1 transition"
+              className="w-full sm:flex-1 h-9 rounded-lg border border-secondary-3 text-secondary-3 body-3 font-bold flex items-center justify-center gap-1.5 hover:bg-secondary-1 transition"
             >
               <ExternalLink className="w-3.5 h-3.5" /> Google Maps
             </a>
           )}
           <button
             onClick={() => setShowReceipts(true)}
-            className="h-9 px-3 rounded-lg bg-secondary-1 border border-secondary-2 body-3 font-semibold text-secondary-4 flex items-center hover:bg-secondary-2 transition"
+            className="w-full sm:w-auto h-9 px-3 rounded-lg bg-secondary-1 border border-secondary-2 body-3 font-semibold text-secondary-4 flex items-center justify-center hover:bg-secondary-2 transition"
           >
             🧾 {receiptUrls.length > 0 ? `${receiptUrls.length} comprobante${receiptUrls.length > 1 ? 's' : ''}` : 'Añadir comprobante'}
           </button>
           <button
             onClick={() => setShowCancel(true)}
-            className="h-9 px-3 rounded-lg border border-red-300 text-red-600 body-3 font-semibold hover:bg-red-50 transition"
+            className="w-full sm:w-auto h-9 px-3 rounded-lg border border-red-300 text-red-600 body-3 font-semibold flex items-center justify-center hover:bg-red-50 transition"
           >
             Eliminar
           </button>

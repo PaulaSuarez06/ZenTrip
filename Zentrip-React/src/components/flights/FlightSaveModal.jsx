@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Plane, ChevronRight, CheckCircle2 } from 'lucide-react';
 import {
   getUserTrips,
-  getTripMembers,
+  getTripMembersFirestore,
   addStop,
   addBooking,
   addActivity,
@@ -200,7 +200,7 @@ export default function FlightSaveModal({ offer, user, tripContext, onClose }) {
   useEffect(() => {
     if (!selectedTrip?.id) return;
     setLoadingTrip(true);
-    getTripMembers(selectedTrip.id)
+    getTripMembersFirestore(selectedTrip.id)
       .catch(() => [])
       .then((membersData) => {
         const list = Array.isArray(membersData) ? membersData : [];

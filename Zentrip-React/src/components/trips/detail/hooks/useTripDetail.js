@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { onSnapshot, doc, collection, query, where } from 'firebase/firestore';
 import { db } from '../../../../config/firebaseConfig';
 import { useAuth } from '../../../../context/AuthContext';
-import { getTripById, getTripMembers, getActivities, getBookings } from '../../../../services/tripService';
+import { getTripById, getTripMembers, getTripMembersFirestore, getActivities, getBookings } from '../../../../services/tripService';
 
 export function useTripDetail(tripId) {
   const { user } = useAuth();
@@ -35,7 +35,7 @@ export function useTripDetail(tripId) {
 
         // Members y activities son secundarios — no bloquean si fallan
         const [membersResult, activitiesResult, bookingsResult] = await Promise.allSettled([
-          getTripMembers(tripId),
+          getTripMembers(tripId).catch(() => getTripMembersFirestore(tripId)),
           getActivities(tripId),
           getBookings(tripId),
         ]);

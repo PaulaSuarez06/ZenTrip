@@ -163,7 +163,7 @@ export default function Home() {
       <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.2)" }} />
 
       {/* Text content — left side */}
-      <div className="absolute left-5 right-5 top-26 bottom-65 flex items-center sm:flex-none sm:block sm:inset-auto sm:left-10 sm:top-32 sm:right-auto md:left-14 md:top-36 lg:left-16 lg:top-40 max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl text-left">
+      <div className="absolute left-5 right-5 top-28 sm:left-10 sm:top-32 sm:right-auto md:left-14 md:top-36 lg:left-16 lg:top-40 max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl text-left">
         <div className="w-full">
           <h1 className="text-[20px] sm:text-[22px] font-black font-titles md:title-h1-desktop text-white">
             ¡Bienvenid@, {registeredName}!

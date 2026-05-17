@@ -271,7 +271,7 @@ export default function ReservasTab({ bookings }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Controles: filtro por tipo + vista */}
-      <div className="bg-white rounded-2xl border border-neutral-1 p-3 flex items-center gap-3">
+      <div className="bg-white rounded-2xl border border-neutral-1 p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
           <button
             type="button"
@@ -299,7 +299,7 @@ export default function ReservasTab({ bookings }) {
           })}
         </div>
 
-        <div className="flex rounded-full border border-neutral-1 overflow-hidden shrink-0">
+        <div className="flex rounded-full border border-neutral-1 overflow-hidden shrink-0 self-end sm:self-auto">
           {[['tipo', 'Por tipo'], ['dia', 'Por día']].map(([v, l]) => (
             <button
               key={v}

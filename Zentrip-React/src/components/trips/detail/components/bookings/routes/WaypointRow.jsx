@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Autocomplete } from '@react-google-maps/api';
 
 export default function WaypointRow({ wp, index, total, onChange, onRemove, onMove, isLoaded }) {
@@ -37,8 +37,29 @@ export default function WaypointRow({ wp, index, total, onChange, onRemove, onMo
       onDragEnd={() => setIsDragOver(false)}
       className={`flex items-start gap-2 mb-1 transition-opacity ${isDragOver ? 'opacity-50' : ''}`}
     >
-      <div className="shrink-0 pt-3 cursor-grab text-neutral-2 hover:text-neutral-4 transition-colors">
+      {/* Desktop: drag handle */}
+      <div className="hidden sm:block shrink-0 pt-3 cursor-grab text-neutral-2 hover:text-neutral-4 transition-colors">
         <GripVertical className="w-4 h-4" />
+      </div>
+
+      {/* Mobile: up/down buttons */}
+      <div className="sm:hidden flex flex-col shrink-0 pt-1.5">
+        <button
+          type="button"
+          onClick={() => index > 0 && onMove(index, index - 1)}
+          disabled={index === 0}
+          className="p-0.5 text-neutral-3 hover:text-primary-3 disabled:opacity-25 transition"
+        >
+          <ChevronUp className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => index < total - 1 && onMove(index, index + 1)}
+          disabled={index === total - 1}
+          className="p-0.5 text-neutral-3 hover:text-primary-3 disabled:opacity-25 transition"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </button>
       </div>
 
       <div className="flex flex-col items-center shrink-0 pt-3">

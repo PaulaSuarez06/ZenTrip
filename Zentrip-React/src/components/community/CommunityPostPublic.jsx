@@ -52,10 +52,11 @@ export default function CommunityPostPublic() {
   }, [postId]);
 
   useEffect(() => {
-    if (!postId || !user?.uid) return;
+    if (!postId || !user?.uid || !post?.userId) return;
+    if (user.uid === post.userId) return;
     recordPostView(postId, user.uid);
     setViewedBy((prev) => prev.includes(user.uid) ? prev : [...prev, user.uid]);
-  }, [postId, user?.uid]);
+  }, [postId, user?.uid, post?.userId]);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
