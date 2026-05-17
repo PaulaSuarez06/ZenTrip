@@ -23,30 +23,30 @@ export default function InspirationCard({ article }) {
   const color = CATEGORY_COLOR[article.category] ?? 'text-primary-3';
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-neutral-1 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-      <div className="h-44 overflow-hidden">
+    <div className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-neutral-1 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+      <div className="h-40 sm:h-44 md:h-56 overflow-hidden bg-neutral-1">
         <img
           src={article.image}
           alt={article.title}
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="p-4 flex flex-col flex-1 gap-2">
+      <div className="p-3 sm:p-4 md:p-5 flex flex-col flex-1 gap-2 sm:gap-2.5">
         <span className={`text-xs font-bold uppercase tracking-wide ${color}`}>
           {article.emoji} {article.category}
         </span>
-        <h3 className="body-bold text-secondary-5 leading-tight line-clamp-2">
+        <h3 className="body-bold text-secondary-5 leading-tight line-clamp-2 text-sm sm:text-base">
           {article.title}
         </h3>
-        <p className="body-3 text-neutral-4 line-clamp-2 flex-1">
+        <p className="body-3 text-neutral-4 line-clamp-2 flex-1 text-xs sm:text-sm">
           {article.summary}
         </p>
-        <div className="flex items-center justify-between mt-2">
-          <span className="body-3 text-neutral-3">{article.readingTime} min lectura</span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2 mt-1 sm:mt-2">
+          <span className="body-3 text-neutral-3 text-xs">{article.readingTime} min lectura</span>
           <button
             type="button"
             onClick={() => navigate(`/inspiracion/${article.id}`)}
-            className="bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold px-4 py-1.5 rounded-full transition-colors cursor-pointer"
+            className="w-full sm:w-auto bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold px-3 sm:px-4 py-2 sm:py-1.5 rounded-full transition-colors cursor-pointer text-xs sm:text-sm"
           >
             Leer →
           </button>

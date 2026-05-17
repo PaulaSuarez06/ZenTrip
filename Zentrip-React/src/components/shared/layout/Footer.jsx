@@ -21,19 +21,19 @@ export default function Footer() {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <footer className="px-6 md:px-16 py-8 bg-secondary-5 text-white">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pb-6 border-b border-white/20">
+    <footer className="px-4 sm:px-6 md:px-16 py-6 sm:py-8 bg-secondary-5 text-white">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8 pb-4 sm:pb-6 border-b border-white/20">
 
         {/* Logo */}
         <div
-          className="flex items-center gap-2 cursor-pointer select-none"
+          className="col-span-2 sm:col-span-1 flex items-center gap-2 cursor-pointer select-none"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
           <img
             src="/img/logo/Logo-white-png.png"
             alt="ZenTrip"
-            className="h-14 w-auto transition-transform duration-700"
+            className="h-10 sm:h-12 md:h-14 w-auto transition-transform duration-700"
             style={{
               animation: 'footerFloat 3s ease-in-out infinite',
               transform: hovered ? 'rotate(360deg) scale(1.15)' : undefined,
@@ -41,7 +41,7 @@ export default function Footer() {
             }}
           />
           <div className="flex flex-col leading-none">
-            <p className="font-[Montserrat] text-[16px] font-bold flex">
+            <p className="font-[Montserrat] text-xs sm:text-sm md:text-base font-bold flex">
               {ZEN.map((char, i) => (
                 <span
                   key={i}
@@ -71,19 +71,19 @@ export default function Footer() {
                 </span>
               ))}
             </p>
-            <p className="body-3 mt-1 text-white/70">Plan, Pack & Go.</p>
+            <p className="body-3 mt-0.5 sm:mt-1 text-white/70 text-[11px] sm:text-xs md:text-sm">Plan, Pack & Go.</p>
           </div>
         </div>
 
         {/* Navegación */}
         <div>
-          <p className="body-2-semibold text-white mb-3">Navegación</p>
-          <ul className="space-y-2">
+          <p className="body-2-semibold text-white mb-2 sm:mb-3 text-xs sm:text-sm md:text-base">Navegación</p>
+          <ul className="space-y-1.5 sm:space-y-2">
             {NAV_LINKS.map(({ label, to }) => (
               <li key={label}>
                 <Link
                   to={to}
-                  className="body-2 text-white/70 hover:text-white transition-colors duration-200"
+                  className="body-2 text-white/70 hover:text-white transition-colors duration-200 text-xs sm:text-sm md:text-base"
                 >
                   {label}
                 </Link>
@@ -94,13 +94,13 @@ export default function Footer() {
 
         {/* Legal */}
         <div>
-          <p className="body-2-semibold text-white mb-3">Legal</p>
-          <ul className="space-y-2">
+          <p className="body-2-semibold text-white mb-2 sm:mb-3 text-xs sm:text-sm md:text-base">Legal</p>
+          <ul className="space-y-1.5 sm:space-y-2">
             {LEGAL_LINKS.map(({ label, to }) => (
               <li key={label}>
                 <Link
                   to={to}
-                  className="body-2 text-white/70 hover:text-white transition-colors duration-200"
+                  className="body-2 text-white/70 hover:text-white transition-colors duration-200 text-xs sm:text-sm md:text-base"
                 >
                   {label}
                 </Link>
@@ -111,8 +111,8 @@ export default function Footer() {
       </div>
 
       {/* Copyright */}
-      <div className="pt-5 text-center">
-        <p className="body-3 text-white/50">© 2026 ZenTrip · Proyecto TFG — Desarrollo de Aplicaciones Web</p>
+      <div className="pt-4 sm:pt-5 text-center">
+        <p className="body-3 text-white/50 text-xs sm:text-sm">© 2026 ZenTrip · Proyecto TFG — Desarrollo de Aplicaciones Web</p>
       </div>
 
       <style>{`
