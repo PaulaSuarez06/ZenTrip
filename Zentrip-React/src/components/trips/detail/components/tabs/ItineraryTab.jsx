@@ -44,6 +44,7 @@ export default function ItinerarioTab({
   locationByDate = {},
   initialSelectedDay = null,
   highlightActivityId = null,
+  onRefetch,
 }) {
   const today = new Date().toISOString().split('T')[0];
   const [selectedDay, setSelectedDay] = useState(() =>
@@ -134,7 +135,7 @@ export default function ItinerarioTab({
         <>
           <button
             type="button"
-            onClick={() => setActiveBooking(null)}
+            onClick={() => { setActiveBooking(null); onRefetch?.(); }}
             className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-neutral-6 w-fit transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />

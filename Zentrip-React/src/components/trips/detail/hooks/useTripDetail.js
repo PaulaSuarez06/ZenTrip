@@ -186,6 +186,43 @@ export function useTripDetail(tripId) {
     return [...daySet].sort();
   })();
 
+  const refetch = async () => {
+    try {
+      const [activitiesResult, bookingsResult] = await Promise.allSettled([
+        getActivities(tripId),
+        getBookings(tripId),
+      ]);
+
+      if (activitiesResult.status === 'fulfilled') {
+        let acts = activitiesResult.value;
+        if (bookingsResult.status === 'fulfilled') {
+          const bkgs = bookingsResult.value;
+          const routeBookings = bkgs.filter((b) => b.type === 'ruta');
+          const otherBookings = bkgs.filter((b) => b.type !== 'ruta');
+
+          acts = acts.map((act) => {
+            const bk = otherBookings.find((b) => b.activityId === act.id);
+            if (!bk) return act;
+            const addr =
+              bk.type === 'vuelo' ? (bk.destinationAddress || '') :
+              bk.type === 'car'   ? (bk.pickUpAddress || '') :
+              (bk.address || '');
+            const extra = { bookingId: bk.id };
+            if (!act.address && addr) extra.address = addr;
+            if (!act.city && bk.city) extra.city = bk.city;
+            if (act.lat == null && bk.lat != null) extra.lat = bk.lat;
+            if (act.lng == null && bk.lng != null) extra.lng = bk.lng;
+            return { ...act, ...extra };
+          });
+          setRoutes(routeBookings);
+        }
+        setActivities(acts);
+      }
+    } catch (err) {
+      console.error('[useTripDetail] Error refetching:', err);
+    }
+  };
+
   return {
     trip,
     members,
@@ -198,5 +235,6 @@ export function useTripDetail(tripId) {
     setActivities,
     setMembers,
     setRoutes,
+    refetch,
   };
 }
