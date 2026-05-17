@@ -15,10 +15,14 @@ export function useChatScroll({ chatId, messages, unreadSinceTs, containerRef, m
   onAfterScrollRef.current = onAfterScroll;
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const unreadSinceTsRef = useRef(unreadSinceTs);
+  unreadSinceTsRef.current = unreadSinceTs;
+  const prevMessagesLengthRef = useRef(0);
 
   useEffect(() => {
     isFirstLoad.current = true;
     userNearBottom.current = true;
+    prevMessagesLengthRef.current = 0;
   }, [chatId]);
 
   // Detecta si el usuario está cerca del fondo para marcar como leído al scrollear
@@ -62,9 +66,13 @@ export function useChatScroll({ chatId, messages, unreadSinceTs, containerRef, m
     }
   }, [messages.length, unreadSinceTs, minimized]);
 
-  // Auto-scroll solo cuando el propio usuario envía un mensaje
+  // Auto-scroll solo cuando el propio usuario envía un mensaje nuevo (no carga histórica)
   useEffect(() => {
-    if (minimized || messages.length === 0 || unreadSinceTs === -1 || isFirstLoad.current) return;
+    const prevLength = prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+    if (minimized || messages.length === 0 || unreadSinceTsRef.current === -1 || isFirstLoad.current) return;
+    // Solo scroll para mensajes nuevos en tiempo real (diff=1), no para carga por lotes de Firebase
+    if (messages.length - prevLength !== 1) return;
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.uid !== currentUserId) return;
     const el = containerRef.current;
@@ -72,5 +80,5 @@ export function useChatScroll({ chatId, messages, unreadSinceTs, containerRef, m
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     const lastTs = Math.max(Date.now(), toMs(lastMsg.createdAt) + 1);
     onAfterScroll?.(lastTs);
-  }, [messages.length, unreadSinceTs, minimized]);
+  }, [messages.length, minimized]);
 }

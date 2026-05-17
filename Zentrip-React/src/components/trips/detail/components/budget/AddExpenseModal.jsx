@@ -261,20 +261,15 @@ export default function AddExpenseModal({
               <label className="block body-2-semibold text-neutral-6 mb-1.5">
                 Importe <span className="text-feedback-error">*</span>
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={form.amount}
-                  onChange={(e) => set('amount', e.target.value)}
-                  placeholder="0.00"
-                  className={`${fi} pr-10 ${errors.amount ? bad : ok}`}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 body-3 text-neutral-4 pointer-events-none">
-                  {currSymbol}
-                </span>
-              </div>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={form.amount}
+                onChange={(e) => set('amount', e.target.value)}
+                placeholder="0.00"
+                className={`${fi} ${errors.amount ? bad : ok}`}
+              />
               {errors.amount && <FieldError msg={errors.amount} />}
             </div>
 
