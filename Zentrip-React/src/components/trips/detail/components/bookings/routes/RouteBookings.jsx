@@ -39,7 +39,7 @@ function RouteCard({ booking, tripId, highlighted = false, onDeleted, onOpenRout
     <div
       onClick={() => onOpenRoute(booking)}
       ref={cardRef}
-      className={`cursor-pointer bg-white border rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition ${highlighted ? 'border-primary-3 ring-2 ring-primary-3 ring-offset-1' : 'border-neutral-1 hover:border-neutral-2'}`}
+      className={`cursor-pointer bg-white border rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition ${highlighted ? 'border-transparent highlight-glow' : 'border-neutral-1 hover:border-neutral-2'}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">

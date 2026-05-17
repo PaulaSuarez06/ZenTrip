@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Map, Trash2 } from 'lucide-react';
+import { Hotel, Plane, Ticket, Map, Utensils, Trash2 } from 'lucide-react';
 import { getBookings, deleteBooking } from '../../../../../services/tripService';
 import { useAuth } from '../../../../../context/AuthContext';
 import { SectionLabel } from './hotels/HotelAtoms';
@@ -11,12 +11,12 @@ import RestaurantBookingCard from './restaurants/RestaurantBookingCard';
 import BookingDetailModal from './hotels/BookingDetailModal';
 
 const SECTIONS = [
-  { type: 'hotel',      label: 'Alojamiento',  emoji: '🏨', tab: 'hoteles'      },
-  { type: 'vuelo',      label: 'Vuelos',        emoji: '✈️', tab: 'vuelos'       },
-  //{ type: 'car',        label: 'Coches',        emoji: '🚗', tab: 'coches'       },
-  { type: 'actividad',  label: 'Actividades',   emoji: '🎯', tab: 'actividades'  },
-  { type: 'restaurant', label: 'Restaurantes',  emoji: '🍽️', tab: 'restaurantes' },
-  { type: 'ruta',       label: 'Rutas',         emoji: '🗺️', tab: 'rutas'        },
+  { type: 'hotel',      label: 'Alojamiento',  Icon: Hotel,    tab: 'hoteles'      },
+  { type: 'vuelo',      label: 'Vuelos',        Icon: Plane,    tab: 'vuelos'       },
+  //{ type: 'car',        label: 'Coches',        Icon: Car,      tab: 'coches'       },
+  { type: 'actividad',  label: 'Actividades',   Icon: Ticket,   tab: 'actividades'  },
+  { type: 'restaurant', label: 'Restaurantes',  Icon: Utensils, tab: 'restaurantes' },
+  { type: 'ruta',       label: 'Rutas',         Icon: Map,      tab: 'rutas'        },
 ];
 
 function RouteCard({ booking, tripId, onCancelled, highlighted = false }) {
@@ -33,7 +33,7 @@ function RouteCard({ booking, tripId, onCancelled, highlighted = false }) {
   };
 
   return (
-    <div className={`bg-white border rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm ${highlighted ? 'border-primary-3 ring-2 ring-primary-3 ring-offset-1' : 'border-neutral-1'}`}>
+    <div className={`bg-white border rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm ${highlighted ? 'border-transparent highlight-glow' : 'border-neutral-1'}`}>
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-9 h-9 rounded-full bg-primary-1 flex items-center justify-center shrink-0">
           <Map className="w-4 h-4 text-primary-4" />
@@ -125,13 +125,13 @@ export default function AllBookings({ tripId, members = [], highlightBookingId, 
         <p className="body-2-semibold text-neutral-6 mb-1">Sin reservas todavía</p>
         <p className="body-3 text-neutral-4 mb-6">Empieza a añadir hoteles, vuelos, actividades y más</p>
         <div className="flex flex-wrap justify-center gap-2">
-          {SECTIONS.map(({ tab, emoji, label }) => (
+          {SECTIONS.map(({ tab, Icon, label }) => (
             <button
               key={tab}
               onClick={() => onGoBook?.(tab)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-2 text-primary-4 body-3 font-semibold hover:bg-primary-1 transition"
             >
-              {emoji} {label}
+              <Icon className="w-3.5 h-3.5" /> {label}
             </button>
           ))}
         </div>
@@ -141,12 +141,12 @@ export default function AllBookings({ tripId, members = [], highlightBookingId, 
 
   return (
     <div className="p-4 sm:p-6">
-      {SECTIONS.map(({ type, label, emoji }) => {
+      {SECTIONS.map(({ type, label, Icon }) => {
         const group = bookings.filter((b) => b.type === type);
         if (group.length === 0) return null;
         return (
           <div key={type} className="mb-7">
-            <SectionLabel>{emoji} {label}</SectionLabel>
+            <SectionLabel><span className="flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" />{label}</span></SectionLabel>
             <div className="flex flex-col gap-3">
               {group.map(renderCard)}
             </div>

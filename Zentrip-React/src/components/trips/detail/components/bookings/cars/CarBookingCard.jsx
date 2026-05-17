@@ -84,7 +84,7 @@ export default function CarBookingCard({ booking, tripId, members = [], onCancel
 
   return (
     <>
-      <div ref={cardRef} className={`bg-auxiliary-green-1 border rounded-xl px-4 py-3 transition ${highlighted ? 'border-primary-3 ring-2 ring-primary-3 ring-offset-1' : 'border-auxiliary-green-3'}`}>
+      <div ref={cardRef} className={`bg-auxiliary-green-1 border rounded-xl px-4 py-3 transition ${highlighted ? 'border-transparent highlight-glow' : 'border-auxiliary-green-3'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
             <span className="text-xl">🚗</span>

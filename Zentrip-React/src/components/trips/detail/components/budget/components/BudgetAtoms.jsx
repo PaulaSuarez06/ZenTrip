@@ -50,12 +50,21 @@ export function fmtDateLabel(dateStr) {
   } catch { return dateStr; }
 }
 
+const BRAND_COLORS = ['#FE6B01', '#004C87', '#016FC1', '#C35001', '#059669', '#6366f1', '#d97706'];
+
+function colorFromString(str = '') {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (str.charCodeAt(i) + ((h << 5) - h)) | 0;
+  return BRAND_COLORS[Math.abs(h) % BRAND_COLORS.length];
+}
+
 export function Avatar({ member, size = 'sm' }) {
-  const dim = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm';
-  if (member?.avatar) {
-    return <img src={member.avatar} alt={member?.name} className={`${dim} rounded-full object-cover shrink-0`} />;
+  const dim   = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm';
+  const photo = member?.avatar || member?.profilePhoto || '';
+  if (photo) {
+    return <img src={photo} alt={member?.name} className={`${dim} rounded-full object-cover shrink-0`} />;
   }
-  const color    = member?.avatarColor ?? '#FE6B01';
+  const color    = member?.avatarColor || colorFromString(member?.uid || member?.name || '');
   const initials = (member?.name ?? '?').slice(0, 1).toUpperCase();
   return (
     <div

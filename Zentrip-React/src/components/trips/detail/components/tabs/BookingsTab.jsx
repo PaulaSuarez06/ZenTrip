@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Hotel, Plane, Car, Train, Compass, Map, Utensils, LayoutList } from 'lucide-react';
+import { Hotel, Plane, Car, Train, Ticket, Map, Utensils, LayoutList } from 'lucide-react';
 import AllBookings from '../bookings/AllBookings';
 import HotelBookings from '../bookings/hotels/HotelBookings';
 import CarBookings from '../bookings/cars/CarBookings';
@@ -15,7 +15,7 @@ const SUBTABS = [
   { key: 'vuelos',       label: 'Vuelos',         Icon: Plane,      available: true  },
   //{ key: 'coches',       label: 'Coches',         Icon: Car,        available: true  },
   //{ key: 'trenes',       label: 'Trenes',         Icon: Train,      available: false },
-  { key: 'actividades',  label: 'Actividades',    Icon: Compass,    available: true  },
+  { key: 'actividades',  label: 'Actividades',    Icon: Ticket,     available: true  },
   { key: 'rutas',        label: 'Rutas',          Icon: Map,        available: true  },
   { key: 'restaurantes', label: 'Restaurantes',   Icon: Utensils,   available: true  },
 ];
