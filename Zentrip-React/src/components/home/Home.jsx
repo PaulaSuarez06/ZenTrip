@@ -209,41 +209,41 @@ export default function Home() {
       </div>
     </div>
     {/* ── Mi espacio ── */}
-    <section className="pt-20 pb-12 px-16 sm:px-24 lg:px-32">
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Mi espacio</p>
-            <h2 className="title-h2-desktop text-secondary-5">Mis próximos viajes</h2>
-            <p className="body-2 text-neutral-4 mt-1">Continúa donde lo dejaste o empieza algo nuevo</p>
+    <section className="pt-12 sm:pt-16 md:pt-20 pb-8 sm:pb-12 px-4 sm:px-6 md:px-8 lg:px-12">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 md:mb-10">
+          <div className="flex-1">
+            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-2 text-xs sm:text-sm">Mi espacio</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl title-h2-desktop text-secondary-5 font-bold mb-1 sm:mb-2">Mis próximos viajes</h2>
+            <p className="body-2 text-neutral-4 mt-1 sm:mt-2 text-sm sm:text-base">Continúa donde lo dejaste o empieza algo nuevo</p>
           </div>
           <button
             type="button"
             onClick={() => navigate(ROUTES.TRIPS.LIST)}
-            className="shrink-0 mt-1 bg-primary-1 text-primary-3 hover:bg-primary-2 body-3 font-semibold px-4 py-2 rounded-full transition-colors cursor-pointer"
+            className="w-full sm:w-auto sm:shrink-0 sm:mt-1 bg-primary-1 text-primary-3 hover:bg-primary-2 body-3 font-semibold px-4 py-2.5 sm:py-2 rounded-full transition-colors cursor-pointer text-sm sm:text-base"
           >
             Ver todos mis viajes →
           </button>
         </div>
 
         {tripsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-10">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-neutral-1 rounded-2xl h-64 animate-pulse" />
+              <div key={i} className="bg-neutral-1 rounded-xl sm:rounded-2xl h-56 sm:h-64 animate-pulse" />
             ))}
           </div>
         ) : misViajes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-14 text-center bg-white rounded-2xl border border-neutral-1">
-            <p className="body-2 text-neutral-4">Aún no tienes viajes activos</p>
+          <div className="flex flex-col items-center justify-center gap-3 py-10 sm:py-12 md:py-14 text-center bg-white rounded-xl sm:rounded-2xl border border-neutral-1">
+            <p className="body-2 text-neutral-4 text-sm sm:text-base">Aún no tienes viajes activos</p>
             <button
               type="button"
               onClick={() => navigate(ROUTES.TRIPS.CREATE)}
-              className="px-5 py-2 rounded-full bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold transition-colors cursor-pointer"
+              className="px-5 py-2 rounded-full bg-primary-3 hover:bg-orange-400 text-white body-3 font-semibold transition-colors cursor-pointer text-sm sm:text-base"
             >
               Planificar un viaje
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-10">
             {misViajes.map((trip) => (
               <TripCard
                 key={trip.id}
@@ -263,46 +263,46 @@ export default function Home() {
 
     {/* ── Inspiración ── */}
     {destinations.length > 0 && (
-      <section className="pt-8 pb-16 px-16 sm:px-24 lg:px-32">
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Inspiración</p>
-            <h2 className="title-h2-desktop text-secondary-5">Destinos que te van a enamorar</h2>
-            <p className="body-2 text-neutral-4 mt-1">Tendencias reales basadas en lo que está reservando la gente ahora</p>
+      <section className="pt-6 sm:pt-8 md:pt-10 pb-12 sm:pb-16 px-4 sm:px-6 md:px-8 lg:px-12">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 md:mb-10">
+          <div className="flex-1">
+            <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-2 text-xs sm:text-sm">Inspiración</p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl title-h2-desktop text-secondary-5 font-bold mb-1 sm:mb-2">Destinos que te van a enamorar</h2>
+            <p className="body-2 text-neutral-4 mt-1 sm:mt-2 text-sm sm:text-base">Tendencias reales basadas en lo que está reservando la gente ahora</p>
           </div>
         </div>
 
-        <div className="flex gap-10" style={{ height: '480px' }}>
-          {/* Tarjeta grande izquierda */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8 lg:gap-10">
+          {/* Tarjeta grande — full width en móvil, flex-1 en desktop */}
           {destinations[0] && (
             <div
               onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(destinations[0].name)}`)}
-              className="relative rounded-2xl overflow-hidden cursor-pointer flex-1"
+              className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-56 sm:h-64 md:h-80 lg:h-96"
               style={{ backgroundImage: `url(${destinations[0].imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
             >
               <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <p className="text-white title-h3-desktop leading-tight">{destinations[0].name}</p>
+              <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-5">
+                <p className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl title-h3-desktop font-bold leading-tight">{destinations[0].name}</p>
                 {(destinations[0].tip || DESTINATION_TIPS[destinations[0].name]) && (
-                  <p className="text-white/80 body-3 mt-1">✦ {destinations[0].tip || DESTINATION_TIPS[destinations[0].name]}</p>
+                  <p className="text-white/80 body-3 mt-1 sm:mt-2 text-xs sm:text-sm">✦ {destinations[0].tip || DESTINATION_TIPS[destinations[0].name]}</p>
                 )}
               </div>
             </div>
           )}
-          {/* 4 tarjetas pequeñas en 2x2 */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-10 flex-1">
+          {/* 4 tarjetas pequeñas — grid responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 w-full lg:flex-1">
             {destinations.slice(1, 5).map((dest) => (
               <div
                 key={dest.id}
                 onClick={() => navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination: dest.name } } })}
-                className="relative rounded-2xl overflow-hidden cursor-pointer"
+                className="relative rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden cursor-pointer h-40 sm:h-48 md:h-56"
                 style={{ backgroundImage: `url(${dest.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               >
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="text-white body-bold leading-tight">{dest.name}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4">
+                  <p className="text-white body-bold text-sm sm:text-base leading-tight">{dest.name}</p>
                   {(dest.tip || DESTINATION_TIPS[dest.name]) && (
-                    <p className="text-white/80 text-[11px] mt-0.5">✦ {dest.tip || DESTINATION_TIPS[dest.name]}</p>
+                    <p className="text-white/80 text-[10px] sm:text-xs mt-0.5 sm:mt-1 line-clamp-1">✦ {dest.tip || DESTINATION_TIPS[dest.name]}</p>
                   )}
                 </div>
               </div>
