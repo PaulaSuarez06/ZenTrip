@@ -79,13 +79,43 @@ export async function denyShareRequest({ shareRequestId, requesterId, tripId, tr
   });
 }
 
+function nullify(v) { return v ?? null; }
+
+function extractTime(v) {
+  if (!v) return null;
+  if (typeof v === 'string' && v.includes('T')) return v.split('T')[1].slice(0, 5);
+  return v;
+}
+
 function sanitizeBookings(bookings = []) {
   return bookings.map((b) => {
-    if (b.segments?.length > 0) return { bookingType: 'vuelo', isRoundTrip: b.isRoundTrip ?? false, segments: b.segments.map((s) => ({ departureAirport: s.departureAirport, arrivalAirport: s.arrivalAirport, departureTime: s.departureTime, arrivalTime: s.arrivalTime, date: s.date })), passengerCount: b.passengerCount ?? 0 };
-    if (b.hotelName) return { bookingType: 'hotel', hotelName: b.hotelName, checkIn: b.checkIn, checkOut: b.checkOut, nights: b.nights, totalPrice: b.totalPrice, currency: b.currency };
-    if (b.activityName) return { bookingType: 'actividad', activityName: b.activityName, date: b.date, persons: b.persons, price: b.price, currency: b.currency, duration: b.duration, rating: b.rating };
-    if (b.restaurantName) return { bookingType: 'restaurante', restaurantName: b.restaurantName, date: b.date, persons: b.persons, rating: b.rating, address: b.address };
-    if (b.carName) return { bookingType: 'coche', carName: b.carName, supplierName: b.supplierName, pickUpDate: b.pickUpDate, dropOffDate: b.dropOffDate, days: b.days, totalPrice: b.totalPrice, currency: b.currency };
+    if (b.bookingType === 'vuelo' || b.segments?.length > 0) {
+      return {
+        bookingType: 'vuelo',
+        isRoundTrip: b.isRoundTrip ?? false,
+        totalPrice: nullify(b.totalPrice),
+        currency: b.currency || '',
+        passengerCount: b.passengerCount ?? 0,
+        segments: (b.segments ?? []).map((s) => ({
+          departureCode: s.departureCode || s.departureAirport?.code || '',
+          departureCity: s.departureCity || s.departureAirport?.cityName || s.departureAirport?.city || '',
+          departureAirportName: s.departureAirport?.name || '',
+          arrivalCode: s.arrivalCode || s.arrivalAirport?.code || '',
+          arrivalCity: s.arrivalCity || s.arrivalAirport?.cityName || s.arrivalAirport?.city || '',
+          arrivalAirportName: s.arrivalAirport?.name || '',
+          departureTime: extractTime(s.departureTime),
+          arrivalTime: extractTime(s.arrivalTime),
+          date: nullify(s.date),
+          flightNumber: nullify(s.flightNumber),
+          airline: nullify(s.airline),
+          carriers: s.carriers ? s.carriers.map((c) => ({ name: c.name || '' })) : null,
+        })),
+      };
+    }
+    if (b.hotelName) return { bookingType: 'hotel', hotelName: b.hotelName, checkIn: nullify(b.checkIn), checkOut: nullify(b.checkOut), nights: nullify(b.nights), totalPrice: nullify(b.totalPrice), currency: b.currency || '' };
+    if (b.activityName) return { bookingType: 'actividad', activityName: b.activityName, date: nullify(b.date), persons: nullify(b.persons), price: nullify(b.price), currency: b.currency || '', duration: nullify(b.duration), rating: nullify(b.rating), address: nullify(b.address) };
+    if (b.restaurantName) return { bookingType: 'restaurante', restaurantName: b.restaurantName, date: nullify(b.date), persons: nullify(b.persons), rating: nullify(b.rating), address: nullify(b.address) };
+    if (b.carName) return { bookingType: 'coche', carName: b.carName, supplierName: nullify(b.supplierName), pickUpDate: nullify(b.pickUpDate), dropOffDate: nullify(b.dropOffDate), days: nullify(b.days), totalPrice: nullify(b.totalPrice), currency: b.currency || '' };
     return null;
   }).filter(Boolean);
 }

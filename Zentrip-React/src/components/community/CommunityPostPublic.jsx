@@ -1,10 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   MapPin, Users, Calendar, Heart, MessageCircle, Bookmark,
   Copy, Check, Lock, Wallet, Package, Settings, UserCircle,
   Image as ImageIcon, CalendarDays, ChevronLeft, ChevronRight, X, Folder, Trash2, Ticket,
-  Plane, Hotel, Car, Compass, Utensils, Star,
+  Plane, Hotel, Car, Compass, Utensils, Star, ChevronDown,
 } from 'lucide-react';
 import { getCommunityPostById, toggleLike, toggleSave, unpublishPost } from '../../services/communityService';
 import CommentsModal from './CommentsModal';
@@ -13,6 +13,7 @@ import UserAvatar from '../ui/UserAvatar';
 import { useAuth } from '../../context/AuthContext';
 import { ROUTES } from '../../config/routes';
 import DayCalendar from '../trips/detail/components/itinerary/DayCalendar';
+import { TripContentTabs, SummarySidebar } from '../shared/SharedTripContent';
 
 // --- Helpers ---a
 
@@ -68,15 +69,15 @@ function normalizeGallery(images) {
 }
 
 const TYPE_CONFIG = {
-  actividad:   { label: 'Actividad',   badgeClass: 'bg-violet-50 text-violet-600' },
-  vuelo:       { label: 'Vuelo',       badgeClass: 'bg-blue-50 text-blue-700' },
-  hotel:       { label: 'Hotel',       badgeClass: 'bg-teal-50 text-teal-700' },
-  restaurante: { label: 'Restaurante', badgeClass: 'bg-orange-50 text-orange-700' },
-  restaurant:  { label: 'Restaurante', badgeClass: 'bg-orange-50 text-orange-700' },
-  coche:       { label: 'Coche',       badgeClass: 'bg-amber-50 text-amber-600' },
-  car:         { label: 'Coche',       badgeClass: 'bg-amber-50 text-amber-600' },
-  tren:        { label: 'Tren',        badgeClass: 'bg-indigo-50 text-indigo-600' },
-  ruta:        { label: 'Ruta',        badgeClass: 'bg-emerald-50 text-emerald-600' },
+  actividad:   { label: 'Actividad',   Icon: Compass,  badgeClass: 'bg-violet-50 text-violet-600',  dotClass: 'bg-violet-400' },
+  vuelo:       { label: 'Vuelo',       Icon: Plane,    badgeClass: 'bg-blue-50 text-blue-700',      dotClass: 'bg-blue-400' },
+  hotel:       { label: 'Hotel',       Icon: Hotel,    badgeClass: 'bg-teal-50 text-teal-700',      dotClass: 'bg-teal-400' },
+  restaurante: { label: 'Restaurante', Icon: Utensils, badgeClass: 'bg-orange-50 text-orange-700', dotClass: 'bg-orange-400' },
+  restaurant:  { label: 'Restaurante', Icon: Utensils, badgeClass: 'bg-orange-50 text-orange-700', dotClass: 'bg-orange-400' },
+  coche:       { label: 'Coche',       Icon: Car,      badgeClass: 'bg-amber-50 text-amber-600',   dotClass: 'bg-amber-400' },
+  car:         { label: 'Coche',       Icon: Car,      badgeClass: 'bg-amber-50 text-amber-600',   dotClass: 'bg-amber-400' },
+  tren:        { label: 'Tren',        Icon: MapPin,   badgeClass: 'bg-indigo-50 text-indigo-600', dotClass: 'bg-indigo-400' },
+  ruta:        { label: 'Ruta',        Icon: MapPin,   badgeClass: 'bg-emerald-50 text-emerald-600', dotClass: 'bg-emerald-400' },
 };
 
 const BOOKING_TYPE_CONFIG = {
@@ -234,30 +235,46 @@ function ItinerarioTab({ tripDays, activitiesByDate, bookings = [] }) {
               <div className="mt-2">
                 {dayActivities.map((act, i) => {
                   const typeCfg = TYPE_CONFIG[act.type] || TYPE_CONFIG.actividad;
+                  const TypeIcon = typeCfg.Icon || Compass;
+                  const isBooked = act.status === 'reservado';
+                  const isLast = i === dayActivities.length - 1;
                   return (
-                    <div key={act.id || i} className="flex gap-2 min-w-0">
-                      <div className="flex flex-col items-end shrink-0 w-11 pt-1">
+                    <div key={act.id || i} className="flex gap-3 min-w-0">
+                      {/* Hora */}
+                      <div className="flex flex-col items-end shrink-0 w-12 pt-2">
                         <span className="body-3 text-neutral-5 font-semibold leading-tight">{act.startTime || '—'}</span>
                         {act.endTime && (
                           <span className="body-3 text-neutral-3 mt-auto leading-tight">{act.endTime}</span>
                         )}
                       </div>
-                      <div className="flex flex-col items-center shrink-0">
-                        <div className="w-3 h-3 rounded-full shrink-0 mt-1.5 bg-primary-3" />
-                        {i < dayActivities.length - 1 && <div className="w-px flex-1 bg-neutral-1 mt-1" />}
+                      {/* Línea de tiempo */}
+                      <div className="flex flex-col items-center shrink-0 pt-2">
+                        <div className={`w-3 h-3 rounded-full shrink-0 ${isBooked ? 'bg-auxiliary-green-5' : typeCfg.dotClass}`} />
+                        {!isLast && <div className="w-px flex-1 bg-neutral-1 mt-1.5" />}
                       </div>
-                      <div className="flex-1 min-w-0 rounded-2xl border border-neutral-1 bg-white p-3 sm:p-4 mb-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                          <h4 className="body-bold text-secondary-5 wrap-break-word">{act.name}</h4>
-                          <span className={`body-3 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap self-start shrink-0 ${typeCfg.badgeClass}`}>
+                      {/* Tarjeta */}
+                      <div className={`flex-1 min-w-0 rounded-2xl border p-3 sm:p-4 mb-3 shadow-sm transition ${
+                        isBooked
+                          ? 'bg-auxiliary-green-1 border-auxiliary-green-3'
+                          : 'bg-white border-neutral-1'
+                      }`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="body-bold text-secondary-5 leading-snug">{act.name}</h4>
+                          <span className={`flex items-center gap-1 body-3 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap shrink-0 ${typeCfg.badgeClass}`}>
+                            <TypeIcon className="w-3 h-3 shrink-0" />
                             {typeCfg.label}
                           </span>
                         </div>
                         {act.city && (
-                          <div className="flex items-center gap-1 mt-1.5 body-3 text-neutral-3">
+                          <div className="flex items-center gap-1 mt-1.5 body-3 text-neutral-4">
                             <MapPin className="w-3 h-3 shrink-0" />
                             <span>{act.city}</span>
                           </div>
+                        )}
+                        {isBooked && (
+                          <span className="inline-flex items-center gap-1 mt-1.5 body-3 font-semibold text-auxiliary-green-5">
+                            <Star className="w-3 h-3 shrink-0" /> Reservado
+                          </span>
                         )}
                       </div>
                     </div>
@@ -292,7 +309,7 @@ function ItinerarioTab({ tripDays, activitiesByDate, bookings = [] }) {
                             )}
                             {price != null && (
                               <span className="text-[11px] font-semibold text-neutral-5">
-                                {price.toLocaleString('es-ES')} {currency}
+                                {fmtMoney(price)} {currency}
                               </span>
                             )}
                           </div>
@@ -311,6 +328,11 @@ function ItinerarioTab({ tripDays, activitiesByDate, bookings = [] }) {
 }
 
 // --- Tab: Presupuesto ---
+
+function fmtMoney(amount) {
+  if (amount == null || Number.isNaN(amount)) return '—';
+  return amount.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 function fmtDayShort(dateStr, locale = 'es') {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -335,9 +357,67 @@ function CategoryBar({ cat, amount, total, currency }) {
         <div className={`h-full rounded-full ${cat.color}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="body-3 text-neutral-4 w-8 text-right shrink-0">{pct}%</span>
-      <span className="body-3 font-semibold text-neutral-5 w-20 text-right shrink-0">
-        {Math.round(amount).toLocaleString('es-ES')} <span className="font-normal text-neutral-3">{currency || ''}</span>
+      <span className="body-3 font-semibold text-neutral-5 w-24 text-right shrink-0">
+        {fmtMoney(amount)} <span className="font-normal text-neutral-3">{currency || ''}</span>
       </span>
+    </div>
+  );
+}
+
+function DaySelect({ days, selected, onSelect, fmtDayFull, currency }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const selectedData = days.find((d) => d.date === selected);
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border transition-colors ${
+          open ? 'border-primary-3 ring-2 ring-primary-3/20' : 'border-neutral-2 hover:border-neutral-3'
+        } bg-white`}
+      >
+        {selectedData ? (
+          <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
+            <span className="body-3 font-semibold text-secondary-5 truncate">{fmtDayFull(selectedData.date)}</span>
+            <span className="body-3 font-semibold text-primary-3 shrink-0">{fmtMoney(selectedData.total)} {currency}</span>
+          </div>
+        ) : (
+          <span className="body-3 text-neutral-3 flex-1">Selecciona un día...</span>
+        )}
+        <ChevronDown className={`w-4 h-4 shrink-0 text-neutral-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-neutral-2 rounded-xl shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+          {days.map(({ date, total }) => (
+            <button
+              key={date}
+              type="button"
+              onClick={() => { onSelect(date); setOpen(false); }}
+              className={`w-full flex items-center justify-between gap-4 px-4 py-2.5 transition-colors ${
+                selected === date ? 'bg-primary-1' : 'hover:bg-neutral-1'
+              }`}
+            >
+              <span className={`body-3 font-semibold ${selected === date ? 'text-primary-4' : 'text-secondary-5'}`}>
+                {fmtDayFull(date)}
+              </span>
+              <span className={`body-3 font-semibold shrink-0 ${selected === date ? 'text-primary-3' : 'text-neutral-4'}`}>
+                {fmtMoney(total)} {currency}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -414,7 +494,7 @@ function PresupuestoTab({ post, perDay }) {
           <div className="flex-1 min-w-28 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
             <p className="body-3 text-green-700 font-semibold mb-0.5">Total del viaje</p>
             <p className="title-h2-desktop text-green-800 leading-tight">
-              {displayTotal != null ? Math.round(displayTotal).toLocaleString('es-ES') : '—'}
+              {fmtMoney(displayTotal)}
               {currency && <span className="body-2 ml-1 font-normal">{currency}</span>}
             </p>
           </div>
@@ -422,7 +502,7 @@ function PresupuestoTab({ post, perDay }) {
             <div className="flex-1 min-w-28 bg-primary-1 border border-primary-2 rounded-xl px-4 py-3">
               <p className="body-3 text-primary-4 font-semibold mb-0.5">Por día</p>
               <p className="title-h2-desktop text-primary-5 leading-tight">
-                {Math.round(displayTotal / days).toLocaleString('es-ES')}
+                {fmtMoney(displayTotal / days)}
                 {currency && <span className="body-2 ml-1 font-normal">{currency}</span>}
               </p>
             </div>
@@ -431,7 +511,7 @@ function PresupuestoTab({ post, perDay }) {
             <div className="flex-1 min-w-28 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
               <p className="body-3 text-orange-700 font-semibold mb-0.5">Por persona</p>
               <p className="title-h2-desktop text-orange-800 leading-tight">
-                {Math.round(displayTotal / participantCount).toLocaleString('es-ES')}
+                {fmtMoney(displayTotal / participantCount)}
                 {currency && <span className="body-2 ml-1 font-normal">{currency}</span>}
               </p>
             </div>
@@ -451,35 +531,24 @@ function PresupuestoTab({ post, perDay }) {
         {/* Por día */}
         {view === 'por-dia' && sortedDays.length > 0 && (
           <div className="flex flex-col gap-4 pt-4 border-t border-neutral-1">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-              {sortedDays.map(({ date, total }) => (
-                <button
-                  key={date}
-                  type="button"
-                  onClick={() => setSelectedDay(date === selectedDay ? null : date)}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl shrink-0 border transition-colors ${
-                    selectedDay === date
-                      ? 'bg-secondary-5 border-secondary-5 text-white'
-                      : 'bg-white border-neutral-2 hover:bg-neutral-1 text-neutral-5'
-                  }`}
-                >
-                  <span className={`text-[11px] font-semibold ${selectedDay === date ? 'text-blue-200' : 'text-neutral-3'}`}>{fmtDay(date)}</span>
-                  <span className={`body-3 font-bold leading-tight ${selectedDay === date ? 'text-primary-3' : 'text-secondary-5'}`}>
-                    {Math.round(total).toLocaleString('es-ES')}
-                  </span>
-                  {currency && <span className={`text-[10px] ${selectedDay === date ? 'text-white/60' : 'text-neutral-3'}`}>{currency}</span>}
-                </button>
-              ))}
+            <div className="grid grid-cols-3 gap-3">
+              <DaySelect
+                days={sortedDays}
+                selected={selectedDay}
+                onSelect={setSelectedDay}
+                fmtDayFull={fmtDayFullLocal}
+                currency={currency}
+              />
             </div>
 
             {selectedDay && selectedDayData && (
               <div className="bg-neutral-1/50 rounded-xl p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <p className="body-3 font-semibold text-secondary-5">{fmtDayFullLocal(selectedDay)}</p>
-                  <p className="body-bold text-primary-3">{Math.round(selectedDayData.total).toLocaleString('es-ES')} {currency}</p>
+                  <p className="body-bold text-primary-3">{fmtMoney(selectedDayData.total)} {currency}</p>
                 </div>
                 {participantCount > 1 && (
-                  <p className="body-3 text-neutral-4">≈ {Math.round(selectedDayData.total / participantCount).toLocaleString('es-ES')} {currency} por persona</p>
+                  <p className="body-3 text-neutral-4">≈ {fmtMoney(selectedDayData.total / participantCount)} {currency} por persona</p>
                 )}
                 {selectedDayCats.length > 0 && (
                   <div className="flex flex-col gap-2 pt-2 border-t border-neutral-2">
@@ -489,10 +558,6 @@ function PresupuestoTab({ post, perDay }) {
                   </div>
                 )}
               </div>
-            )}
-
-            {!selectedDay && (
-              <p className="body-3 text-neutral-3 text-center py-2">Haz clic en un día para ver el desglose</p>
             )}
           </div>
         )}
@@ -706,55 +771,121 @@ function EquipajeTab({ categories, personalCategories, scopeAll }) {
 
 // --- Tab: Reservas ---
 
+function fmtFlightDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(y, m - 1, d));
+}
+
 function VueloCard({ booking }) {
   const pax = booking.passengerCount;
+  const segs = booking.segments ?? [];
+  const first = segs[0];
+  const last = segs[segs.length - 1];
+  const dep = first ? `${first.departureCity || ''} (${first.departureCode || ''})`.trim() : '';
+  const arr = last ? `${last.arrivalCity || ''} (${last.arrivalCode || ''})`.trim() : '';
+  const routeLabel = dep && arr ? `${dep} → ${arr}` : booking.isRoundTrip ? 'Ida y vuelta' : 'Vuelo de ida';
+  const tripKind = booking.isRoundTrip ? 'Ida y vuelta' : segs.length > 1 ? `${segs.length} tramos` : 'Solo ida';
+
   return (
-    <div className="bg-white rounded-xl border border-blue-100 p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="text-base">✈️</span>
-        <span className="body-3 font-semibold text-secondary-5">
-          {booking.isRoundTrip ? 'Vuelo ida y vuelta' : 'Vuelo de ida'}
-        </span>
-        {pax > 0 && (
-          <span className="ml-auto flex items-center gap-1 body-3 text-neutral-4">
-            <Users className="w-3.5 h-3.5 shrink-0" /> {pax} {pax === 1 ? 'persona' : 'personas'}
-          </span>
-        )}
-      </div>
-      {(booking.segments ?? []).map((seg, i) => (
-        <div key={i} className="flex items-center gap-3 bg-neutral-1/60 rounded-xl px-4 py-3">
-          <div className="flex flex-col items-center min-w-0 flex-1">
-            <span className="text-xl font-bold text-secondary-5 leading-tight">{seg.departureCode || seg.departureCity}</span>
-            <span className="text-[11px] text-neutral-3 truncate max-w-24 text-center">{seg.departureCity}</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 shrink-0">
-            <div className="flex items-center gap-1">
-              <div className="w-8 h-px bg-neutral-3" />
-              <span className="text-neutral-4 text-sm">✈</span>
-              <div className="w-8 h-px bg-neutral-3" />
-            </div>
-            {seg.date && <span className="text-[10px] text-neutral-4">{seg.date}</span>}
-          </div>
-          <div className="flex flex-col items-center min-w-0 flex-1">
-            <span className="text-xl font-bold text-secondary-5 leading-tight">{seg.arrivalCode || seg.arrivalCity}</span>
-            <span className="text-[11px] text-neutral-3 truncate max-w-24 text-center">{seg.arrivalCity}</span>
+    <div className="bg-white border border-secondary-2 rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="bg-secondary-1 px-4 py-3 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-secondary-2 flex items-center justify-center shrink-0">
+          <Plane className="w-4 h-4 text-secondary-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="body-2-semibold text-neutral-7">{routeLabel}</p>
+          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+            <span className="body-3 text-neutral-4">{tripKind}</span>
+            {pax > 0 && (
+              <span className="flex items-center gap-1 body-3 text-neutral-4">
+                · <Users className="w-3 h-3 shrink-0" /> {pax} {pax === 1 ? 'pasajero' : 'pasajeros'}
+              </span>
+            )}
           </div>
         </div>
-      ))}
+        {booking.totalPrice != null && (
+          <div className="text-right shrink-0">
+            <p className="body-2-semibold text-secondary-4">{fmtMoney(booking.totalPrice)} {booking.currency || ''}</p>
+            {pax > 1 && <p className="text-[11px] text-neutral-4">≈ {fmtMoney(booking.totalPrice / pax)} /persona</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Segmentos */}
+      {segs.map((seg, i) => {
+        const segDep = `${seg.departureCity || ''} (${seg.departureCode || ''})`.trim();
+        const segArr = `${seg.arrivalCity || ''} (${seg.arrivalCode || ''})`.trim();
+        const depAirport = seg.departureAirportName || seg.departureAirport?.name || null;
+        const arrAirport = seg.arrivalAirportName || seg.arrivalAirport?.name || null;
+        const airlines = seg.carriers?.map(c => c.name).join(' · ') || seg.airline || null;
+        const segLabel = segs.length > 1
+          ? (i === 0 ? 'Ida' : booking.isRoundTrip && i === segs.length - 1 ? 'Vuelta' : `Tramo ${i + 1}`)
+          : null;
+        return (
+          <div key={i} className="px-4 py-3 border-t border-neutral-1 flex flex-col gap-1.5">
+            {/* Título del segmento */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {segLabel && (
+                <span className="text-[10px] font-bold text-secondary-4 uppercase tracking-wide bg-secondary-1 rounded px-1.5 py-0.5">{segLabel}</span>
+              )}
+              <span className="body-3 font-semibold text-neutral-7">{segDep} → {segArr}</span>
+              {seg.flightNumber && <span className="body-3 text-neutral-4">{seg.flightNumber}</span>}
+            </div>
+            {/* Aeropuertos */}
+            {(depAirport || arrAirport) && (
+              <p className="body-3 text-neutral-3 truncate">{depAirport}{depAirport && arrAirport ? ' → ' : ''}{arrAirport}</p>
+            )}
+            {/* Fecha y horas */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {seg.date && (
+                <span className="flex items-center gap-1 body-3 text-neutral-5">
+                  <CalendarDays className="w-3.5 h-3.5 text-neutral-3 shrink-0" />
+                  {fmtFlightDate(seg.date)}
+                </span>
+              )}
+              {(seg.departureTime || seg.arrivalTime) && (
+                <span className="flex items-center gap-1 body-3 font-semibold text-neutral-7">
+                  <Plane className="w-3.5 h-3.5 text-neutral-3 shrink-0" />
+                  {seg.departureTime}{seg.departureTime && seg.arrivalTime ? ' → ' : ''}{seg.arrivalTime}
+                </span>
+              )}
+            </div>
+            {/* Aerolínea */}
+            {airlines && (
+              <p className="body-3 text-neutral-5 flex items-center gap-1">
+                <span className="text-neutral-3">✈</span> {airlines}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 function HotelCard({ booking }) {
   return (
-    <div className="bg-white rounded-xl border border-teal-100 p-4 flex flex-col gap-1.5">
-      <span className="body-3 font-semibold text-secondary-5">{booking.hotelName}</span>
-      <div className="flex flex-wrap gap-x-4 gap-y-0.5 body-3 text-neutral-4">
-        {booking.checkIn && <span>Entrada: {booking.checkIn}</span>}
-        {booking.checkOut && <span>Salida: {booking.checkOut}</span>}
-        {booking.nights && <span>{booking.nights} noche{booking.nights !== 1 ? 's' : ''}</span>}
+    <div className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-xl shrink-0">🏨</span>
+          <div className="min-w-0">
+            <p className="body-2-semibold text-neutral-7 truncate">{booking.hotelName}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 body-3 text-neutral-4 mt-0.5">
+              {booking.checkIn && booking.checkOut && (
+                <span>{booking.checkIn} → {booking.checkOut}</span>
+              )}
+              {booking.nights && <span>{booking.nights} noche{booking.nights !== 1 ? 's' : ''}</span>}
+            </div>
+          </div>
+        </div>
         {booking.totalPrice != null && (
-          <span className="font-semibold text-neutral-5">{booking.totalPrice.toLocaleString('es-ES')} {booking.currency || ''}</span>
+          <div className="text-right shrink-0">
+            <p className="body-2-semibold text-auxiliary-green-5">{fmtMoney(booking.totalPrice)} <span className="body-3 font-normal">{booking.currency || ''}</span></p>
+            <p className="text-[11px] text-neutral-4">total</p>
+          </div>
         )}
       </div>
     </div>
@@ -763,14 +894,28 @@ function HotelCard({ booking }) {
 
 function ActividadCard({ booking }) {
   return (
-    <div className="bg-white rounded-xl border border-violet-100 p-4 flex flex-col gap-1.5">
-      <span className="body-3 font-semibold text-secondary-5">{booking.activityName}</span>
-      <div className="flex flex-wrap gap-x-4 gap-y-0.5 body-3 text-neutral-4">
-        {booking.date && <span>{booking.date}</span>}
-        {booking.persons > 0 && <span>{booking.persons} persona{booking.persons !== 1 ? 's' : ''}</span>}
-        {booking.duration && <span>{booking.duration}</span>}
-        {booking.price != null && <span className="font-semibold text-neutral-5">{booking.price.toLocaleString('es-ES')} {booking.currency || ''}</span>}
-        {booking.rating && <span>⭐ {booking.rating}</span>}
+    <div className="bg-white border border-neutral-1 rounded-xl px-4 py-3">
+      <div className="flex items-start gap-3">
+        <span className="text-xl shrink-0">🎯</span>
+        <div className="flex-1 min-w-0">
+          <p className="body-2-semibold text-neutral-7">{booking.activityName}</p>
+          {booking.address && (
+            <p className="body-3 text-neutral-4 truncate mt-0.5">📍 {booking.address}</p>
+          )}
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {booking.rating != null && (
+              <span className="text-[11px] font-bold text-auxiliary-yellow-5">★ {Number(booking.rating).toFixed(1)}</span>
+            )}
+            {booking.price != null && (
+              <span className="text-[11px] font-semibold text-secondary-4">{fmtMoney(booking.price)} {booking.currency || ''}</span>
+            )}
+            {booking.duration && <span className="text-[11px] text-neutral-4">⏱ {booking.duration}</span>}
+            {booking.date && <span className="text-[11px] text-neutral-4">{booking.date}</span>}
+            {booking.persons > 0 && (
+              <span className="text-[11px] text-neutral-4">{booking.persons} persona{booking.persons !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -778,13 +923,24 @@ function ActividadCard({ booking }) {
 
 function RestauranteCard({ booking }) {
   return (
-    <div className="bg-white rounded-xl border border-orange-100 p-4 flex flex-col gap-1.5">
-      <span className="body-3 font-semibold text-secondary-5">{booking.restaurantName}</span>
-      <div className="flex flex-wrap gap-x-4 gap-y-0.5 body-3 text-neutral-4">
-        {booking.date && <span>{booking.date}</span>}
-        {booking.persons > 0 && <span>{booking.persons} persona{booking.persons !== 1 ? 's' : ''}</span>}
-        {booking.rating && <span>⭐ {booking.rating}</span>}
-        {booking.address && <span className="truncate max-w-xs">{booking.address}</span>}
+    <div className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span className="text-xl shrink-0">🍽️</span>
+        <div className="flex-1 min-w-0">
+          <p className="body-2-semibold text-neutral-7">{booking.restaurantName}</p>
+          {booking.address && (
+            <p className="body-3 text-neutral-4 truncate mt-0.5">{booking.address}</p>
+          )}
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {booking.rating != null && (
+              <span className="text-[11px] font-bold text-auxiliary-yellow-5">★ {booking.rating}</span>
+            )}
+            {booking.date && <span className="text-[11px] text-neutral-4">{booking.date}</span>}
+            {booking.persons > 0 && (
+              <span className="text-[11px] text-neutral-4">{booking.persons} persona{booking.persons !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -792,16 +948,29 @@ function RestauranteCard({ booking }) {
 
 function CocheCard({ booking }) {
   return (
-    <div className="bg-white rounded-xl border border-amber-100 p-4 flex flex-col gap-1.5">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="body-3 font-semibold text-secondary-5">{booking.carName}</span>
-        {booking.supplierName && <span className="body-3 text-neutral-3">· {booking.supplierName}</span>}
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-0.5 body-3 text-neutral-4">
-        {booking.pickUpDate && <span>Recogida: {booking.pickUpDate}</span>}
-        {booking.dropOffDate && <span>Devolución: {booking.dropOffDate}</span>}
-        {booking.days > 0 && <span>{booking.days} día{booking.days !== 1 ? 's' : ''}</span>}
-        {booking.totalPrice != null && <span className="font-semibold text-neutral-5">{booking.totalPrice.toLocaleString('es-ES')} {booking.currency || ''}</span>}
+    <div className="bg-auxiliary-green-1 border border-auxiliary-green-3 rounded-xl px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-xl shrink-0">🚗</span>
+          <div className="min-w-0">
+            <p className="body-2-semibold text-neutral-7">{booking.carName}</p>
+            {booking.supplierName && (
+              <p className="body-3 text-neutral-4">{booking.supplierName}</p>
+            )}
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 body-3 text-neutral-4 mt-0.5">
+              {booking.pickUpDate && booking.dropOffDate && (
+                <span>{booking.pickUpDate} → {booking.dropOffDate}</span>
+              )}
+              {booking.days > 0 && <span>{booking.days} día{booking.days !== 1 ? 's' : ''}</span>}
+            </div>
+          </div>
+        </div>
+        {booking.totalPrice != null && (
+          <div className="text-right shrink-0">
+            <p className="body-2-semibold text-auxiliary-green-5">{fmtMoney(booking.totalPrice)} <span className="body-3 font-normal">{booking.currency || ''}</span></p>
+            <p className="text-[11px] text-neutral-4">total</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -861,8 +1030,8 @@ function ReservasTab({ bookings }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Controles: filtro por tipo + vista */}
-      <div className="bg-white rounded-2xl border border-neutral-1 p-3 flex flex-col gap-3">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+      <div className="bg-white rounded-2xl border border-neutral-1 p-3 flex items-center gap-3">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
           <button
             type="button"
             onClick={() => setTypeFilter('todas')}
@@ -889,7 +1058,7 @@ function ReservasTab({ bookings }) {
           })}
         </div>
 
-        <div className="flex rounded-full border border-neutral-1 overflow-hidden self-start">
+        <div className="flex rounded-full border border-neutral-1 overflow-hidden shrink-0">
           {[['tipo', 'Por tipo'], ['dia', 'Por día']].map(([v, l]) => (
             <button
               key={v}
@@ -956,62 +1125,6 @@ function ReservasTab({ bookings }) {
   );
 }
 
-// --- Sidebar summary (persistent across all tabs) ---
-
-function getCurrencySymbol(currency) {
-  if (!currency) return '';
-  const code = currency.split(/[\s-]/)[0].trim().toUpperCase();
-  return DIVISAS.find(d => d.code === code)?.symbol || currency.split(' ').at(-1) || currency;
-}
-
-function formatBudgetAmount(amount) {
-  if (amount >= 10000) {
-    return new Intl.NumberFormat('es-ES', { notation: 'compact', maximumFractionDigits: 1 }).format(amount);
-  }
-  return Math.round(amount).toLocaleString('es-ES');
-}
-
-function SummarySidebar({ post }) {
-  const displayTotal = post.expenseSummary?.totalSpent > 0
-    ? post.expenseSummary.totalSpent
-    : post.totalBudget;
-  const currencySymbol = getCurrencySymbol(post.budgetCurrency);
-  const budgetValue = post.shareBudget && displayTotal
-    ? `${formatBudgetAmount(displayTotal)} ${currencySymbol}`.trim()
-    : null;
-
-  const items = [
-    post.days ? { Icon: CalendarDays, value: post.days, label: 'días' } : null,
-    post.participantCount > 0 ? { Icon: Users, value: post.participantCount, label: post.participantCount === 1 ? 'persona' : 'personas' } : null,
-    post.itinerary?.length > 0 ? { Icon: Ticket, value: post.itinerary.length, label: 'actividades' } : null,
-    budgetValue ? { Icon: Wallet, value: budgetValue, label: 'presupuesto total' } : null,
-  ].filter(Boolean);
-
-  if (items.length === 0) return null;
-
-  return (
-    <div className="hidden lg:flex flex-col gap-4 w-52 shrink-0">
-      <div className="bg-white rounded-2xl border border-neutral-1 p-4">
-        <p className="body-3 text-neutral-4 font-semibold uppercase tracking-wide mb-3">Resumen</p>
-        <div className="grid grid-cols-2 gap-2">
-          {items.map(({ Icon, value, label }) => (
-            <div key={label} className="flex flex-col items-center gap-0.5 p-3 rounded-xl bg-neutral-1/60 text-center">
-              <Icon className="w-5 h-5 text-primary-3" />
-              <span className="body-bold text-secondary-5 mt-0.5 text-sm break-words w-full">{value}</span>
-              <span className="body-3 text-neutral-3 leading-tight">{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-neutral-1/60 rounded-2xl border border-neutral-1 p-4 flex items-start gap-2">
-        <Lock className="w-4 h-4 text-neutral-3 shrink-0 mt-0.5" />
-        <p className="body-3 text-neutral-3">Solo lectura. Notas y datos privados están ocultos.</p>
-      </div>
-    </div>
-  );
-}
-
 // --- Main component ---
 
 export default function CommunityPostPublic() {
@@ -1030,7 +1143,7 @@ export default function CommunityPostPublic() {
   const [savedBy, setSavedBy] = useState([]);
   const [likeLoading, setLikeLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(null);
+  const [activeTab, setActiveTab] = useState('itinerario');
   const [showEditVisibility, setShowEditVisibility] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -1089,42 +1202,17 @@ export default function CommunityPostPublic() {
     finally { setSaveLoading(false); }
   }
 
-  const { tripDays, activitiesByDate, perDay, galleryPhotos, tabs } = useMemo(() => {
-    if (!post) return { tripDays: [], activitiesByDate: {}, perDay: null, galleryPhotos: [], tabs: [] };
-
+  const { tripDays, activitiesByDate, galleryPhotos } = useMemo(() => {
+    if (!post) return { tripDays: [], activitiesByDate: {}, galleryPhotos: [] };
     const tripDays = getTripDays(post.startDate, post.endDate);
-
     const activitiesByDate = (post.itinerary ?? []).reduce((acc, act) => {
       const d = act.date || 'sin-fecha';
       if (!acc[d]) acc[d] = [];
       acc[d].push(act);
       return acc;
     }, {});
-
-    const perDay = post.shareBudget && post.totalBudget && post.days
-      ? Math.round(post.totalBudget / post.days)
-      : null;
-
-    const galleryPhotos = normalizeGallery(post.galleryImages);
-
-    const tabs = [];
-    if (post.itinerary?.length > 0)
-      tabs.push({ key: 'itinerario', label: 'Itinerario', icon: CalendarDays });
-    if (post.shareBookings && post.bookings?.length > 0)
-      tabs.push({ key: 'reservas', label: 'Reservas', icon: Ticket });
-    if (post.shareBudget && post.totalBudget != null)
-      tabs.push({ key: 'presupuesto', label: 'Presupuesto', icon: Wallet });
-    if (post.shareLuggage && (post.luggageCategories?.length > 0 || post.personalLuggageCategories?.length > 0))
-      tabs.push({ key: 'equipaje', label: 'Equipaje', icon: Package });
-    if (post.shareGallery && galleryPhotos.length > 0)
-      tabs.push({ key: 'galeria', label: 'Galería', icon: ImageIcon });
-
-    return { tripDays, activitiesByDate, perDay, galleryPhotos, tabs };
+    return { tripDays, activitiesByDate, galleryPhotos: normalizeGallery(post.galleryImages) };
   }, [post]);
-
-  useEffect(() => {
-    if (tabs.length > 0 && activeTab === null) setActiveTab(tabs[0].key);
-  }, [tabs, activeTab]);
 
   if (loading) {
     return (
@@ -1176,41 +1264,63 @@ export default function CommunityPostPublic() {
 
       {/* Header card — cover image flush at top, then content */}
       <div className="bg-white rounded-2xl overflow-hidden border border-neutral-1 shadow-sm">
-        {post.coverImage && (
-          <div className="w-full h-64 sm:h-80">
+        {post.coverImage ? (
+          <div className="relative w-full h-64 sm:h-80">
             <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/15 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 px-5 sm:px-8 pb-5">
+              <h1 className="title-h2-desktop text-white leading-tight drop-shadow-sm">{post.title}</h1>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {post.destination && (
+                  <span className="flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white body-3 font-semibold px-3 py-1 rounded-full">
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                    {post.destination}{post.origin && ` · desde ${post.origin}`}
+                  </span>
+                )}
+                {dateLabel && (
+                  <span className="flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white body-3 font-semibold px-3 py-1 rounded-full">
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    {dateLabel}{post.days ? ` · ${post.days} días` : ''}
+                  </span>
+                )}
+                {post.participantCount > 0 && (
+                  <span className="flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white body-3 font-semibold px-3 py-1 rounded-full">
+                    <Users className="w-3.5 h-3.5 shrink-0" />
+                    {post.participantCount} {post.participantCount === 1 ? 'persona' : 'personas'}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-
-        <div className="px-5 sm:px-8 py-5 sm:py-6 flex flex-col gap-3">
-          {/* Title + meta */}
-          <div>
+        ) : (
+          <div className="px-5 sm:px-8 pt-6 pb-4">
             <h1 className="title-h2-desktop text-secondary-5 leading-tight">{post.title}</h1>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 body-3 text-neutral-4 mt-2">
+            <div className="flex flex-wrap gap-2 mt-3">
               {post.destination && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 shrink-0" />
-                  {post.destination}
-                  {post.origin && <span className="text-neutral-3 ml-1">· desde {post.origin}</span>}
+                <span className="flex items-center gap-1.5 bg-neutral-1 text-neutral-5 body-3 font-semibold px-3 py-1.5 rounded-full">
+                  <MapPin className="w-3.5 h-3.5 shrink-0 text-primary-3" />
+                  {post.destination}{post.origin && ` · desde ${post.origin}`}
                 </span>
               )}
               {dateLabel && (
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 shrink-0" />
-                  {dateLabel}
+                <span className="flex items-center gap-1.5 bg-neutral-1 text-neutral-5 body-3 font-semibold px-3 py-1.5 rounded-full">
+                  <Calendar className="w-3.5 h-3.5 shrink-0 text-primary-3" />
+                  {dateLabel}{post.days ? ` · ${post.days} días` : ''}
                 </span>
               )}
               {post.participantCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 shrink-0" />
+                <span className="flex items-center gap-1.5 bg-neutral-1 text-neutral-5 body-3 font-semibold px-3 py-1.5 rounded-full">
+                  <Users className="w-3.5 h-3.5 shrink-0 text-primary-3" />
                   {post.participantCount} {post.participantCount === 1 ? 'persona' : 'personas'}
                 </span>
               )}
             </div>
           </div>
+        )}
 
+        <div className="px-5 sm:px-8 py-4 sm:py-5 flex flex-col gap-3 border-t border-neutral-1">
           {/* Author + action buttons */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-neutral-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <UserAvatar
                 src={post.userAvatar}
@@ -1293,41 +1403,20 @@ export default function CommunityPostPublic() {
       {!user && <GuestBanner postId={postId} />}
 
       {/* Content: sidebar + tabs */}
-      {tabs.length > 0 && activeTab && (
-        <div className="flex gap-4 items-start">
-          <SummarySidebar post={post} />
-
-          <div className="flex-1 flex flex-col gap-4 min-w-0">
-            <TabNav tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-
-            {activeTab === 'itinerario' && (
-              <ItinerarioTab tripDays={tripDays} activitiesByDate={activitiesByDate} bookings={post.bookings ?? []} />
-            )}
-            {activeTab === 'presupuesto' && (
-              <PresupuestoTab post={post} perDay={perDay} />
-            )}
-            {activeTab === 'galeria' && (
-              <GaleriaTab photos={galleryPhotos} />
-            )}
-            {activeTab === 'equipaje' && (
-              <EquipajeTab
-                categories={post.luggageCategories ?? []}
-                personalCategories={post.personalLuggageCategories ?? []}
-                scopeAll={post.luggageScopeAll ?? false}
-              />
-            )}
-            {activeTab === 'reservas' && (
-              <ReservasTab bookings={post.bookings ?? []} />
-            )}
-          </div>
+      <div className="flex gap-4 items-start">
+        <SummarySidebar data={post} />
+        <div className="flex-1 min-w-0">
+          <TripContentTabs
+            data={post}
+            tripDays={tripDays}
+            activitiesByDate={activitiesByDate}
+            galleryPhotos={galleryPhotos}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
         </div>
-      )}
-
-      {/* Privacy notice */}
-      <div className="flex items-start gap-2 body-3 text-neutral-3 pb-4">
-        <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-        <span>Las notas personales, comprobantes de pago y datos de reservas privados no se comparten en ZenTrip.</span>
       </div>
+
 
       {showComments && <CommentsModal post={post} onClose={() => setShowComments(false)} />}
       {showEditVisibility && (
