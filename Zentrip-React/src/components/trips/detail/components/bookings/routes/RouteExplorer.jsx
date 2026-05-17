@@ -63,6 +63,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
   const [isDirty, setIsDirty] = useState(false);
   const [showEditPanel, setShowEditPanel] = useState(initialData?.editMode ?? false);
   const [bookings, setBookings] = useState([]);
+  const [departureTime, setDepartureTime] = useState(initialData?.departureTime || '');
   const bookingsLoadedRef = useRef(false);
   const mapRef = useRef(null);
   const isMounted = useRef(false);
@@ -190,6 +191,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
     // Reutilizar IDs existentes para que React actualice props sin remontar WaypointRow
     setWaypoints((prev) => finalWps.map((wp, i) => ({ ...wp, id: prev[i]?.id ?? wp.id })));
     setTravelMode(booking.travelMode || 'DRIVING');
+    setDepartureTime(booking.departureTime || '');
     setLoadedRouteId(booking.id);
     // Ensure the select shows the route's day when loading a saved route
     setSelectedDay(booking.date || null);
@@ -343,6 +345,15 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
     setIsDirty(true);
   };
 
+  const calculateArrivalTime = () => {
+    if (!departureTime || !routeInfo?.legs) return '';
+    const totalSeconds = routeInfo.legs.reduce((s, l) => s + l.duration.value, 0);
+    const [depHours, depMinutes] = departureTime.split(':').map(Number);
+    const depDate = new Date(0, 0, 0, depHours, depMinutes);
+    depDate.setSeconds(depDate.getSeconds() + totalSeconds);
+    return `${String(depDate.getHours()).padStart(2, '0')}:${String(depDate.getMinutes()).padStart(2, '0')}`;
+  };
+
   const buildRoutePayload = (name) => ({
     name,
     date: selectedDay || null,
@@ -350,6 +361,8 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
     waypoints: waypoints.filter((w) => w.value.trim()).map(waypointToStored),
     distance: routeInfo.distance,
     duration: routeInfo.duration,
+    departureTime: departureTime || null,
+    arrivalTime: departureTime ? calculateArrivalTime() : null,
   });
 
   const handleUpdateRoute = async () => {
@@ -466,6 +479,7 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
                         setLoadedRouteId(null);
                         fillFromDay(selectedDay);
                         setRouteName('');
+                        setDepartureTime('');
                         setIsDirty(false);
                         setShowEditPanel(false);
                       }}
@@ -647,6 +661,27 @@ export default function RouteExplorer({ trip, tripId, tripDays = [], activitiesB
                     <p className="body-bold text-secondary-4">{routeInfo.duration}</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Hora de salida y llegada */}
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-36 flex flex-col gap-2">
+                  <label className="body-3 font-semibold text-neutral-5">Hora de salida</label>
+                  <input
+                    type="time"
+                    value={departureTime}
+                    onChange={(e) => { setDepartureTime(e.target.value); setIsDirty(true); }}
+                    className="w-full px-3 py-2 border border-neutral-2 rounded-lg body-3 text-neutral-7 focus:outline-none focus:border-primary-3"
+                  />
+                </div>
+                {departureTime && (
+                  <div className="flex-1 min-w-36 flex flex-col gap-2">
+                    <label className="body-3 font-semibold text-neutral-5">Hora de llegada</label>
+                    <div className="px-3 py-2 border border-neutral-2 rounded-lg bg-neutral-1 body-3 font-semibold text-neutral-7 flex items-center">
+                      {calculateArrivalTime()}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {(() => {

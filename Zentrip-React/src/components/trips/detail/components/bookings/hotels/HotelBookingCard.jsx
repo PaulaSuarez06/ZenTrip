@@ -10,7 +10,12 @@ function CancelBookingModal({ booking, tripId, onConfirm, onClose }) {
     setDeleting(true);
     try {
       await deleteBooking(tripId, booking.id);
-      if (booking.activityId) await deleteActivity(tripId, booking.activityId);
+      const activityIds = [];
+      if (booking.activityId) activityIds.push(booking.activityId);
+      if (booking.checkOutActivityId) activityIds.push(booking.checkOutActivityId);
+      for (const actId of activityIds) {
+        await deleteActivity(tripId, actId);
+      }
       onConfirm();
       window.location.reload();
     } finally {

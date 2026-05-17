@@ -34,6 +34,7 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
 
   const [selectedMembers, setSelectedMembers] = useState('all');
   const [receiptUrls, setReceiptUrls] = useState([]);
+  const [activityTime, setActivityTime] = useState('');
 
   useEffect(() => {
     if (!activity.slug) { setLoading(false); return; }
@@ -84,7 +85,7 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
         null;
       const activityId = await addActivity(tripId, {
         date: date || '',
-        startTime: '',
+        startTime: activityTime || '',
         endTime: '',
         name: info.name,
         type: 'actividad',
@@ -93,6 +94,7 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
           info.price != null ? fmtPrice(info.price, info.currency) : null,
           adults ? `${adults} adulto${adults !== 1 ? 's' : ''}${children > 0 ? `, ${children} niño${children !== 1 ? 's' : ''}` : ''}` : null,
           date ? fmtDate(date) : null,
+          activityTime ? `Hora: ${activityTime}` : null,
         ].filter(Boolean).join(' · ') || 'Anotada',
         status: 'reservado',
         address,
@@ -113,6 +115,7 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
         duration: info.duration ?? null,
         freeCancellation: info.freeCancellation ?? false,
         date: date ?? null,
+        time: activityTime ?? null,
         adults: adults ?? null,
         children: children ?? 0,
         mapsUrl: mapsUrl ?? info.mapsUrl ?? null,
@@ -198,6 +201,16 @@ export default function ActivityDetailModal({ activity, tripId, trip, bookingPar
                     ].filter(Boolean).join(' · ')}
                   </p>
                 </div>
+              </div>
+
+              <div>
+                <label className="body-3 font-bold text-neutral-5 uppercase tracking-wider block mb-3">Hora de la actividad</label>
+                <input
+                  type="time"
+                  value={activityTime}
+                  onChange={(e) => setActivityTime(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-neutral-2 rounded-lg body-2 text-neutral-7 focus:outline-none focus:border-primary-3 focus:ring-1 focus:ring-primary-3"
+                />
               </div>
 
               {acceptedMembers.length > 0 && (

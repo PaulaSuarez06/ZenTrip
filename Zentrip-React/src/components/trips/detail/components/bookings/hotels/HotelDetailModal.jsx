@@ -212,17 +212,31 @@ export default function HotelDetailModal({ hotel, searchParams, tripId, trip, me
       }
       const bookingData = getBookingData();
       const address = bookingData.address;
-      const activityId = await addActivity(tripId, {
+      const checkinTime = details?.data?.property?.checkin?.fromTime || '15:00';
+      const checkoutTime = details?.data?.property?.checkout?.untilTime || '11:00';
+      const notes = hotel.price != null ? `Reservado · ${hotel.price} ${hotel.currency}/noche · ${nights} noche${nights !== 1 ? 's' : ''}` : 'Reservado';
+
+      const checkInActivityId = await addActivity(tripId, {
         date: checkIn,
-        startTime: details?.data?.property?.checkin?.fromTime || '15:00',
-        endTime: details?.data?.property?.checkout?.untilTime || '11:00',
+        startTime: checkinTime,
         name: hotel.name,
         type: 'hotel',
-        notes: hotel.price != null ? `Reservado · ${hotel.price} ${hotel.currency}/noche · ${nights} noche${nights !== 1 ? 's' : ''}` : 'Reservado',
+        notes: `Check-in ${checkinTime} · ${notes}`,
         status: 'reservado',
         address,
       });
-      const newBookingId = await addBooking(tripId, { ...bookingData, activityId, receiptUrls: receiptUrls.length ? receiptUrls : [] });
+
+      const checkOutActivityId = await addActivity(tripId, {
+        date: checkOut,
+        startTime: checkoutTime,
+        name: hotel.name,
+        type: 'hotel',
+        notes: `Check-out ${checkoutTime} · ${notes}`,
+        status: 'reservado',
+        address,
+      });
+
+      const newBookingId = await addBooking(tripId, { ...bookingData, activityId: checkInActivityId, checkOutActivityId, receiptUrls: receiptUrls.length ? receiptUrls : [] });
       await sendBookingNotifications(tripId, {
         bookerUid: user.uid,
         bookerName: profile?.displayName || profile?.firstName || 'Un miembro',

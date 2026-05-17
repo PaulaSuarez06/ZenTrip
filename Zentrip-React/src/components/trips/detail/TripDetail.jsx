@@ -146,6 +146,7 @@ export default function TripDetail() {
     accessDenied,
     setActivities,
     setMembers,
+    refetch,
   } = useTripDetail(tripId);
 
   const { weatherByDate, locationByDate, currentWeather } = useWeather(trip?.destination, trip?.stops);
@@ -401,6 +402,7 @@ export default function TripDetail() {
           locationByDate={locationByDate}
           initialSelectedDay={highlightDate}
           highlightActivityId={highlightActivityId}
+          onRefetch={refetch}
         />
       );
     }
