@@ -162,7 +162,7 @@ function CtaButton({ onGoBook }) {
   );
 }
 
-export default function RouteBookings({ tripId, highlightBookingId, onOpenRoute, onGoBook }) {
+export default function RouteBookings({ tripId, highlightBookingId, onOpenRoute, onGoBook, onRefetch }) {
   const { language } = useLanguage();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -181,7 +181,10 @@ export default function RouteBookings({ tripId, highlightBookingId, onOpenRoute,
       .finally(() => setLoading(false));
   }, [tripId]);
 
-  const handleDeleted = (id) => setBookings((prev) => prev.filter((b) => b.id !== id));
+  const handleDeleted = (id) => {
+    setBookings((prev) => prev.filter((b) => b.id !== id));
+    onRefetch?.();
+  };
 
   return (
     <ImageLoadGate src="/img/background/bookings/routes.jpg" alt="Rutas guardadas">

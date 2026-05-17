@@ -30,10 +30,16 @@ function CancelBookingModal({ booking, tripId, onConfirm, onClose }) {
     setDeleting(true);
     try {
       await deleteBooking(tripId, booking.id);
-      if (booking.activityId) await deleteActivity(tripId, booking.activityId);
+      if (booking.activityId) {
+        try {
+          await deleteActivity(tripId, booking.activityId);
+        } catch (err) {
+          console.warn('[RestaurantBookingCard] Error deleting activity:', err);
+        }
+      }
       onConfirm();
-      window.location.reload();
-    } finally {
+    } catch (err) {
+      console.error('[RestaurantBookingCard] Error deleting booking:', err);
       setDeleting(false);
     }
   };

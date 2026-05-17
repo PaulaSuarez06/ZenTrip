@@ -7,7 +7,7 @@ import ImageLoadGate from '../../../../../shared/ImageLoadGate';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { getBookings } from '../../../../../../services/tripService';
 
-export default function RestaurantBookings({ tripId, members = [], highlightBookingId, onGoBook }) {
+export default function RestaurantBookings({ tripId, members = [], highlightBookingId, onGoBook, onRefetch }) {
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
 
@@ -17,6 +17,11 @@ export default function RestaurantBookings({ tripId, members = [], highlightBook
       .then((data) => setBookings(data.filter((b) => b.type === 'restaurant')))
       .catch(() => {});
   }, [tripId, user]);
+
+  const handleBookingCancelled = (id) => {
+    setBookings((prev) => prev.filter((x) => x.id !== id));
+    onRefetch?.();
+  };
 
   if (!user) {
     return (
@@ -48,7 +53,7 @@ export default function RestaurantBookings({ tripId, members = [], highlightBook
                   tripId={tripId}
                   members={members}
                   highlighted={b.id === highlightBookingId}
-                  onCancelled={(id) => setBookings((prev) => prev.filter((x) => x.id !== id))}
+                  onCancelled={handleBookingCancelled}
                 />
               ))}
             </div>

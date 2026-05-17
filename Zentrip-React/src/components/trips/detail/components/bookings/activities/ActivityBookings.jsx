@@ -7,7 +7,7 @@ import BookingBanner from '../BookingBanner';
 import ImageLoadGate from '../../../../../shared/ImageLoadGate';
 import ActivityBookingCard from './ActivityBookingCard';
 
-export default function ActivityBookings({ tripId, members = [], highlightBookingId, onGoBook }) {
+export default function ActivityBookings({ tripId, members = [], highlightBookingId, onGoBook, onRefetch }) {
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
 
@@ -17,6 +17,11 @@ export default function ActivityBookings({ tripId, members = [], highlightBookin
       .then((data) => setBookings(data.filter((b) => b.type === 'actividad')))
       .catch(() => {});
   }, [tripId, user]);
+
+  const handleBookingCancelled = (id) => {
+    setBookings((prev) => prev.filter((x) => x.id !== id));
+    onRefetch?.();
+  };
 
   if (!user) {
     return (
@@ -48,7 +53,7 @@ export default function ActivityBookings({ tripId, members = [], highlightBookin
                   tripId={tripId}
                   members={members}
                   highlighted={b.id === highlightBookingId}
-                  onCancelled={(id) => setBookings((prev) => prev.filter((x) => x.id !== id))}
+                  onCancelled={handleBookingCancelled}
                 />
               ))}
             </div>

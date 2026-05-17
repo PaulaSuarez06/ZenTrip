@@ -62,7 +62,7 @@ function RouteCard({ booking, tripId, onCancelled, highlighted = false }) {
   );
 }
 
-export default function AllBookings({ tripId, members = [], highlightBookingId, onGoBook }) {
+export default function AllBookings({ tripId, members = [], highlightBookingId, onGoBook, onRefetch }) {
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +85,10 @@ export default function AllBookings({ tripId, members = [], highlightBookingId, 
     );
   }
 
-  const onCancelled = (id) => setBookings((prev) => prev.filter((x) => x.id !== id));
+  const onCancelled = (id) => {
+    setBookings((prev) => prev.filter((x) => x.id !== id));
+    onRefetch?.();
+  };
 
   const renderCard = (booking) => {
     const shared = {
