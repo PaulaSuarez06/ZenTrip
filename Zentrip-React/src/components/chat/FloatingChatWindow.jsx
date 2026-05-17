@@ -125,6 +125,7 @@ export default function FloatingChatWindow({ chat, minimized, onClose, onToggleM
             containerRef={containerRef}
             onReply={setReplyTo}
             unreadSinceTs={unreadSinceTs}
+            isGroup={isGroup}
           />
           <div className="relative shrink-0">
             {isGroup && mentionQuery !== null && mentionMembers.length > 0 && (

@@ -281,6 +281,7 @@ export default function ConversationView({ chat, onChatUpdate }) {
           containerRef={containerRef}
           onReply={setReplyTo}
           unreadSinceTs={unreadSinceTs}
+          isGroup={isGroup}
         />
       </div>
 
