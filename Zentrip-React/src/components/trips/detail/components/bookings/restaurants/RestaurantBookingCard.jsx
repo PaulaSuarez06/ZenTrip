@@ -92,6 +92,9 @@ export default function RestaurantBookingCard({ booking, tripId, members = [], o
                 {booking.date && (
                   <span className="text-[11px] text-neutral-4">{fmtDate(booking.date)}</span>
                 )}
+                {booking.time && (
+                  <span className="text-[11px] text-neutral-4">🕐 {booking.time}</span>
+                )}
                 {booking.adults != null && (
                   <span className="text-[11px] text-neutral-4">
                     {booking.adults} adulto{booking.adults !== 1 ? 's' : ''}{booking.children > 0 ? `, ${booking.children} niño${booking.children !== 1 ? 's' : ''}` : ''}

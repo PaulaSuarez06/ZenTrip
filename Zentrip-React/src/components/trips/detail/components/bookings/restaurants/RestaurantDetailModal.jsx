@@ -31,6 +31,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
 
   const [selectedMembers, setSelectedMembers] = useState('all');
   const [receiptUrls, setReceiptUrls] = useState([]);
+  const [reservationTime, setReservationTime] = useState('');
 
   useEffect(() => {
     if (!restaurant.placeId) { setLoading(false); return; }
@@ -62,7 +63,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
 
       const activityId = await addActivity(tripId, {
         date: date || '',
-        startTime: '',
+        startTime: reservationTime,
         endTime: '',
         name: info.name,
         type: 'restaurant',
@@ -70,6 +71,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
           info.rating != null ? `${info.rating}★` : null,
           adults ? `${adults} adulto${adults !== 1 ? 's' : ''}${children > 0 ? `, ${children} niño${children !== 1 ? 's' : ''}` : ''}` : null,
           date ? fmtDate(date) : null,
+          reservationTime ? `Hora: ${reservationTime}` : null,
         ].filter(Boolean).join(' · ') || 'Anotado',
         status: 'reservado',
         address: info.address ?? null,
@@ -85,6 +87,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
         rating: info.rating ?? null,
         priceLevel: info.priceLevel ?? null,
         date: date ?? null,
+        time: reservationTime ?? null,
         adults: adults ?? null,
         children: children ?? 0,
         mapsUrl,
@@ -170,6 +173,17 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
                 </div>
               </div>
 
+              {/* Hora de la reserva */}
+              <div>
+                <label className="body-3 font-bold text-neutral-5 uppercase tracking-wider block mb-3">Hora de la reserva</label>
+                <input
+                  type="time"
+                  value={reservationTime}
+                  onChange={(e) => setReservationTime(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-neutral-2 rounded-lg body-2 text-neutral-7 focus:outline-none focus:border-primary-3 focus:ring-1 focus:ring-primary-3"
+                />
+              </div>
+
               {/* Selector de miembros */}
               {acceptedMembers.length > 0 && (
                 <PassengerSelector
@@ -251,7 +265,7 @@ export default function RestaurantDetailModal({ restaurant, tripId, trip, bookin
                 {(date || adults) && (
                   <div className="bg-secondary-1/40 rounded-xl p-4 mb-5">
                     <p className="body-3 font-bold text-neutral-5 uppercase tracking-wider mb-3">Tu reserva</p>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       {date && (
                         <div>
                           <p className="body-3 text-neutral-4 mb-0.5">Fecha</p>
