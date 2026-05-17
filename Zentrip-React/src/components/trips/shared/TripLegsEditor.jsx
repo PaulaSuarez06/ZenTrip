@@ -64,7 +64,7 @@ function LegRow({ stop, index, total, originName, onOriginChange, onChange, onRe
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {isFirst ? (
             <CityAutocomplete
               label="Origen"
@@ -90,7 +90,7 @@ function LegRow({ stop, index, total, originName, onOriginChange, onChange, onRe
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             variant="light"
             label="Desde"

@@ -179,7 +179,7 @@ export default function DetailsForm({
               }}
             />
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <CityAutocomplete
                 label="Origen"
                 name="origin"
@@ -234,7 +234,7 @@ export default function DetailsForm({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <label className={labelClass}>
               Divisa <span className="text-red-500 ml-0.5">*</span>
@@ -254,8 +254,8 @@ export default function DetailsForm({
               <p className="mt-1 body-3 text-feedback-error">{fieldErrors.currency}</p>
             )}
           </div>
-          <div className="flex items-center gap-3 self-end pb-1.5">
-            <span className="body text-slate-600">¿Viajas solo?</span>
+          <div className="flex items-center gap-2 justify-end sm:self-end sm:pb-1.5">
+            <span className="body-3 text-slate-500">¿Viajas solo?</span>
             <button
               type="button"
               role="switch"
@@ -277,11 +277,11 @@ export default function DetailsForm({
         </div>
       </div>
 
-      <div className="flex justify-between mt-6">
-        <Button variant="ghost" type="button" onClick={onCancel} className="w-auto! px-6">
+      <div className="flex justify-between gap-3 mt-6">
+        <Button variant="ghost" type="button" onClick={onCancel} className="flex-1 sm:flex-none sm:w-auto! px-4 sm:px-6 py-1.5! sm:py-2! text-xs! sm:text-sm!">
           Cancelar
         </Button>
-        <Button variant="orange" type="submit" className="w-auto! px-6">
+        <Button variant="orange" type="submit" className="flex-1 sm:flex-none sm:w-auto! px-4 sm:px-6 py-1.5! sm:py-2! text-xs! sm:text-sm!">
           Siguiente
         </Button>
       </div>

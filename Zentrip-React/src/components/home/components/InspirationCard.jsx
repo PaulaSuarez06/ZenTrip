@@ -24,7 +24,7 @@ export default function InspirationCard({ article }) {
   const color = CATEGORY_COLOR[article.category] ?? 'text-primary-3';
 
   return (
-    <div className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-neutral-1 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+    <div className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-neutral-1 shadow-sm hover:shadow-md transition-shadow flex flex-col h-80 sm:h-full">
       <ImageLoadGate src={article.image} alt={article.title}>
         <div className="h-40 sm:h-44 md:h-56 overflow-hidden bg-neutral-1">
           <img

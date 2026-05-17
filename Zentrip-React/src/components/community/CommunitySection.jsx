@@ -40,16 +40,18 @@ export default function CommunitySection() {
 
   return (
     <section className="pt-8 pb-16 px-4 sm:px-6 md:px-8 lg:px-12">
-      <div className="mb-8">
-        <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Comunidad</p>
-        <h2 className="title-h2-desktop text-secondary-5">Viajes de otros viajeros</h2>
-        <p className="body-2 text-neutral-4 mt-1 mb-4">Descubre itinerarios reales creados por personas como tú</p>
+      <div className="mb-8 sm:flex sm:items-start sm:justify-between sm:gap-6">
+        <div className="sm:flex-1">
+          <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Comunidad</p>
+          <h2 className="title-h2-desktop text-secondary-5">Viajes de otros viajeros</h2>
+          <p className="body-2 text-neutral-4 mt-1 mb-4 sm:mb-0">Descubre itinerarios reales creados por personas como tú</p>
+        </div>
         <button
           type="button"
           onClick={() => navigate(ROUTES.COMMUNITY)}
-          className="w-full bg-primary-1 text-primary-3 hover:bg-primary-2 body-3 font-semibold px-4 py-2.5 rounded-full transition-colors cursor-pointer"
+          className="w-full bg-primary-1 text-primary-3 hover:bg-primary-2 body-3 font-semibold px-4 py-2.5 rounded-full transition-colors cursor-pointer sm:w-auto sm:shrink-0 sm:mt-1 sm:whitespace-nowrap"
         >
-          Ver más ideas →
+          Ver más viajes →
         </button>
       </div>
 

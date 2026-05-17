@@ -171,23 +171,23 @@ export default function SummaryForm({
 
       <div className="flex flex-col sm:flex-row sm:justify-between gap-3 mt-6">
         <div className="flex gap-3">
-          <Button variant="ghost" type="button" onClick={onBack} className="w-auto! px-6">
+          <Button variant="ghost" type="button" onClick={onBack} className="flex-1 sm:flex-none sm:w-auto! px-4 sm:px-6 py-1.5! sm:py-2! text-xs! sm:text-sm!">
             Atrás
           </Button>
-          <Button variant="danger" type="button" onClick={onCancel} className="w-auto! px-6">
+          <Button variant="danger" type="button" onClick={onCancel} className="flex-1 sm:flex-none sm:w-auto! px-4 sm:px-6 py-1.5! sm:py-2! text-xs! sm:text-sm!">
             Cancelar
           </Button>
         </div>
         <div className="flex gap-3">
           {!isEditing && (
-            <Button variant="ghost" type="button" onClick={onSaveDraft} className="w-auto! px-4 sm:px-6">
+            <Button variant="ghost" type="button" onClick={onSaveDraft} className="flex-1 sm:flex-none sm:w-auto! px-3 sm:px-6 py-1.5! sm:py-2! text-xs! sm:text-sm!">
               Continuar más tarde
             </Button>
           )}
           <Button
             variant="orange"
             type="button"
-            className="w-auto! px-6"
+            className="flex-1 sm:flex-none sm:w-auto! px-4 sm:px-6 py-1.5! sm:py-2! text-xs! sm:text-sm!"
             onClick={onCreateTrip}
             disabled={disableCreate}
           >

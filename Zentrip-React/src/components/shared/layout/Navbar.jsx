@@ -26,7 +26,7 @@ function LanguageSelector() {
     }, [open]);
 
     return (
-        <div ref={ref} className="relative hidden sm:block">
+        <div ref={ref} className="relative">
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
@@ -34,7 +34,7 @@ function LanguageSelector() {
                 aria-label="Cambiar idioma"
                 title={current.label}
             >
-                <img src={TRANSLATE_ICON} alt="Idioma" className="w-8 h-8 object-contain" />
+                <img src={TRANSLATE_ICON} alt="Idioma" className="w-5 h-5 sm:w-8 sm:h-8 object-contain" />
                 {language !== 'es' && (
                     <span className="absolute -bottom-0.5 -right-0.5 text-[11px] leading-none">{current.flag}</span>
                 )}
@@ -151,11 +151,11 @@ const Header = () => {
         >
             {/* Logo */}
             <button
-                className="flex items-center gap-3 cursor-pointer bg-transparent border-none p-0 shrink-0 -ml-0.5"
+                className="flex items-center gap-3 cursor-pointer bg-transparent border-none p-0 shrink-0 ml-1 sm:-ml-0.5"
                 onClick={handleGoHome}
             >
-                <img src={logo} alt="ZenTrip" className="h-10 w-auto" />
-                <span className="title-h3-desktop whitespace-nowrap mt-1" data-no-translate>
+                <img src={logo} alt="ZenTrip" className="h-9 w-auto sm:h-10" />
+                <span className="hidden sm:inline title-h3-desktop whitespace-nowrap mt-1" data-no-translate>
                     <span className="text-secondary-5">Zen</span>
                     <span className="text-primary-3">Trip</span>
                 </span>
@@ -183,16 +183,16 @@ const Header = () => {
             </nav>
 
             {/* Iconos derecha */}
-            <div className={`flex items-center gap-5 md:gap-6 ml-auto ${isPublicPostGuest ? 'hidden' : ''}`}>
+            <div className={`flex items-center gap-2 md:gap-6 ml-auto ${isPublicPostGuest ? 'hidden' : ''}`}>
 
                 {/* Notificaciones */}
                 <div className="relative">
-                    <button className="relative p-1 cursor-pointer" onClick={toggleNotificationPanel} aria-label="Notificaciones">
-                        <svg width="25" height="25" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <button className="relative p-1 cursor-pointer" onClick={toggleNotificationPanel} onMouseDown={(e) => e.stopPropagation()} aria-label="Notificaciones">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M16.0183 24.5C15.8132 24.8536 15.5188 25.1471 15.1646 25.3511C14.8104 25.5552 14.4088 25.6625 14 25.6625C13.5912 25.6625 13.1896 25.5552 12.8354 25.3511C12.4812 25.1471 12.1868 24.8536 11.9817 24.5M21 9.33334C21 7.47683 20.2625 5.69635 18.9497 4.3836C17.637 3.07084 15.8565 2.33334 14 2.33334C12.1435 2.33334 10.363 3.07084 9.05025 4.3836C7.7375 5.69635 7 7.47683 7 9.33334C7 17.5 3.5 19.8333 3.5 19.8333H24.5C24.5 19.8333 21 17.5 21 9.33334Z" stroke="#1E1E1E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         {notificationCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex min-w-5 h-5 items-center justify-center rounded-full bg-primary-3 px-1 text-[10px] font-semibold leading-none text-white shadow-sm">
+                            <span className="absolute -top-1 -right-1 flex min-w-3.5 h-3.5 sm:min-w-5 sm:h-5 items-center justify-center rounded-full bg-primary-3 px-0.5 sm:px-1 text-[7px] sm:text-[10px] font-semibold leading-none text-white shadow-sm">
                                 {notificationCount > 99 ? '99+' : notificationCount}
                             </span>
                         )}
@@ -204,12 +204,12 @@ const Header = () => {
 
                 {/* Mensajes */}
                 <div className="relative">
-                    <button className="relative p-1 cursor-pointer" onClick={toggleChatPanel} aria-label="Mensajes">
-                        <svg width="25" height="25" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <button className="relative p-1 cursor-pointer" onClick={toggleChatPanel} onMouseDown={(e) => e.stopPropagation()} aria-label="Mensajes">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M24.5 13.4167C24.504 14.9565 24.1442 16.4755 23.45 17.85C22.6268 19.497 21.3614 20.8824 19.7954 21.8508C18.2293 22.8193 16.4246 23.3326 14.5833 23.3333C13.0435 23.3374 11.5245 22.9776 10.15 22.2833L3.5 24.5L5.71667 17.85C5.02242 16.4755 4.66265 14.9565 4.66667 13.4167C4.66738 11.5754 5.18071 9.77066 6.14917 8.20464C7.11763 6.63863 8.50296 5.37316 10.15 4.55C11.5245 3.85576 13.0435 3.49599 14.5833 3.5H15.1667C17.5984 3.63416 19.8952 4.66056 21.6173 6.38267C23.3394 8.10479 24.3658 10.4016 24.5 12.8333V13.4167Z" stroke="#1E1E1E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         {messageCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex min-w-5 h-5 items-center justify-center rounded-full bg-primary-3 px-1 text-[10px] font-semibold leading-none text-white shadow-sm">
+                            <span className="absolute -top-1 -right-1 flex min-w-3.5 h-3.5 sm:min-w-5 sm:h-5 items-center justify-center rounded-full bg-primary-3 px-0.5 sm:px-1 text-[7px] sm:text-[10px] font-semibold leading-none text-white shadow-sm">
                                 {messageCount > 99 ? '99+' : messageCount}
                             </span>
                         )}
@@ -232,7 +232,7 @@ const Header = () => {
                         <UserAvatar
                             src={avatarSrc}
                             initials={initials}
-                            sizeClass="w-10 h-10"
+                            sizeClass="w-7 h-7 sm:w-10 sm:h-10"
                             containerClass="shrink-0"
                             backgroundClass="bg-secondary-5"
                             backgroundColor={avatarColor}
