@@ -4,9 +4,9 @@ import {
   MapPin, Users, Calendar, Heart, MessageCircle, Bookmark,
   Copy, Check, Lock, Wallet, Package, Settings, UserCircle,
   Image as ImageIcon, CalendarDays, ChevronLeft, ChevronRight, X, Folder, Trash2, Ticket,
-  Plane, Hotel, Car, Compass, Utensils, Star, ChevronDown,
+  Plane, Hotel, Car, Compass, Utensils, Star, ChevronDown, Eye,
 } from 'lucide-react';
-import { getCommunityPostById, toggleLike, toggleSave, unpublishPost } from '../../services/communityService';
+import { getCommunityPostById, toggleLike, toggleSave, unpublishPost, recordPostView } from '../../services/communityService';
 import CommentsModal from './CommentsModal';
 import EditPostVisibilityModal from './EditPostVisibilityModal';
 import UserAvatar from '../ui/UserAvatar';
@@ -1141,6 +1141,7 @@ export default function CommunityPostPublic() {
   const [likes, setLikes] = useState(0);
   const [likedBy, setLikedBy] = useState([]);
   const [savedBy, setSavedBy] = useState([]);
+  const [viewedBy, setViewedBy] = useState([]);
   const [likeLoading, setLikeLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('itinerario');
@@ -1155,9 +1156,16 @@ export default function CommunityPostPublic() {
       setLikes(data.likes ?? 0);
       setLikedBy(data.likedBy ?? []);
       setSavedBy(data.savedBy ?? []);
+      setViewedBy(data.viewedBy ?? []);
       setLoading(false);
     }).catch(() => { setNotFound(true); setLoading(false); });
   }, [postId]);
+
+  useEffect(() => {
+    if (!postId || !user?.uid) return;
+    recordPostView(postId, user.uid);
+    setViewedBy((prev) => prev.includes(user.uid) ? prev : [...prev, user.uid]);
+  }, [postId, user?.uid]);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
@@ -1393,6 +1401,10 @@ export default function CommunityPostPublic() {
                   </button>
                 </>
               )}
+              <span className="flex items-center gap-1.5 body-3 px-3 py-1.5 rounded-full border border-neutral-2 text-neutral-4">
+                <Eye className="w-4 h-4" />
+                {viewedBy.length}
+              </span>
               <CopyLinkButton postId={post.id} />
             </div>
           </div>

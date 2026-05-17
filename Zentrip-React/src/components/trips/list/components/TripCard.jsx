@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Wallet } from 'lucide-react';
 import { getGradient } from '../../../../utils/gradients';
 import CoverUploadModal from './CoverUploadModal';
 import { useLanguage } from '../../../../context/LanguageContext';
@@ -183,7 +184,7 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
 
           {totalSpent != null && (
             <div className="flex items-center gap-1.5 body-3 text-neutral-4">
-              <span>💸</span>
+              <Wallet className="w-3.5 h-3.5 shrink-0" />
               {totalSpent > 0
                 ? <span>Gastado: {totalSpent.toLocaleString('es', { maximumFractionDigits: 0 })} {(trip.currency || 'EUR €').split(' ')[1] || (trip.currency || 'EUR €').split(' ')[0]}</span>
                 : <span className="text-neutral-3">Sin gastos registrados</span>

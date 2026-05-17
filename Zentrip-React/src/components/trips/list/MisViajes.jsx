@@ -118,11 +118,11 @@ export default function MisViajes() {
         {/* Back link */}
         <button
           type="button"
-          onClick={() => navigate(ROUTES.HOME)}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-neutral-6 w-fit transition-colors mb-6 -ml-1.5 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
-          Volver al inicio
+          Volver
         </button>
 
         {/* Cabecera */}
