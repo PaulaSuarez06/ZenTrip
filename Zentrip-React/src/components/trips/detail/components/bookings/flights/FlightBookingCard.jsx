@@ -220,16 +220,16 @@ export default function FlightBookingCard({ booking, tripId, members = [], onCan
             </div>
 
             {/* Footer: comprobante + cancelar */}
-            <div className="px-4 pb-3 border-t border-neutral-1 pt-3 flex items-center gap-2 flex-wrap">
+            <div className="px-4 pb-3 border-t border-neutral-1 pt-3 flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => setShowReceipts(true)}
-                className="flex items-center gap-1.5 body-3 text-secondary-4 font-semibold px-2.5 py-1.5 bg-secondary-1 border border-secondary-2 rounded-lg hover:bg-secondary-2 transition"
+                className="w-full sm:w-auto h-9 px-3 flex items-center justify-center gap-1.5 body-3 text-secondary-4 font-semibold bg-secondary-1 border border-secondary-2 rounded-lg hover:bg-secondary-2 transition"
               >
                 🧾 {receiptUrls.length > 0 ? `${receiptUrls.length} comprobante${receiptUrls.length > 1 ? 's' : ''}` : 'Añadir comprobante'}
               </button>
               <button
                 onClick={() => setShowCancel(true)}
-                className="ml-auto h-8 px-3 rounded-lg border border-red-300 text-red-600 body-3 font-semibold hover:bg-red-50 transition flex items-center gap-1"
+                className="w-full sm:w-auto h-9 px-3 rounded-lg border border-red-300 text-red-600 body-3 font-semibold hover:bg-red-50 transition flex items-center justify-center gap-1"
               >
                 <X className="w-3 h-3" /> Cancelar
               </button>
@@ -250,7 +250,7 @@ export default function FlightBookingCard({ booking, tripId, members = [], onCan
         <CancelModal
           booking={booking}
           tripId={tripId}
-          onConfirm={() => { setShowCancel(false); onCancelled(); }}
+          onConfirm={() => { setShowCancel(false); onCancelled(booking.id); }}
           onClose={() => setShowCancel(false)}
         />
       )}

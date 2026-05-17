@@ -46,7 +46,7 @@ export default function RegisterForm({
                 </span>
             </div>
 
-            <h2 className="title-h2-desktop text-secondary-5">Crear cuenta</h2>
+            <h2 className="title-h2-mobile md:title-h2-desktop text-secondary-5">Crear cuenta</h2>
             <p className="body-2 text-neutral-4 mb-4 md:mb-6">
                 Empieza a planificar tu próximo viaje en minutos.
             </p>
@@ -154,7 +154,7 @@ export default function RegisterForm({
                                 {nonRequiredPasswordRules.map((rule) => (
                                     <li
                                         key={rule.key}
-                                        className={`body-3 flex items-center gap-2 whitespace-nowrap ${
+                                        className={`body-3 flex items-center gap-2 ${
                                             rule.valid ? 'text-secondary-3' : 'text-primary-3'
                                         }`}
                                     >

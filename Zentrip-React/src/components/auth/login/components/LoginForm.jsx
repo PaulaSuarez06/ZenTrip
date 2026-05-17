@@ -41,7 +41,7 @@ export default function LoginForm({
         </span>
       </div>
 
-      <h2 className="title-h2-desktop text-secondary-5">Bienvenido</h2>
+      <h2 className="title-h2-mobile md:title-h2-desktop text-secondary-5">Bienvenido</h2>
       <p className="body-2 text-slate-500 mb-4 md:mb-6">
         Accede para continuar planificando tu aventura
       </p>

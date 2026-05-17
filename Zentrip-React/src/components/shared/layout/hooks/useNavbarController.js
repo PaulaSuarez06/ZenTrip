@@ -26,6 +26,22 @@ export function useNavbarController() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [chatPanelOpen, setChatPanelOpen] = useState(false);
+  const [languageSelectorOpen, setLanguageSelectorOpen] = useState(false);
+
+  const toggleLanguageSelector = () => {
+    setLanguageSelectorOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setMenuOpen(false);
+        setProfileMenuOpen(false);
+        setNotificationPanelOpen(false);
+        setChatPanelOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const closeLanguageSelector = () => setLanguageSelectorOpen(false);
 
   const toggleNotificationPanel = () => {
     setNotificationPanelOpen((prev) => {
@@ -34,6 +50,7 @@ export function useNavbarController() {
         setMenuOpen(false);
         setProfileMenuOpen(false);
         setChatPanelOpen(false);
+        setLanguageSelectorOpen(false);
       }
       return next;
     });
@@ -48,6 +65,7 @@ export function useNavbarController() {
         setMenuOpen(false);
         setProfileMenuOpen(false);
         setNotificationPanelOpen(false);
+        setLanguageSelectorOpen(false);
       }
       return next;
     });
@@ -61,6 +79,7 @@ export function useNavbarController() {
       if (next) {
         setMenuOpen(false);
         setNotificationPanelOpen(false);
+        setLanguageSelectorOpen(false);
       }
       return next;
     });
@@ -72,6 +91,7 @@ export function useNavbarController() {
       if (next) {
         setProfileMenuOpen(false);
         setNotificationPanelOpen(false);
+        setLanguageSelectorOpen(false);
       }
       return next;
     });
@@ -133,6 +153,9 @@ export function useNavbarController() {
     profileMenuOpen,
     notificationPanelOpen,
     chatPanelOpen,
+    languageSelectorOpen,
+    toggleLanguageSelector,
+    closeLanguageSelector,
     toggleProfileMenu,
     toggleMobileMenu,
     closeMobileMenu,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
-import { addActivity, addBooking, createTrip, deleteTrip, getTripPublicInviteLink, getTripPublicInvitePreview, saveTripDraft, sendTripInvitations, updateTrip } from '../../../../services/tripService';
+import { addActivity, addBooking, createTrip, deleteDraft, deleteTrip, getTripPublicInviteLink, getTripPublicInvitePreview, saveTripDraft, sendTripInvitations, updateTrip } from '../../../../services/tripService';
 import { subscribeToAllPersonalBudgets } from '../../../../services/budgetService';
 import { ROUTES } from '../../../../config/routes';
 import { STORAGE_KEY, useTripDraft } from './useTripDraft';
@@ -211,7 +211,7 @@ export function useCreateTripController() {
       localStorage.removeItem(STORAGE_KEY);
 
       if (draftIdRef.current) {
-        try { await deleteTrip(draftIdRef.current); } catch (e) { console.warn('Could not delete draft:', e); }
+        try { await deleteDraft(draftIdRef.current); } catch (e) { console.warn('Could not delete draft:', e); }
       }
 
       if (sessionStorage.getItem('zt_pending_flight')) {

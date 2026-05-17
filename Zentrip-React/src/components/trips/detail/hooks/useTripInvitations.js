@@ -103,7 +103,7 @@ export function useTripInvitations(tripId, tripName, initialMembers = [], onMemb
     setInvitados((prev) => prev.filter((i) => i.id !== invitadoId));
 
     try {
-      await removeMemberFromTrip(tripId, member.uid || invitadoId);
+      await removeMemberFromTrip(tripId, member.uid || invitadoId, member.email);
       onMemberRemoved?.(member.uid || invitadoId);
     } catch (err) {
       console.error('[useTripInvitations] Error al eliminar miembro:', err);

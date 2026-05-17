@@ -99,34 +99,12 @@ export async function saveTripDraft(uid, form, existingDraftId = null) {
   return docRef.id;
 }
 
+export async function deleteDraft(draftId) {
+  await deleteDoc(doc(db, 'trips', draftId));
+}
+
 export async function deleteTrip(tripId) {
-  const subcollections = ['members', 'activities', 'bookings', 'galleryFolders', 'galleryPhotos', 'luggage', 'expenses', 'personalBudgets'];
-  await Promise.all(
-    subcollections.map(async (sub) => {
-      const snap = await getDocs(collection(db, 'trips', tripId, sub));
-      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-    })
-  );
-
-  const groupSnap = await getDocs(collection(db, 'trips', tripId, 'luggageGroup'));
-  await Promise.all(
-    groupSnap.docs.map(async (doc_) => {
-      const selectionsSnap = await getDocs(collection(db, 'trips', tripId, 'luggageGroup', doc_.id, 'selections'));
-      await Promise.all(selectionsSnap.docs.map((d) => deleteDoc(d.ref)));
-      await deleteDoc(doc_.ref);
-    })
-  );
-
-  // Limpiar colecciones de nivel raíz asociadas al viaje
-  const rootCollections = ['notifications', 'trip_shares', 'trip_share_requests', 'tripPublicInvitations', 'invitations'];
-  await Promise.all(
-    rootCollections.map(async (col) => {
-      const snap = await getDocs(query(collection(db, col), where('tripId', '==', tripId)));
-      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-    })
-  );
-
-  await deleteDoc(doc(db, 'trips', tripId));
+  return apiClient.delete(`/trips/${tripId}`);
 }
 
 export async function updateTripCover(tripId, imageUrl) {
@@ -285,8 +263,30 @@ export function subscribeToTripMembers(tripId, callback) {
   });
 }
 
-export async function removeMemberFromTrip(tripId, memberUid) {
-  await deleteDoc(doc(db, 'trips', tripId, 'members', memberUid));
+export async function removeMemberFromTrip(tripId, memberUid, memberEmail) {
+  const cleanups = [deleteDoc(doc(db, 'trips', tripId, 'members', memberUid))];
+
+  if (memberEmail) {
+    const invSnap = await getDocs(query(
+      collection(db, 'invitations'),
+      where('email', '==', memberEmail.toLowerCase()),
+    ));
+    invSnap.docs
+      .filter((d) => d.data().tripId === tripId)
+      .forEach((d) => cleanups.push(deleteDoc(d.ref)));
+  }
+
+  if (memberUid) {
+    const notifSnap = await getDocs(query(
+      collection(db, 'notifications'),
+      where('recipientUid', '==', memberUid),
+    ));
+    notifSnap.docs
+      .filter((d) => d.data().tripId === tripId)
+      .forEach((d) => cleanups.push(deleteDoc(d.ref)));
+  }
+
+  await Promise.all(cleanups);
 }
 
 export async function addMemberToTrip(tripId, member) {

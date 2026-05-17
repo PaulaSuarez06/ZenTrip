@@ -648,7 +648,7 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
                   <button
                     type="button"
                     onClick={() => toggleModalItem(item)}
-                    className={`w-full h-[50px] px-2 pr-8 rounded-xl border text-[12px] font-semibold transition text-left flex items-center justify-center ${modalSelection.has(item)
+                    className={`w-full h-[50px] px-3 pr-8 rounded-xl border text-[12px] font-semibold transition text-left flex items-center justify-start ${modalSelection.has(item)
                       ? 'border-secondary-3 bg-secondary-1 text-secondary-6'
                       : 'border-secondary-2 text-secondary-5 hover:bg-secondary-1'}`}
                   >

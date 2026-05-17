@@ -3,6 +3,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
+/* Bloquea scroll del body cuando hay un modal/overlay visible */
+body:has(.fixed.inset-0) {
+  overflow: hidden;
+}
+
 @keyframes zt-highlight-glow {
   0%   { box-shadow: 0 0 18px 6px rgba(254, 107, 1, 0.55); }
   100% { box-shadow: 0 0 0 0 transparent; }

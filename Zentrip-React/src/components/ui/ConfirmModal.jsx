@@ -1,6 +1,8 @@
 import Button from './Button';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export default function ConfirmModal({ title, message, confirmLabel = 'Confirmar', cancelLabel = 'Cancelar', confirmVariant = 'danger', onConfirm, onCancel }) {
+  useScrollLock();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
