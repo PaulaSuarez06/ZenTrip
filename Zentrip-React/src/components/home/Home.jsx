@@ -163,40 +163,42 @@ export default function Home() {
       <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.2)" }} />
 
       {/* Text content — left side */}
-      <div className="absolute left-5 right-5 top-24 sm:left-10 sm:top-32 sm:right-auto md:left-14 md:top-36 lg:left-16 lg:top-40 max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl text-left">
-        <h1 className="title-h1-mobile md:title-h1-desktop text-white">
-          ¡Bienvenid@, {registeredName}!
-        </h1>
+      <div className="absolute left-5 right-5 top-26 bottom-65 flex items-center sm:flex-none sm:block sm:inset-auto sm:left-10 sm:top-32 sm:right-auto md:left-14 md:top-36 lg:left-16 lg:top-40 max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl text-left">
+        <div className="w-full">
+          <h1 className="text-[20px] sm:text-[22px] font-black font-titles md:title-h1-desktop text-white">
+            ¡Bienvenid@, {registeredName}!
+          </h1>
 
-        <h2 className="title-h2-mobile md:title-h2-desktop text-white mt-2">
-          Plan, Pack &amp; Go
-        </h2>
+          <h2 className="text-[16px] sm:text-[18px] font-extrabold font-titles md:title-h2-desktop text-white mt-1.5">
+            Plan, Pack &amp; Go
+          </h2>
 
-        <p className="body-bold text-white mt-4">
-          Planifica tu próximo gran viaje o explora nuevos destinos para tu próxima aventura
-        </p>
+          <p className="body-bold text-white mt-3 text-[12px]! sm:text-sm! md:text-base!">
+            Planifica tu próximo gran viaje o explora nuevos destinos para tu próxima aventura
+          </p>
 
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.TRIPS.CREATE)}
-          className="mt-5 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-5 py-2 rounded-full transition duration-200 shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer"
-        >
-          Planificar un nuevo viaje
-        </button>
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.TRIPS.CREATE)}
+            className="mt-4 bg-primary-3 hover:bg-orange-400 text-white body-2-semibold px-5 py-2 rounded-full transition duration-200 shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer text-[11px]! sm:text-sm!"
+          >
+            Planificar un nuevo viaje
+          </button>
 
-        {/* Calendar below text — oculto solo cuando pantalla ancha Y corta */}
-        <div className="mt-6 w-full max-w-xs [@media(min-width:768px)_and_(max-height:800px)]:hidden">
-          <HomeCalendar
-            activeTripDayMap={activeTripDayMap}
-            tripNameMap={tripNameMap}
-            pastTripDaySet={pastTripDaySet}
-            activitiesByDate={activitiesByDate}
-          />
+          {/* Calendar below text — oculto solo cuando pantalla grande Y corta */}
+          <div className="hidden lg:block mt-6 w-full max-w-xs [@media(min-width:1024px)_and_(max-height:800px)]:hidden">
+            <HomeCalendar
+              activeTripDayMap={activeTripDayMap}
+              tripNameMap={tripNameMap}
+              pastTripDaySet={pastTripDaySet}
+              activitiesByDate={activitiesByDate}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Calendar derecha — solo cuando pantalla ancha Y corta */}
-      <div className="hidden [@media(min-width:768px)_and_(max-height:800px)]:block absolute right-14 top-36 lg:right-16 lg:top-40 w-72 lg:w-80">
+      {/* Calendar derecha — solo cuando pantalla grande (lg+) Y corta */}
+      <div className="hidden [@media(min-width:1024px)_and_(max-height:800px)]:block absolute right-14 top-36 lg:right-16 lg:top-40 w-72 lg:w-80">
         <HomeCalendar
           activeTripDayMap={activeTripDayMap}
           tripNameMap={tripNameMap}
@@ -279,7 +281,7 @@ export default function Home() {
             <ImageLoadGate src={destinations[0].imageUrl} alt={destinations[0].name}>
               <div
                 onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(destinations[0].name)}`)}
-                className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-56 sm:h-64 md:h-80 lg:h-auto"
+                className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-40 sm:h-64 md:h-80 lg:h-auto"
                 style={{ backgroundImage: `url(${destinations[0].imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               >
                 <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />

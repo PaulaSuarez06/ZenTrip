@@ -100,7 +100,7 @@ export async function saveTripDraft(uid, form, existingDraftId = null) {
 }
 
 export async function deleteTrip(tripId) {
-  const subcollections = ['members', 'activities', 'bookings', 'galleryFolders', 'galleryPhotos', 'luggage'];
+  const subcollections = ['members', 'activities', 'bookings', 'galleryFolders', 'galleryPhotos', 'luggage', 'expenses', 'personalBudgets'];
   await Promise.all(
     subcollections.map(async (sub) => {
       const snap = await getDocs(collection(db, 'trips', tripId, sub));
@@ -286,7 +286,7 @@ export function subscribeToTripMembers(tripId, callback) {
 }
 
 export async function removeMemberFromTrip(tripId, memberUid) {
-  return apiClient.delete(`/trips/${tripId}/members/${memberUid}`);
+  await deleteDoc(doc(db, 'trips', tripId, 'members', memberUid));
 }
 
 export async function addMemberToTrip(tripId, member) {

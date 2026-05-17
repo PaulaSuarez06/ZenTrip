@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { collection, onSnapshot, query, updateDoc, doc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, where, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { useAuth } from './AuthContext';
 
@@ -79,6 +79,28 @@ export function NotificationProvider({ children }) {
 
     return unsubscribe;
   }, [user?.uid]);
+
+  // Limpia automáticamente notificaciones de viajes eliminados (notificación fantasma)
+  useEffect(() => {
+    if (!tripNotifications.length) return;
+    let cancelled = false;
+    const uniqueTripIds = [...new Set(tripNotifications.map((n) => n.tripId).filter(Boolean))];
+    Promise.all(
+      uniqueTripIds.map(async (tripId) => {
+        try {
+          const snap = await getDoc(doc(db, 'trips', tripId));
+          return snap.exists() ? tripId : null;
+        } catch { return null; }
+      })
+    ).then((existing) => {
+      if (cancelled) return;
+      const validTripIdSet = new Set(existing.filter(Boolean));
+      const orphaned = tripNotifications.filter((n) => n.tripId && !validTripIdSet.has(n.tripId));
+      orphaned.forEach((n) => updateDoc(doc(db, 'notifications', n.id), { read: true }).catch(() => {}));
+      if (orphaned.length > 0) setUnseenCount((prev) => Math.max(0, prev - orphaned.length));
+    });
+    return () => { cancelled = true; };
+  }, [tripNotifications]);
 
   // Escucha aceptaciones desde el flujo de login/registro por enlace
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { Plane, Hotel, Compass, Utensils, Car } from 'lucide-react';
 import { TYPE_CONFIG } from '../../../utils/activityConfig';
 
 // --- Time helpers ---
