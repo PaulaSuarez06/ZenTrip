@@ -426,13 +426,9 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
       .map((g) => g.key)
   );
 
-  // Items personales que NO están vinculados a un item grupal del usuario
-  const pureGroupedPersonalItems = groupedPersonalItems.filter(
-    (g) => !groupLinkedKeys.has(g.key)
-  );
-  const purePersonalItems = personalItems.filter(
-    (p) => !groupLinkedKeys.has(p.item?.trim().toLowerCase())
-  );
+  // Usar todos los items personales, incluso los vinculados a grupos
+  const pureGroupedPersonalItems = groupedPersonalItems;
+  const purePersonalItems = personalItems;
 
   const personalRecentItems = getRecentLabels(personalItems);
   const groupRecentSourceItems = groupItems.filter((item) => (item.selections || []).some((s) => s.userId === user?.uid) || item.createdBy === user?.uid);
@@ -711,7 +707,7 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
               </div>
               <div className="flex gap-2">
                 <span className="shrink-0 font-bold text-secondary-5">2.</span>
-                <span><strong>Marca como empaquetados:</strong> Cuando metas un item en la maleta, haz clic en él para marcar con ✓. La barra de progreso se actualiza automáticamente</span>
+                <span><strong>Marca como en mi maleta:</strong> Cuando metas un item en la maleta, haz clic en él para marcar con ✓. La barra de progreso se actualiza automáticamente</span>
               </div>
               <div className="flex gap-2">
                 <span className="shrink-0 font-bold text-secondary-5">3.</span>
@@ -732,7 +728,7 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
           {purePersonalItems.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="body-4 font-semibold text-neutral-6">Items empaquetados</span>
+                <span className="body-4 font-semibold text-neutral-6">Lo que llevo</span>
                 <span className="body-4 font-semibold text-secondary-5">
                   {Math.round((purePersonalItems.filter(item => item.packed).length / purePersonalItems.length) * 100)}%
                 </span>
@@ -870,7 +866,7 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
                 return (
                   <>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="body-4 font-semibold text-neutral-6">Items empaquetados</span>
+                      <span className="body-4 font-semibold text-neutral-6">Lo que llevamos</span>
                       <span className="body-4 font-semibold text-primary-4">
                         {percentage}%
                       </span>
@@ -1007,7 +1003,10 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleDeleteGroupItemGroup(group)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGroupItemGroup(group);
+                        }}
                         disabled={submitting}
                         className="ml-2 text-neutral-4 hover:text-feedback-error-strong transition disabled:opacity-50 shrink-0"
                       >
