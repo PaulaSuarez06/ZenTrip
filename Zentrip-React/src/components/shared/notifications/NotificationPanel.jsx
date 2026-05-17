@@ -46,7 +46,7 @@ function ShareRequestNotification({ n, onRead }) {
     <div className="px-4 py-3 rounded-xl border bg-primary-1 border-primary-2">
       <div className="flex items-start gap-3">
         <span className="text-xl shrink-0 mt-0.5">🔗</span>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 wrap-break-word">
           <p className="body-3 font-semibold text-neutral-7 mb-0.5">Solicitud para compartir viaje</p>
           <p className="body-3 text-neutral-5 leading-snug">
             <span className="font-semibold text-primary-4">{n.requesterName}</span> quiere compartir{' '}
@@ -224,7 +224,7 @@ export default function NotificationPanel({ onClose }) {
                   >
                     <div className="flex items-start gap-3">
                       <img src={flightImg} alt="" className="w-8 h-8 object-contain shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 wrap-break-word">
                         <p className="body-3 font-semibold text-secondary-5 mb-0.5">¡Ya estás a bordo! ✈️</p>
                         <p className="body-3 text-neutral-5 leading-snug">
                           Ahora formas parte de{' '}
@@ -270,7 +270,7 @@ export default function NotificationPanel({ onClose }) {
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 wrap-break-word">
                           <p className="body-3 font-semibold text-neutral-7 mb-0.5">{title}</p>
                           <p className="body-3 text-neutral-5 leading-snug">{body}</p>
                           {formatNotificationDate(n.createdAt) && (
@@ -310,7 +310,7 @@ export default function NotificationPanel({ onClose }) {
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl shrink-0 mt-0.5">{approved ? '✅' : '❌'}</span>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 wrap-break-word">
                           <p className="body-3 font-semibold text-neutral-7 mb-0.5">
                             {approved ? 'Permiso concedido' : 'Permiso denegado'}
                           </p>
@@ -367,7 +367,7 @@ export default function NotificationPanel({ onClose }) {
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl shrink-0 mt-0.5">{voteEmoji}</span>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 wrap-break-word">
                           <p className="body-3 font-semibold text-neutral-7 mb-0.5">{voteTitle}</p>
                           <p className="body-3 text-neutral-5 leading-snug">{voteBody}</p>
                           {formatNotificationDate(n.createdAt) && (
@@ -400,7 +400,7 @@ export default function NotificationPanel({ onClose }) {
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl shrink-0 mt-0.5">{isAdded ? '🧳' : '✅'}</span>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 wrap-break-word">
                           <p className="body-3 font-semibold text-neutral-7 mb-0.5">
                             {isAdded ? 'Nuevo item en la maleta grupal' : 'Item empaquetado'}
                           </p>
@@ -439,7 +439,7 @@ export default function NotificationPanel({ onClose }) {
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl shrink-0 mt-0.5">💸</span>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 wrap-break-word">
                           <p className="body-3 font-semibold text-neutral-7 mb-0.5">Nuevo gasto compartido</p>
                           <p className="body-3 text-neutral-5 leading-snug">
                             <span className="font-semibold text-primary-4">{n.creatorName}</span>
@@ -495,7 +495,7 @@ export default function NotificationPanel({ onClose }) {
                   >
                     <div className="flex items-start gap-3">
                       <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 wrap-break-word">
                         <p className="body-3 font-semibold text-neutral-7 mb-0.5">{title}</p>
                         <p className="body-3 text-neutral-5 leading-snug">
                           <span className={`font-semibold ${nameColor}`}>{n.bookerName}</span>
