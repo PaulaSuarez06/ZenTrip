@@ -14,6 +14,7 @@ import { getUserProfile } from "../../services/profileService";
 import { getActiveDestinations } from "../../services/destinationsService";
 import InspirationSection from "./InspirationSection";
 import CommunitySection from "../community/CommunitySection";
+import ImageLoadGate from "../shared/ImageLoadGate";
 
 const DESTINATION_TIPS = {
   'Santorini, Grecia':       'Reserva el atardecer desde Oia, el más famoso del Mediterráneo',
@@ -275,37 +276,40 @@ export default function Home() {
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8 lg:gap-10">
           {/* Tarjeta grande — full width en móvil, flex-1 en desktop */}
           {destinations[0] && (
-            <div
-              onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(destinations[0].name)}`)}
-              className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-56 sm:h-64 md:h-80 lg:h-96"
-              style={{ backgroundImage: `url(${destinations[0].imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-            >
-              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-5">
-                <p className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl title-h3-desktop font-bold leading-tight">{destinations[0].name}</p>
-                {(destinations[0].tip || DESTINATION_TIPS[destinations[0].name]) && (
-                  <p className="text-white/80 body-3 mt-1 sm:mt-2 text-xs sm:text-sm">✦ {destinations[0].tip || DESTINATION_TIPS[destinations[0].name]}</p>
-                )}
+            <ImageLoadGate src={destinations[0].imageUrl} alt={destinations[0].name}>
+              <div
+                onClick={() => navigate(`${ROUTES.TRIPS.CREATE}?destination=${encodeURIComponent(destinations[0].name)}`)}
+                className="relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer w-full lg:flex-1 h-56 sm:h-64 md:h-80 lg:h-96"
+                style={{ backgroundImage: `url(${destinations[0].imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-5">
+                  <p className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl title-h3-desktop font-bold leading-tight">{destinations[0].name}</p>
+                  {(destinations[0].tip || DESTINATION_TIPS[destinations[0].name]) && (
+                    <p className="text-white/80 body-3 mt-1 sm:mt-2 text-xs sm:text-sm">✦ {destinations[0].tip || DESTINATION_TIPS[destinations[0].name]}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </ImageLoadGate>
           )}
           {/* 4 tarjetas pequeñas — grid responsive */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 w-full lg:flex-1">
             {destinations.slice(1, 5).map((dest) => (
-              <div
-                key={dest.id}
-                onClick={() => navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination: dest.name } } })}
-                className="relative rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden cursor-pointer h-40 sm:h-48 md:h-56"
-                style={{ backgroundImage: `url(${dest.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-              >
-                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4">
-                  <p className="text-white body-bold text-sm sm:text-base leading-tight">{dest.name}</p>
-                  {(dest.tip || DESTINATION_TIPS[dest.name]) && (
-                    <p className="text-white/80 text-[10px] sm:text-xs mt-0.5 sm:mt-1 line-clamp-1">✦ {dest.tip || DESTINATION_TIPS[dest.name]}</p>
-                  )}
+              <ImageLoadGate key={dest.id} src={dest.imageUrl} alt={dest.name}>
+                <div
+                  onClick={() => navigate(ROUTES.TRIPS.CREATE, { state: { prefill: { destination: dest.name } } })}
+                  className="relative rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden cursor-pointer h-40 sm:h-48 md:h-56"
+                  style={{ backgroundImage: `url(${dest.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                >
+                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4">
+                    <p className="text-white body-bold text-sm sm:text-base leading-tight">{dest.name}</p>
+                    {(dest.tip || DESTINATION_TIPS[dest.name]) && (
+                      <p className="text-white/80 text-[10px] sm:text-xs mt-0.5 sm:mt-1 line-clamp-1">✦ {dest.tip || DESTINATION_TIPS[dest.name]}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </ImageLoadGate>
             ))}
           </div>
         </div>

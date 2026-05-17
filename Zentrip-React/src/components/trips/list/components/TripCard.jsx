@@ -4,6 +4,7 @@ import { getGradient } from '../../../../utils/gradients';
 import CoverUploadModal from './CoverUploadModal';
 import { useLanguage } from '../../../../context/LanguageContext';
 import { buildDateHelpers } from '../../../../utils/localeDate';
+import ImageLoadGate from '../../../shared/ImageLoadGate';
 
 const STATUS_CONFIG = {
   en_curso:  { label: 'En curso',      className: 'bg-primary-1 text-primary-3' },
@@ -120,10 +121,11 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
         className="bg-white rounded-2xl shadow-sm border border-neutral-1 overflow-hidden cursor-pointer hover:shadow-md transition-shadow flex flex-col relative"
       >
         {/* Imagen / gradiente */}
-        <div
-          className={`${imageHeight} relative flex items-start justify-between p-3 ${trip.coverImage ? '' : `bg-linear-to-br ${gradient}`}`}
-          style={trip.coverImage ? { backgroundImage: `url(${trip.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-        >
+        <ImageLoadGate src={trip.coverImage} alt={name}>
+          <div
+            className={`${imageHeight} relative flex items-start justify-between p-3 ${trip.coverImage ? '' : `bg-linear-to-br ${gradient}`}`}
+            style={trip.coverImage ? { backgroundImage: `url(${trip.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+          >
           <span className={`body-3 px-2 py-0.5 rounded-full font-semibold ${statusCfg.className}`}>
             {statusCfg.label}
           </span>
@@ -160,6 +162,7 @@ export default function TripCard({ trip, isDraft, memberCount, creatorName, tota
             )}
           </div>
         </div>
+        </ImageLoadGate>
 
         {/* Contenido */}
         <div className={`p-4 flex flex-col ${contentGap} flex-1`}>
