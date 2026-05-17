@@ -124,8 +124,8 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-1 sticky top-0 bg-white rounded-t-2xl z-10">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-1 bg-white shrink-0">
           <div>
             <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide">Comunidad</p>
             <h2 className="title-h3-desktop text-secondary-5">Editar visibilidad</h2>
@@ -135,7 +135,7 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
           </button>
         </div>
 
-        <div className="px-6 py-5 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           <div>
             <p className="body-2 font-semibold text-neutral-5 mb-1">¿Qué quieres compartir?</p>
             <p className="body-3 text-neutral-4 mb-4">El itinerario de actividades siempre se comparte, sin información privada.</p>
@@ -273,7 +273,7 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
           )}
         </div>
 
-        <div className="px-6 pb-5 flex gap-3 sticky bottom-0 bg-white pt-3 border-t border-neutral-1">
+        <div className="px-6 pb-5 flex gap-3 shrink-0 bg-white pt-3 border-t border-neutral-1">
           <button
             type="button"
             onClick={onClose}

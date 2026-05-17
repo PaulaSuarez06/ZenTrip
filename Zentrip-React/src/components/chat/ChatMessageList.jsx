@@ -49,7 +49,7 @@ function renderTextWithMentions(text, mentions, isOwn) {
 
 export default function ChatMessageList({
   messages, currentUserId, memberProfiles = {}, compact = false,
-  bottomRef, containerRef, onReply, unreadSinceTs = 0,
+  bottomRef, containerRef, onReply, unreadSinceTs = 0, isGroup = true,
 }) {
   const groups = buildGroups(messages);
   const [highlightedMsgId, setHighlightedMsgId] = useState(null);
@@ -77,7 +77,7 @@ export default function ChatMessageList({
   }, [messages, currentUserId, unreadSinceTs]);
 
   const atMeMessages = useMemo(() => {
-    if (!currentUserId || unreadSinceTs < 1) return [];
+    if (!isGroup || !currentUserId || unreadSinceTs < 1) return [];
     return messages.filter((m) =>
       !m.isIntro &&
       m.uid !== currentUserId &&
@@ -87,7 +87,7 @@ export default function ChatMessageList({
         m.mentions?.some((x) => x.uid === currentUserId || x.uid === 'todos')
       )
     );
-  }, [messages, currentUserId, unreadSinceTs]);
+  }, [isGroup, messages, currentUserId, unreadSinceTs]);
 
   const unreadAtCount = atMeMessages.length - seenCount;
   const showAtBadge = unreadAtCount > 0;
@@ -247,7 +247,7 @@ export default function ChatMessageList({
                             <button
                               type="button"
                               onClick={() => onReply({ messageId: msg.id, uid: group.uid, displayName: group.displayName, text: msg.text })}
-                              className="opacity-0 group-hover/msg:opacity-100 transition-opacity p-1 rounded-full hover:bg-neutral-2 text-neutral-3 hover:text-neutral-5 shrink-0"
+                              className="opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity p-1 rounded-full hover:bg-neutral-2 text-neutral-3 hover:text-neutral-5 shrink-0"
                               title="Responder"
                             >
                               <Reply className={compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
