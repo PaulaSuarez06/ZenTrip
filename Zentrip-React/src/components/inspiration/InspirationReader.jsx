@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getInspirationById } from '../../services/inspirationsService';
 import { ROUTES } from '../../config/routes';
+import ImageLoadGate from '../shared/ImageLoadGate';
 
 const LAST_READ_KEY = 'zt_last_read_inspiration';
 
@@ -105,9 +106,11 @@ export default function InspirationReader() {
         {/* Tarjeta del artículo — imagen flush arriba, sin redondeo abajo */}
         <div className="bg-white rounded-lg sm:rounded-t-2xl overflow-hidden border border-neutral-1 shadow-sm">
           {/* Imagen de cabecera — pegada al borde del card */}
-          <div className="w-full h-48 sm:h-72 md:h-96">
-            <img src={article.image} alt={article.title} className="w-full h-full object-cover" />
-          </div>
+          <ImageLoadGate src={article.image} alt={article.title}>
+            <div className="w-full h-48 sm:h-72 md:h-96">
+              <img src={article.image} alt={article.title} className="w-full h-full object-cover" />
+            </div>
+          </ImageLoadGate>
 
           {/* Contenido */}
           <div className="px-4 sm:px-8 md:px-12 py-6 sm:py-8">

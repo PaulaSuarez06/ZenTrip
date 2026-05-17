@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import ImageLoadGate from '../../shared/ImageLoadGate';
 
 const CATEGORY_COLOR = {
   ROADTRIP:    'text-orange-500',
@@ -24,13 +25,15 @@ export default function InspirationCard({ article }) {
 
   return (
     <div className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-neutral-1 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
-      <div className="h-40 sm:h-44 md:h-56 overflow-hidden bg-neutral-1">
-        <img
-          src={article.image}
-          alt={article.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
+      <ImageLoadGate src={article.image} alt={article.title}>
+        <div className="h-40 sm:h-44 md:h-56 overflow-hidden bg-neutral-1">
+          <img
+            src={article.image}
+            alt={article.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </ImageLoadGate>
       <div className="p-3 sm:p-4 md:p-5 flex flex-col flex-1 gap-2 sm:gap-2.5">
         <span className={`text-xs font-bold uppercase tracking-wide ${color}`}>
           {article.emoji} {article.category}
