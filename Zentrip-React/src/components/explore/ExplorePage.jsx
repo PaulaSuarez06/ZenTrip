@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import { getInspirations } from '../../services/inspirationsService';
 import InspirationCard from '../home/components/InspirationCard';
 
@@ -43,6 +45,7 @@ function getCreatedAtMs(article) {
 }
 
 export default function ExplorePage() {
+  const navigate = useNavigate();
   const [articles, setArticles]         = useState([]);
   const [loading, setLoading]           = useState(true);
   const [query, setQuery]               = useState('');
@@ -139,6 +142,16 @@ export default function ExplorePage() {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-8">
+
+      {/* Back button */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1.5 body-3 text-neutral-4 hover:text-secondary-5 transition-colors w-fit mb-4"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Volver
+      </button>
 
       {/* Cabecera */}
       <div className="mb-10">

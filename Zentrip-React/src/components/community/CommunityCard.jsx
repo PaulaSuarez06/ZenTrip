@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Heart, MessageCircle, Bookmark, MapPin, Users, Calendar, Copy, Check, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, MapPin, Users, Calendar, Copy, Check, Trash2, Eye } from 'lucide-react';
 import { getGradient } from '../../utils/gradients';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -259,25 +259,30 @@ export default function CommunityCard({ post, onCommentClick, onDelete, followin
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={copy}
-            title="Copiar enlace"
-            className="flex items-center gap-1 body-3 text-neutral-4 hover:text-primary-3 transition-colors ml-auto"
-          >
-            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-          </button>
-
-          {isOwner && onDelete && (
+          <div className="ml-auto flex items-center gap-2">
+            <span className="flex items-center gap-1 body-3 text-neutral-3">
+              <Eye className="w-3.5 h-3.5" />
+              {post.viewedBy?.length ?? 0}
+            </span>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
-              title="Borrar publicación"
-              className="flex items-center gap-1 body-3 text-neutral-3 hover:text-red-500 transition-colors"
+              onClick={copy}
+              title="Copiar enlace"
+              className="flex items-center gap-1 body-3 text-neutral-4 hover:text-primary-3 transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
             </button>
-          )}
+            {isOwner && onDelete && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                title="Borrar publicación"
+                className="flex items-center gap-1 body-3 text-neutral-3 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -1,19 +1,16 @@
-import { Hotel, Plane, Car, Train, Compass, Map, Utensils } from 'lucide-react';
-
 const BOOKING_TYPES = [
-  { key: 'hoteles',      label: 'Hoteles',      Icon: Hotel },
-  { key: 'vuelos',       label: 'Vuelos',       Icon: Plane },
-  //{ key: 'coches',       label: 'Coches',       Icon: Car },
-  { key: 'actividades',  label: 'Actividades',  Icon: Compass },
-  { key: 'rutas',        label: 'Rutas',        Icon: Map },
-  { key: 'restaurantes', label: 'Restaurantes', Icon: Utensils },
+  { key: 'hoteles',      label: 'Hoteles',      emoji: '🏨' },
+  { key: 'vuelos',       label: 'Vuelos',       emoji: '✈️' },
+  { key: 'actividades',  label: 'Actividades',  emoji: '🎯' },
+  { key: 'rutas',        label: 'Rutas',        emoji: '🗺️' },
+  { key: 'restaurantes', label: 'Restaurantes', emoji: '🍽️' },
 ];
 
 export default function BookingBar({ onBook, activeKey }) {
   return (
     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
       <span className="body-3 text-neutral-5 shrink-0 font-bold bold"><strong>Reservar:</strong></span>
-      {BOOKING_TYPES.map(({ key, label, Icon }) => {
+      {BOOKING_TYPES.map(({ key, label, emoji }) => {
         const isActive = key === activeKey;
         return (
           <button
@@ -26,7 +23,7 @@ export default function BookingBar({ onBook, activeKey }) {
                 : 'border-neutral-1 bg-white text-neutral-5 hover:border-primary-3 hover:bg-primary-1 hover:text-primary-3'
               }`}
           >
-            <Icon className="w-3.5 h-3.5" />
+            <span>{emoji}</span>
             {label}
           </button>
         );

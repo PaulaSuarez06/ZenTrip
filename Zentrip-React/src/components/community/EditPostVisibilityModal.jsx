@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Image, Wallet, Package, Shield, Folder, Users } from 'lucide-react';
-import { getGalleryPhotos, getGroupLuggage, getTripById, getUserLuggage } from '../../services/tripService';
+import { X, Image, Wallet, Package, Shield, Folder, Users, Ticket, Plane, Hotel, Compass, Utensils } from 'lucide-react';
+import { getGalleryPhotos, getGroupLuggage, getTripById, getUserLuggage, getBookings } from '../../services/tripService';
 import { getPersonalBudgetsTotal } from '../../services/budgetService';
-import { updatePostVisibility } from '../../services/communityService';
+import { updatePostVisibility, sanitizeBookings } from '../../services/communityService';
+
+const BOOKING_TYPES = [
+  { key: 'vuelo',      label: 'Vuelos',        Icon: Plane    },
+  { key: 'hotel',      label: 'Hoteles',       Icon: Hotel    },
+  { key: 'actividad',  label: 'Actividades',   Icon: Compass  },
+  { key: 'restaurant', label: 'Restaurantes',  Icon: Utensils },
+];
 
 function Toggle({ checked, onChange, disabled, loading }) {
   if (loading) return <div className="w-11 h-6 bg-neutral-2 rounded-full animate-pulse" />;
@@ -26,6 +33,12 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
   const [shareBudget, setShareBudget] = useState(post.shareBudget ?? false);
   const [shareLuggage, setShareLuggage] = useState(post.shareLuggage ?? false);
   const [luggageScopeAll, setLuggageScopeAll] = useState(post.luggageScopeAll ?? false);
+  const [shareBookings, setShareBookings] = useState(post.shareBookings ?? false);
+  const [rawBookings, setRawBookings] = useState([]);
+  const [enabledBookingTypes, setEnabledBookingTypes] = useState(() => {
+    const existing = new Set((post.bookings ?? []).map((b) => b.bookingType));
+    return { vuelo: existing.size === 0 || existing.has('vuelo'), hotel: existing.size === 0 || existing.has('hotel'), actividad: existing.size === 0 || existing.has('actividad'), restaurant: existing.size === 0 || existing.has('restaurant') };
+  });
   const [allPhotos, setAllPhotos] = useState([]);
   const [selectedFolders, setSelectedFolders] = useState([]);
   const [luggageCategories, setLuggageCategories] = useState([]);
@@ -62,7 +75,9 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
       getUserLuggage(post.tripId, post.userId).catch(() => []),
       getTripById(post.tripId).catch(() => null),
       getPersonalBudgetsTotal(post.tripId).catch(() => 0),
-    ]).then(([photos, groupLuggage, personalLuggage, trip, budgetTotal]) => {
+      getBookings(post.tripId).catch(() => []),
+    ]).then(([photos, groupLuggage, personalLuggage, trip, budgetTotal, bookings]) => {
+      setRawBookings(bookings || []);
       // Gallery
       const validPhotos = photos.filter((p) => p.url);
       setAllPhotos(validPhotos);
@@ -93,6 +108,12 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
     setSaving(true);
     setError('');
     try {
+      const filteredBookings = shareBookings
+        ? sanitizeBookings(rawBookings.filter((b) => {
+            const t = b.bookingType || (b.segments?.length > 0 ? 'vuelo' : b.hotelName ? 'hotel' : b.activityName ? 'actividad' : b.restaurantName ? 'restaurant' : null);
+            return t && enabledBookingTypes[t];
+          }))
+        : [];
       const updates = {
         shareGallery,
         galleryImages,
@@ -103,6 +124,8 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
         luggageScopeAll,
         luggageCategories,
         personalLuggageCategories: luggageScopeAll ? personalLuggageCategories : [],
+        shareBookings,
+        bookings: filteredBookings,
       };
       await updatePostVisibility(post.id, updates);
       onSaved(updates);
@@ -186,6 +209,51 @@ export default function EditPostVisibilityModal({ post, onClose, onSaved }) {
                   </div>
                 )}
               </div>
+
+              {/* Reservas */}
+              {(() => {
+                const bookingTypesInTrip = BOOKING_TYPES.filter((bt) =>
+                  rawBookings.some((b) => {
+                    if (bt.key === 'vuelo') return b.segments?.length > 0 || b.bookingType === 'vuelo';
+                    if (bt.key === 'hotel') return b.hotelName || b.bookingType === 'hotel';
+                    if (bt.key === 'actividad') return b.activityName || b.bookingType === 'actividad';
+                    if (bt.key === 'restaurant') return b.restaurantName || b.bookingType === 'restaurant';
+                    return false;
+                  })
+                );
+                const hasBookings = bookingTypesInTrip.length > 0;
+                return (
+                  <div className="border border-neutral-2 rounded-xl overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Ticket className="w-5 h-5 text-neutral-4 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="body-3 font-semibold text-neutral-5">Reservas del viaje</p>
+                        <p className="body-3 text-neutral-3">
+                          {loading ? 'Cargando...' : !hasBookings ? 'Sin reservas en el viaje' : `${bookingTypesInTrip.map(t => t.label).join(', ')}`}
+                        </p>
+                      </div>
+                      <Toggle checked={shareBookings} onChange={setShareBookings} disabled={loading || !hasBookings} loading={loading} />
+                    </div>
+                    {shareBookings && bookingTypesInTrip.length > 0 && (
+                      <div className="border-t border-neutral-1 px-4 py-3 bg-neutral-1/40 flex flex-col gap-2">
+                        <p className="body-3 font-semibold text-neutral-5">¿Qué tipos compartir?</p>
+                        {bookingTypesInTrip.map(({ key, label, Icon }) => (
+                          <label key={key} className="flex items-center gap-2.5 cursor-pointer body-3 text-neutral-5">
+                            <input
+                              type="checkbox"
+                              checked={enabledBookingTypes[key] ?? true}
+                              onChange={(e) => setEnabledBookingTypes((prev) => ({ ...prev, [key]: e.target.checked }))}
+                              className="w-4 h-4 rounded accent-primary-3"
+                            />
+                            <Icon className="w-3.5 h-3.5 text-neutral-4 shrink-0" />
+                            <span className="flex-1">{label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Presupuesto */}
               <div className="flex items-center gap-3 border border-neutral-2 rounded-xl px-4 py-3">

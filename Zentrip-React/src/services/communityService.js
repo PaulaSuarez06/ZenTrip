@@ -49,21 +49,34 @@ async function createSocialNotification(type, recipientUid, actorUid, actorProfi
 }
 
 // Sanitize bookings: keep only non-sensitive fields
-function sanitizeBookings(bookings = []) {
+export function sanitizeBookings(bookings = []) {
   const result = [];
   for (const b of bookings) {
     if (b.segments?.length > 0) {
       result.push({
         bookingType: 'vuelo',
         isRoundTrip: b.isRoundTrip ?? false,
-        segments: b.segments.map((seg) => ({
-          departureCity: seg.departureAirport?.cityName ?? '',
-          departureCode: seg.departureAirport?.code ?? '',
-          arrivalCity: seg.arrivalAirport?.cityName ?? '',
-          arrivalCode: seg.arrivalAirport?.code ?? '',
-          date: seg.departureTime ? seg.departureTime.slice(0, 10) : '',
-        })),
-        passengerCount: Array.isArray(b.passengers) ? b.passengers.length : null,
+        totalPrice: b.totalPrice ?? null,
+        currency: b.currency ?? null,
+        passengerCount: Array.isArray(b.passengers) ? b.passengers.length : (b.passengerCount ?? null),
+        segments: b.segments.map((seg) => {
+          const depISO = seg.departureTime ?? null;
+          const arrISO = seg.arrivalTime ?? null;
+          return {
+            departureCity: seg.departureAirport?.cityName ?? seg.departureAirport?.city ?? '',
+            departureCode: seg.departureAirport?.code ?? '',
+            departureAirportName: seg.departureAirport?.name ?? '',
+            arrivalCity: seg.arrivalAirport?.cityName ?? seg.arrivalAirport?.city ?? '',
+            arrivalCode: seg.arrivalAirport?.code ?? '',
+            arrivalAirportName: seg.arrivalAirport?.name ?? '',
+            date: depISO ? depISO.slice(0, 10) : (seg.date ?? ''),
+            departureTime: depISO ? depISO.split('T')[1]?.slice(0, 5) ?? null : null,
+            arrivalTime: arrISO ? arrISO.split('T')[1]?.slice(0, 5) ?? null : null,
+            flightNumber: seg.flightNumber ?? null,
+            airline: seg.airline ?? null,
+            carriers: seg.carriers ? seg.carriers.map((c) => ({ name: c.name ?? '' })) : null,
+          };
+        }),
       });
     } else if (b.hotelName) {
       result.push({
@@ -407,18 +420,16 @@ export async function unpublishPost(postId) {
   }
 }
 
-export async function incrementPostView(postId) {
-  const key = `zt_v_${postId}`;
-  if (localStorage.getItem(key)) return;
-  localStorage.setItem(key, '1');
+export async function recordPostView(postId, userId) {
+  if (!userId) return;
   try {
-    await updateDoc(doc(db, POSTS_COL, postId), { viewCount: increment(1) });
+    await updateDoc(doc(db, POSTS_COL, postId), { viewedBy: arrayUnion(userId) });
   } catch {
     // non-critical
   }
 }
 
-export async function updatePostVisibility(postId, { shareGallery, galleryImages, shareBudget, totalBudget, budgetCurrency, shareLuggage, luggageScopeAll, luggageCategories, personalLuggageCategories }) {
+export async function updatePostVisibility(postId, { shareGallery, galleryImages, shareBudget, totalBudget, budgetCurrency, shareLuggage, luggageScopeAll, luggageCategories, personalLuggageCategories, shareBookings, bookings }) {
   await updateDoc(doc(db, POSTS_COL, postId), {
     shareGallery,
     galleryImages: shareGallery ? galleryImages.slice(0, 20) : [],
@@ -429,6 +440,8 @@ export async function updatePostVisibility(postId, { shareGallery, galleryImages
     luggageScopeAll: shareLuggage ? Boolean(luggageScopeAll) : false,
     luggageCategories: shareLuggage ? luggageCategories : [],
     personalLuggageCategories: (shareLuggage && luggageScopeAll) ? personalLuggageCategories : [],
+    shareBookings: Boolean(shareBookings),
+    bookings: shareBookings ? (bookings ?? []) : [],
     updatedAt: serverTimestamp(),
   });
 }
