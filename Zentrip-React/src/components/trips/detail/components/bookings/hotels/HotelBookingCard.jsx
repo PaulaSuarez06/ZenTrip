@@ -14,11 +14,15 @@ function CancelBookingModal({ booking, tripId, onConfirm, onClose }) {
       if (booking.activityId) activityIds.push(booking.activityId);
       if (booking.checkOutActivityId) activityIds.push(booking.checkOutActivityId);
       for (const actId of activityIds) {
-        await deleteActivity(tripId, actId);
+        try {
+          await deleteActivity(tripId, actId);
+        } catch (err) {
+          console.warn('[HotelBookingCard] Error deleting activity:', err);
+        }
       }
       onConfirm();
-      window.location.reload();
-    } finally {
+    } catch (err) {
+      console.error('[HotelBookingCard] Error deleting booking:', err);
       setDeleting(false);
     }
   };

@@ -431,6 +431,7 @@ export default function TripDetail() {
           highlightBookingId={highlightBookingId}
           onGoBook={handleGoBook}
           onOpenRoute={handleOpenRoute}
+          onRefetch={refetch}
         />
       );
     }
