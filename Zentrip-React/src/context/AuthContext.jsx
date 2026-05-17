@@ -13,7 +13,7 @@ function mapProfile(data, googlePhotoURL = '') {
   const country = data?.country || '';
   const language = data?.language || 'Español';
   const currency = data?.currency || 'EUR €';
-  const profilePhoto = data?.profilePhoto || googlePhotoURL || '';
+  const profilePhoto = data && 'profilePhoto' in data ? (data.profilePhoto || '') : (googlePhotoURL || '');
 
   const normalizeTripGroupType = (value) => {
     const normalized = String(value || '').toLowerCase().trim();

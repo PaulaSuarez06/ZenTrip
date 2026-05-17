@@ -9,10 +9,22 @@ import AddExpenseModal from '../budget/AddExpenseModal';
 import ConfirmModal from '../../../../ui/ConfirmModal';
 import GroupView from '../budget/components/GroupView';
 import PersonalView from '../budget/components/PersonalView';
+import { useMemberProfiles } from '../../../../../hooks/useMemberProfiles';
 
 export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
   const currentUid = currentUser?.uid;
   const { expenses, payments, myPersonalBudget, allPersonalBudgets, loading, error } = useBudget(tripId, currentUid);
+
+  const memberUids = useMemo(() => members.map((m) => m.uid).filter(Boolean), [members]);
+  const memberProfiles = useMemberProfiles(memberUids);
+
+  const enrichedMembers = useMemo(() =>
+    members.map((m) => ({
+      ...m,
+      avatar:      memberProfiles[m.uid]?.profilePhoto || m.avatar || '',
+      avatarColor: memberProfiles[m.uid]?.avatarColor  || m.avatarColor || '',
+    })),
+  [members, memberProfiles]);
 
   const groupExpenses = useMemo(() => expenses.filter((e) => !e.isPersonal), [expenses]);
 
@@ -86,7 +98,7 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
 
       {expenseModal && (
         <AddExpenseModal
-          members={members}
+          members={enrichedMembers}
           currentUser={currentUser}
           trip={trip}
           tripCurrency={currency}
@@ -163,7 +175,7 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
       {view === 'group' ? (
         <GroupView
           trip={trip}
-          members={members}
+          members={enrichedMembers}
           expenses={groupExpenses}
           payments={payments}
           currency={currency}
@@ -177,7 +189,7 @@ export default function BudgetTab({ tripId, trip, members = [], currentUser }) {
       ) : (
         <PersonalView
           trip={trip}
-          members={members}
+          members={enrichedMembers}
           expenses={expenses}
           payments={payments}
           myPersonalBudget={myPersonalBudget}

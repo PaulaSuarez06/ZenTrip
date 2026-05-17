@@ -73,7 +73,7 @@ export default function HotelBookingCard({ booking, tripId, highlighted = false,
 
   return (
     <>
-      <div ref={cardRef} className={`bg-auxiliary-green-1 border rounded-xl px-4 py-3 transition ${highlighted ? 'border-primary-3 ring-2 ring-primary-3 ring-offset-1' : 'border-auxiliary-green-3'}`}>
+      <div ref={cardRef} className={`bg-auxiliary-green-1 border rounded-xl px-4 py-3 transition ${highlighted ? 'border-transparent highlight-glow' : 'border-auxiliary-green-3'}`}>
         <button
           type="button"
           onClick={() => onDetails?.(booking)}

@@ -177,7 +177,7 @@ export default function CommunityPage() {
   return (
     <div className="px-6 sm:px-10 lg:px-16 pb-16">
       {/* Back button for Community page */}
-      <div className="mb-4">
+      <div className="mb-2">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -188,10 +188,10 @@ export default function CommunityPage() {
         </button>
       </div>
       {/* Header */}
-      <div className="pt-10 pb-6">
+      <div className="pt-4 sm:pt-8 pb-4 sm:pb-6">
         <p className="body-3 font-semibold text-primary-3 uppercase tracking-wide mb-1">Comunidad</p>
         <h1 className="title-h1-desktop text-secondary-5">Itinerarios de viajeros</h1>
-        <p className="body-2 text-neutral-4 mt-2">
+        <p className="body-2 text-neutral-4 mt-2 max-w-2xl">
           Descubre itinerarios reales creados por personas como tú. Inspírate, guarda y comenta los viajes que más te llamen.
         </p>
       </div>
@@ -203,14 +203,14 @@ export default function CommunityPage() {
             key={key}
             type="button"
             onClick={() => switchTab(key)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 body-3 font-semibold transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 body-3 font-semibold transition-colors border-b-2 -mb-px ${
               activeTab === key
                 ? 'border-primary-3 text-primary-3'
                 : 'border-transparent text-neutral-4 hover:text-neutral-5'
             }`}
           >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
+            <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden sm:inline">{label}</span>
             {key === 'mine' && user && !loadingMine && myPosts.length > 0 && (
               <span className="ml-0.5 bg-primary-1 text-primary-3 text-xs font-semibold px-1.5 py-0.5 rounded-full leading-none">
                 {myPosts.length}

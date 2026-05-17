@@ -57,7 +57,7 @@ export default function ActivityCard({ activity, members = [], onDelete, onView,
           if (subtab) { onGoToReservas?.(subtab, activity.bookingId); return; }
           if (isDeletable) onView?.(activity);
         }}
-        className={`flex-1 min-w-0 rounded-2xl border p-3 sm:p-4 mb-3 ${subtab || isDeletable ? 'cursor-pointer hover:shadow-md hover:border-neutral-2' : ''} transition ${activity.status === 'reservado' ? 'bg-auxiliary-green-1 border-auxiliary-green-3' : 'bg-white border-neutral-1'} ${highlighted ? 'ring-2 ring-primary-3' : ''}`}
+        className={`flex-1 min-w-0 rounded-2xl border p-3 sm:p-4 mb-3 ${subtab || isDeletable ? 'cursor-pointer hover:shadow-md hover:border-neutral-2' : ''} transition ${activity.status === 'reservado' ? 'bg-auxiliary-green-1 border-auxiliary-green-3' : 'bg-white border-neutral-1'} ${highlighted ? 'border-transparent highlight-glow' : ''}`}
       >
         {confirmDelete ? (
           <div className="flex flex-col gap-2">

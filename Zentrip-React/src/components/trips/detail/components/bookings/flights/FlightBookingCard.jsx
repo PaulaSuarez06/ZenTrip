@@ -131,7 +131,7 @@ export default function FlightBookingCard({ booking, tripId, members = [], onCan
 
   return (
     <>
-      <div ref={cardRef} className={`bg-white border rounded-2xl overflow-hidden transition ${highlighted ? 'border-primary-3 ring-2 ring-primary-3 ring-offset-1' : 'border-secondary-2'}`}>
+      <div ref={cardRef} className={`bg-white border rounded-2xl overflow-hidden transition ${highlighted ? 'border-transparent highlight-glow' : 'border-secondary-2'}`}>
 
         {/* Cabecera clicable */}
         <button

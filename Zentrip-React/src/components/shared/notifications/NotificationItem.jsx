@@ -93,7 +93,7 @@ export default function NotificationItem({ notification }) {
     <div className="px-4 py-3 rounded-xl bg-white border border-neutral-2/60 hover:border-neutral-3 transition-colors">
       <div className="flex items-start gap-3">
         <img src={flightImg} alt="" className="w-8 h-8 object-contain shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 wrap-break-word">
           <p className="body-3 text-neutral-5 leading-snug">
             <span className="font-semibold text-secondary-5">{creatorName || 'Alguien'}</span>
             {' '}te invitó al viaje{' '}

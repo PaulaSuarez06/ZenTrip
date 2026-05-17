@@ -77,7 +77,7 @@ export default function ActivityBookingCard({ booking, tripId, members = [], onC
 
   return (
     <>
-      <div ref={cardRef} className={`bg-white border rounded-xl px-4 py-3 transition ${highlighted ? 'border-primary-3 ring-2 ring-primary-3 ring-offset-1' : 'border-neutral-1'}`}>
+      <div ref={cardRef} className={`bg-white border rounded-xl px-4 py-3 transition ${highlighted ? 'border-transparent highlight-glow' : 'border-neutral-1'}`}>
         <div className="flex items-start gap-3 mb-3">
           <span className="text-2xl shrink-0">🎯</span>
           <div className="flex-1 min-w-0">
