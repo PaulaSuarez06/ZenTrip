@@ -818,7 +818,7 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
                         }`}
                       >
                         <Check className="w-3 h-3 shrink-0" />
-                        {allPacked ? 'Empaquetado' : 'Marcar empaquetado'}
+                        {allPacked ? 'En mi maleta' : 'Pendiente'}
                       </button>
                     </div>
                     <button
@@ -996,7 +996,7 @@ export default function LuggageTab({ tripId, tripName, members = [] }) {
                               }`}
                             >
                               <Check className="w-3 h-3 shrink-0" />
-                              {allPacked ? 'Empaquetado' : 'Marcar empaquetado'}
+                              {allPacked ? 'En mi maleta' : 'Pendiente'}
                             </button>
                           );
                         })()}
